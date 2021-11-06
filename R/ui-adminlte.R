@@ -119,9 +119,13 @@ adminlte_sidebar <- function(root_path = template_root(),
     } else {
       x$group <- NA
     }
+    order <- x$order
+    if(!length(order) || is.na(order)){
+      order <- 9999L
+    }
     data.frame(
       id = mid,
-      order = x$order,
+      order = order,
       group = x$group,
       label = x$label,
       icon = ifelse(length(x$icon) == 1, x$icon, ""),
@@ -132,9 +136,13 @@ adminlte_sidebar <- function(root_path = template_root(),
   }))
 
   if(nrow(module_tbl)){
-    module_tbl <- module_tbl[
-      order(as.integer(module_tbl$group) * 10000 + module_tbl$order),
-    ]
+    max_order <- max(c(module_tbl$order, 10000), na.rm = TRUE) + 1
+    # group could be NA, resulting in warning
+    suppressWarnings({
+      module_tbl <- module_tbl[
+        order(as.integer(module_tbl$group) * max_order + module_tbl$order),
+      ]
+    })
   }
 
   shiny::tagList(

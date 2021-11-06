@@ -1,7 +1,75 @@
+sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
+
+  shared_id <- session$cache$get("shinytemplates_shared_id")
+  private_id <- session$cache$get("shinytemplates_private_id")
+  if(length(shared_id) != 1 || length(private_id) != 1 ||
+     !is.character(shared_id) || !is.character(private_id)){
+    stop("Invalid session IDs, run `register_session_id()` first to register.")
+  }
+
+  root_session <- session$rootScope()
+
+  reactives <- root_session$cache$get("shinytemplates_sync_inputs", NULL)
+
+  if(!shiny::is.reactivevalues(reactives)){
+    reactives <- shiny::reactiveValues()
+    root_session$cache$set("shinytemplates_sync_inputs", reactives)
+  }
+
+  observer <- root_session$cache$get("shinytemplates_sync_handler", NULL)
+
+  if(is.null(observer)){
+    observer <- shiny::observeEvent({
+      root_session$input[["@shinytemplates@"]]
+    }, {
+      try({
+        message <- RcppSimdJson::fparse(root_session$input[["@shinytemplates@"]])
+
+        if(identical(message$last_edit, private_id)){
+          return()
+        }
+
+        input_names <- shiny::isolate({ names(root_session$input) })
+        input_names <- input_names[!startsWith(input_names, "@")]
+        input_names <- input_names[input_names %in% names(message$inputs)]
+        if(!length(input_names)) { return() }
+
+        lapply(input_names, function(nm){
+          v <- message$inputs[[nm]]
+          v2 <- shiny::isolate(root_session$input[[nm]])
+          if(!identical(v, v2)){
+            reactives[[nm]] <- v
+          }
+        })
+
+        # input_names <- input_names[sel]
+        #
+        # if(!length(input_names)) { return() }
+        #
+        # print(message$inputs[input_names])
+        # list2env(list(root_session = root_session), envir=.GlobalEnv)
+        # do.call(root_session$setInputs, message$inputs[input_names])
+
+      }, silent = FALSE)
+    }, domain = root_session, ignoreNULL = TRUE, ignoreInit = TRUE,
+    suspended = TRUE)
+
+    root_session$cache$set("shinytemplates_sync_handler", observer)
+  }
+
+  list(
+    reactives = reactives,
+    sync_observer = observer
+  )
+
+}
+
+
 #' @export
-register_session_id <- function(session = shiny::getDefaultReactiveDomain(),
-                                shared_id = NULL, env = parent.frame(),
-                                watch_list){
+register_session_id <- function(
+  session = shiny::getDefaultReactiveDomain(),
+  shared_id = NULL, env = parent.frame(),
+  shared_inputs = NA){
 
   if(length(shared_id)){
     if(grepl("[^a-z0-9_]", shared_id)){
@@ -11,8 +79,14 @@ register_session_id <- function(session = shiny::getDefaultReactiveDomain(),
     # obtain the shared ID
     shared_id <- session$cache$get("shinytemplates_shared_id", NULL)
     if(length(shared_id) != 1 || !is.character(shared_id)){
-      shared_id <- rand_string(length = 26)
+      # get from session
+      query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
+      shared_id <- query_list$query$shared_id
       shared_id <- tolower(shared_id)
+      if(is.null(shared_id) || grepl("[^a-z0-9_]", shared_id)){
+        shared_id <- rand_string(length = 26)
+        shared_id <- tolower(shared_id)
+      }
     }
   }
   session$cache$set("shinytemplates_shared_id", shared_id)
@@ -26,21 +100,14 @@ register_session_id <- function(session = shiny::getDefaultReactiveDomain(),
     private_id <- session$cache$get("shinytemplates_private_id")
   }
 
-  watch_all <- FALSE
-  if(missing(watch_list)){
-    watch_all <- TRUE
-  }
-
   # set up shared_id bucket
-  if(!is_registerd && (watch_all || length(watch_list))){
-    input_observer <- shiny::observe({
+  broadcast_observer <- session$cache$get(
+    "shinytemplates_broadcast_handler", NULL)
+
+  if( is.null(broadcast_observer) ){
+    broadcast_observer <- shiny::observe({
       inputs <- shiny::reactiveValuesToList(session$input)
-      if(watch_all) {
-        nms <- names(inputs)
-      } else {
-        inputs <- inputs[watch_list]
-        nms <- watch_list
-      }
+      nms <- names(inputs)
 
       sel <- !startsWith(nms, "@")
       if(length(sel) && any(sel)){
@@ -60,7 +127,39 @@ register_session_id <- function(session = shiny::getDefaultReactiveDomain(),
         }
 
       }
-    }, domain = session, priority = -100000)
+    }, domain = session, priority = -100000, suspended = TRUE)
+
+    session$cache$set(
+      "shinytemplates_broadcast_handler", broadcast_observer)
+
   }
 
+  res <- sync_inputs(session = session)
+  res$broadcast_observer <- broadcast_observer
+
+  res$disable_broadcast <- function(){
+    res$broadcast_observer$suspend()
+  }
+  res$enable_broadcast <- function(once = FALSE){
+    if(once){
+      res$broadcast_observer$run()
+    } else {
+      res$broadcast_observer$resume()
+    }
+  }
+  res$disable_sync <- function(){
+    res$sync_observer$suspend()
+  }
+  res$enable_sync <- function(once = FALSE){
+    if(once){
+      res$sync_observer$run()
+    } else {
+      res$sync_observer$resume()
+    }
+  }
+
+  res
 }
+
+
+

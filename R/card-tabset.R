@@ -27,9 +27,12 @@ card_tabset_content <- function(id_tabset, index, active, ...){
 }
 
 #' @export
-card_tabset <- function(inputId, ..., title = NULL,
-                        names = NULL, active = NULL, tools = NULL,
-                        class = "card-dark", class_header = ""){
+card_tabset <- function(
+  ..., inputId = rand_string(), title = NULL,
+  names = NULL, active = NULL, tools = NULL, footer = NULL,
+  class = "", class_header = "", class_body = "", class_foot = ""){
+
+  call_ <- match.call()
 
   if(grepl("[^a-zA-Z0-9_-]", inputId)){
     stop("card_tabset: invalid `inputId`, can only have letters, digits, '-', or '_'.")
@@ -62,7 +65,14 @@ card_tabset <- function(inputId, ..., title = NULL,
                                        tools))
   }
 
-  shiny::div(
+  if(!is.null(footer)){
+    footer <- shiny::div(
+      class = combine_class("card-footer", class_foot),
+      footer
+    )
+  }
+
+  set_attr_call(shiny::div(
     class = sprintf("card card-tabs %s", class),
     shiny::div(
       class = sprintf("card-header p-0 pt-1 %s", class_header),
@@ -79,7 +89,7 @@ card_tabset <- function(inputId, ..., title = NULL,
       )
     ),
     shiny::div(
-      class = "card-body",
+      class = combine_class("card-body", class_body),
       shiny::div(
         class = "tab-content",
         id = sprintf("%sContent", inputId),
@@ -88,15 +98,16 @@ card_tabset <- function(inputId, ..., title = NULL,
           card_tabset_content(inputId, ii, active = title %in% active, tabs[[ii]])
         })
       )
-    )
-  )
+    ),
+    footer
+  ), call = call_)
 }
 
 #' @export
-insert_card_tab <- function(inputId, title, ..., active = TRUE,
+card_tabset_insert <- function(inputId, title, ..., active = TRUE,
                             notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.insert_card_tab",
+    "shinytemplates.card_tabset_insert",
     list(
       inputId = session$ns(inputId),
       title = title,
@@ -107,3 +118,26 @@ insert_card_tab <- function(inputId, title, ..., active = TRUE,
   )
 }
 
+#' @export
+card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage(
+    "shinytemplates.card_tabset_remove",
+    list(
+      inputId = session$ns(inputId),
+      title = title,
+      notify_on_failure = isTRUE(notify_on_failure)
+    )
+  )
+}
+
+#' @export
+card_tabset_activate <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage(
+    "shinytemplates.card_tabset_activate",
+    list(
+      inputId = session$ns(inputId),
+      title = title,
+      notify_on_failure = isTRUE(notify_on_failure)
+    )
+  )
+}

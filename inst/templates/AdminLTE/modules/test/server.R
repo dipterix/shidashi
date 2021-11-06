@@ -16,7 +16,7 @@ if(FALSE){
 server <- function(input, output, session, ...){
 
   list2env(list(session = session), envir=globalenv())
-  shinytemplates::register_session_id(session, shared_id = "testtt")
+  shared_data <- shinytemplates::register_session_id(session)
 
   shiny::observeEvent(input$configure_card, {
     shiny::showModal(
@@ -32,13 +32,8 @@ server <- function(input, output, session, ...){
     plot(1:10, main = input$in1)
   })
 
-  shiny::observeEvent(input$in3, {
-    print('hhhh')
-  })
-
   shiny::observeEvent(input$add_card, {
-    print("Adding card")
-    insert_card_tab("output_tabset", title = "A new tab", session = session,
+    card_tabset_insert("output_tabset", title = "A new tab", session = session,
                     shiny::textInput(ns("in3"), "New input"))
 
     p <- dipsaus::progress2("title")
@@ -50,16 +45,11 @@ server <- function(input, output, session, ...){
 
   })
 
-
-  root_session <- session$rootScope()
-  list2env(list(root_session = root_session), envir=globalenv())
-  observeEvent(root_session$input[["@shinytemplates@"]], {
-    try({
-
-      message <- RcppSimdJson::fparse(root_session$input[["@shinytemplates@"]])
-      print(message)
-
-    }, silent = FALSE)
+  observeEvent({
+    shared_data$reactives[[ns("in2")]]
+  }, {
+    val <- shared_data$reactives[[ns("in2")]]
+    shiny::updateTextInput(session, "in2", value = val)
   })
 
 

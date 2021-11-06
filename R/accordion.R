@@ -2,7 +2,7 @@
 #' @export
 accordion_item <- function(
   title, ..., footer = NULL, tools = NULL,
-  class = "card-dark", collapsed = TRUE,
+  class = "", collapsed = TRUE,
   parentId = rand_string(), itemId = rand_string(),
   style_header = NULL, style_body = NULL,
   root_path = template_root()){

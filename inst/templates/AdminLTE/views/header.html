@@ -23,15 +23,15 @@
 <script src="plugins/jquery-ui/jquery-ui.min.js"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
-  $.widget.bridge('uibutton', $.ui.button)
+  $.widget.bridge('uibutton', $.ui.button);
 </script>
 <!-- Bootstrap 4 -->
 <script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 
 <!-- shiny header -->
 <!-- if above libraries conflict with shiny, you can suppress here -->
-{{ suppressDependencies("jquery", "bootstrap") }}
+{{ suppressDependencies("jquery") }}
 {{ headContent() }}
 
 <!-- Additional cutomized styles that overwrites -->
-<link rel="stylesheet" href="dist/css/adminlte-addon.css">
+<link rel="stylesheet" href="dist/css/shinytemplates.css">

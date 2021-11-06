@@ -1,0 +1,361 @@
+@use "sass:meta";
+@use "sass:map";
+/** global variables **/
+$sizes-margin-padding: 0,5,6,7,8,9,10,11,12,15,20,25,30,50,60,80,100;
+
+$code-background: #e5e5e5;
+$code-color-operator: rgb(104, 118, 135);
+$code-color-parenthesis: rgb(104, 118, 135);
+$code-color-literal: #990073;
+$code-color-number: #099;
+$code-color-comment: #098;
+$code-color-keyword: #900;
+$code-color-identifier: rgb(0, 0, 0);
+$code-color-string: #d14;
+$code-font-family: "'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace";
+$color-error: #dc3545;
+$color-primary: #3f6791;
+$color-secondary: #adb5bd;
+
+/** Some macros **/
+@function add_force($force: false) {
+  $important: "";
+  @if $force {
+    $important: "!important";
+  }
+  @return unquote($string: $important);
+}
+@function as_pixel_size($sizes...){
+  $args : meta.keywords($sizes);
+  $size : map.get($args, "size");
+  @if not $size or $size == 0 {
+    @return 0;
+  }
+  $unit: map.get($args, "unit");
+  @if not $unit {
+    $unit: 1px;
+  }
+  @return $size * $unit;
+}
+@mixin display($type, $force: false) {
+  display: $type add_force($force);
+}
+@mixin visibility($type, $force: false) {
+  visibility: $type add_force($force);
+}
+@mixin position($type, $force: false) {
+  position: $type add_force($force);
+}
+@mixin set-size($type, $direction: all, $force: false, $sizes...) {
+  $style: as_pixel_size($sizes...) add_force($force);
+  @if $direction == all {
+    #{$type}: $style;
+  } @else {
+    @each $d in $direction {
+      @if $d == vertical {
+        #{$type}-top: $style;
+        #{$type}-bottom: $style;
+      } @else if $d == horizontal {
+        #{$type}-left: $style;
+        #{$type}-right: $style;
+      } @else {
+        #{$type}-#{$d}: $style;
+      }
+    }
+  }
+}
+@mixin margin($direction: all, $force: false, $sizes...){
+  @include set-size($type : margin, $sizes...,
+    $direction: $direction, $force: $force);
+}
+@mixin padding($direction: all, $force: false, $sizes...){
+  @include set-size($type : padding, $sizes...,
+    $direction: $direction, $force: $force);
+}
+@mixin min-height($size){ min-height: as_pixel_size($size: $size); }
+@mixin max-height($size){ max-height: as_pixel_size($size: $size); }
+@mixin height($size){ height: as_pixel_size($size: $size); }
+@mixin fill-width { width: 100%; }
+@mixin fill-height { height: 100%; }
+@mixin fill-max-width { max-width: 100%; }
+@mixin fill-max-height { max-height: 100%; }
+@mixin overflow($type, $direction: all, $force: false) {
+  @if $direction == all {
+    overflow: $type add_force($force);
+  } @else {
+    overflow-#{$direction}: $type add_force($force);
+  }
+}
+@mixin code-font-family { font-family: unquote($string: $code-font-family); }
+@mixin border-radius($size, $unit: 1px) {
+  border-radius: as_pixel_size($size: $size, $unit: $unit);
+}
+@mixin border-color($color, $direction: all) {
+  @if $direction == all {
+    border-color: $color;
+  } @else {
+    @each $d in $direction {
+      border-#{$d}-color: $color;
+    }
+  }
+}
+
+/** General rules: display, visibility **/
+.hidden {
+  @include display(none, true);
+  @include visibility(hidden, true);
+}
+
+.display-block-force {
+  @include display(block, true);
+}
+
+.display-block {
+  @include display(block, true);
+}
+
+.inline-all {
+  @include display(inline, true);
+
+  & * {
+    @include display(inline, true);
+  }
+  & pre,
+  & code {
+    padding: 0;
+    margin: 0;
+  }
+}
+
+.flex-container {
+  display: flex;
+  @include fill-width;
+
+  &>* {
+    flex: 1;
+  }
+}
+
+
+.overflow-visible {
+  @include overflow(visible);
+}
+.overflow-visible-on-hover {
+  @include overflow(hidden);
+
+  &:hover {
+    @include overflow(visible);
+    @include position(absolute);
+    min-height: 100%;
+    min-width: 100%;
+    z-index: 10000;
+  }
+}
+
+/** General rules: dimensions **/
+
+.row .shiny-bound-input {
+  width: 100%;
+}
+
+@for $factor from 0 through 20 {
+  $size: $factor * 50;
+  .min-height-#{$size} { @include min-height($size: $size); }
+  .max-height-#{$size} { @include max-height($size: $size); }
+  .height-#{$size} { @include height($size: $size); }
+}
+
+.fill-width { @include fill-width; }
+.fill-height { @include fill-height; }
+.fill {
+  @include fill-width;
+  @include fill-height;
+}
+
+
+/** General rules: margin, padding **/
+@each $size in $sizes-margin-padding {
+  $types: padding, margin;
+  @each $type in $types {
+    .#{$type}-#{$size} { #{$type}: as_pixel_size($size: $size); }
+    .#{$type}-top-#{$size} { #{$type}-top: as_pixel_size($size: $size); }
+    .#{$type}-bottom-#{$size} { #{$type}-bottom: as_pixel_size($size: $size); }
+    .#{$type}-vertical-#{$size} { #{$type}-top: as_pixel_size($size: $size); #{$type}-bottom: as_pixel_size($size: $size); }
+    .#{$type}-left-#{$size} { #{$type}-left: as_pixel_size($size: $size); }
+    .#{$type}-right-#{$size} { #{$type}-right: as_pixel_size($size: $size); }
+    .#{$type}-horizontal-#{$size} { #{$type}-right: as_pixel_size($size: $size); #{$type}-left: as_pixel_size($size: $size); }
+  }
+}
+
+.no-padding { padding: 0!important; }
+.no-margin { margin: 0!important; }
+
+.space-vertical-5 {
+  width: 100%;
+  
+  &::before {
+    content: " ";
+    display: block;
+    height: 5px;
+  }
+}
+
+.resize-vertical {
+  @include overflow(hidden);
+  resize: vertical;
+
+  &:hover {
+    @include overflow(auto);
+  }
+}
+
+/** Colors **/
+
+@for $factor from 0 through 9 {
+  .bg-gray-#{$factor}0 {
+    background-color: adjust-color($color: #000000, $lightness: $factor * 10%);
+  }
+  .opacity-0#{$factor} {
+    opacity: $factor * 0.1;
+  }
+}
+.opacity-10 { opacity: 1; }
+
+/** Syntax highlight for R code **/
+pre {
+  @include code-font-family;
+  @include overflow(auto, x);
+  @include fill-max-width;
+  background-color: $code-background;
+
+  & .operator { color: $code-color-operator; }
+  & .paren { color: $code-color-parenthesis; }
+  & .literal { color: $code-color-literal; }
+  & .number { color: $code-color-number; }
+  & .comment { color: $code-color-comment; font-style: italic; }
+  & .keyword { color: $code-color-keyword; font-weight: bold; }
+  & .identifier { color: $code-color-identifier; }
+  & .string { color: $code-color-string; }
+
+  &.overflow-visible-on-hover:hover {
+    max-width: unset;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.125), 0 1px 50px rgba(0, 0, 0, 0.2);
+  }
+
+}
+tt, code {
+  @include code-font-family;
+}
+
+pre, code {
+  @include display(block);
+  @include padding($size: 0.5, $unit: 1em);
+
+  &[class] {
+    font-size: 92% !important;
+  }
+}
+
+/** shinytemplates objects **/
+// code-display
+.info-box .code-display {
+  @include padding($size: 0);
+  @include margin($size: -0.5, $unit: 1em);
+}
+
+.code-display pre {
+  @include padding($size: 0);
+}
+
+.card-footer.code-display .info-box {
+  @include border-radius(0);
+}
+
+// card-accordion
+.card-accordion {
+  &.catd-tools {
+    @include position($type: absolute);
+    right: 0;
+    margin: 7px 5px; // TODO: change this
+  }
+  &.card-header {
+    @include padding($size: 0);
+    @include position($type: relative);
+
+    & .card-accordion-title {
+      @include padding($size: 10);
+    }
+
+    & [data-toggle="collapse"] {
+      cursor: pointer;
+    }
+  }
+}
+
+// card2
+.card2-body {
+  @include overflow(hidden, x);
+
+  & .direct-chat-contacts hr {
+    @include border-color( rgb(232,232,232), top );
+  }
+}
+
+// progress-bar
+.progress-error { @include display(none, true); }
+.progress-message { @include display(block); }
+.shinytemplates-progress-error {
+  & .progress-error {
+    @include display(block, true);
+    color: $color-error !important;
+  }
+  & .progress-message {
+    @include display(none);
+  }
+  & .progress-bar {
+    background-color: $color-error !important;
+  }
+}
+
+// shiny-notification
+#shiny-notification-panel {
+  width: 350px;
+  background-clip: padding-box;
+  bottom: 70px;
+  @include border-radius(0.25, 1rem);
+
+  & .shiny-notification-close {
+    @include visibility(hidden);
+    color: $color-secondary;
+    font-size: 24px;
+  }
+
+  & .shiny-notification {
+    background-color: rgba(52,58,64);
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
+    color: #fff;
+    opacity: 0.9;
+
+    & .progress {
+      height: 3px;
+      background: #eee;
+      margin-top: 24px;
+      margin-bottom: -30px;
+
+      & .progress-bar {
+        background: $color-primary;
+      }
+    }
+
+    & .progress-text .progress-message {
+      display: block;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+body.dark-mode #shiny-notification-panel .shiny-notification {
+  background-color: rgba(255,255,255);
+  color: #1f2d3d;
+}

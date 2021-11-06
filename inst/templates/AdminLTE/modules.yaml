@@ -3,14 +3,11 @@ groups:
     icon: times
     badge: New|badge-danger
 modules:
-  test:
+  card:
     order: 1.0
-    group: yaya
-    label: Test Module
+    icon: "columns"
+    label: "Cards"
+  widgets:
+    order: 2.0
     icon: th
-    badge: ''
-  test1:
-    order: 1.0
-    label: Test Module 2
-    icon: th
-    badge: ''
+    label: "Widgets"

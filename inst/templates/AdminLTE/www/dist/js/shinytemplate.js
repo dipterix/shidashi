@@ -1,6 +1,95 @@
+// general
+
+$(function() {
+Shiny.addCustomMessageHandler("shinytemplates.click", (params) => {
+  if(!params.selector || params.selector === ''){ return; }
+  const el = $(params.selector);
+  if(!el.length){ return; }
+  el.click();
+});
+});
+
 // Tabset
 $(function() {
 
+const tabsetActivate = function(inputId, title){
+  let el = document.getElementById(inputId);
+  let elbody = document.getElementById(inputId + "Content");
+  if(!el){ return("Cannot find tabset with given settings."); }
+  if(!elbody){ return("Cannot find tabset with given settings."); }
+
+  el = $(el);
+  const existing_items = el.children(".nav-item.nav-tab-header");
+  if(!existing_items.length) {
+    return("Tab with title '" + title + "' cannot be found.");
+  }
+
+  let activated = false;
+  existing_items.each((i, item) => {
+    const link = $(item).children(".nav-link");
+    if(link.text() === title){
+      link.click();
+      activated = true;
+    }
+  });
+
+  if(!activated){
+    return("Tab with title '" + title + "' cannot be found.");
+  }
+  return(true);
+
+}
+
+const tabsetRemove = function(inputId, title){
+  let el = document.getElementById(inputId);
+  let elbody = document.getElementById(inputId + "Content");
+  if(!el){ return("Cannot find tabset with given settings."); }
+  if(!elbody){ return("Cannot find tabset with given settings."); }
+
+  el = $(el);
+
+  // check if title existed
+  const existing_items = el.children(".nav-item.nav-tab-header");
+  if(!existing_items.length) {
+    return("Tab with title '" + title + "' cannot be found.");
+  }
+  el = existing_items.children(".nav-link");
+  let activate = false;
+  let remove_idx = 0;
+  const existing_title = el.toArray()
+    .map((v, i) => {
+      if(v.innerText === title) {
+        // remove this tab
+        remove_idx = i;
+        const rem = $(el[i]);
+        const tabid = rem.attr("aria-controls");
+        const tab = $("#" + tabid);
+        const is_active = rem.attr("aria-selected");
+        Shiny.unbindAll(tab);
+        rem.parent().remove();
+        tab.remove();
+        if(is_active === "true"){
+          activate = true;
+        }
+      }
+      return(v.innerText);
+    });
+  if(!existing_title.includes(title)){
+    return("A tab with title '" + title + "' cannot be found.");
+  }
+  if(activate && existing_items.length > 1){
+    let active_tab;
+    if(remove_idx - 1 >= 0){
+      active_tab = existing_items[remove_idx - 1];
+    } else {
+      active_tab = existing_items[remove_idx + 1];
+    }
+    console.log(remove_idx);
+    $(active_tab).children("a.nav-link").click();
+  }
+  return(true);
+
+}
 const tabsetAdd = function(inputId, title, body, active = true){
   let el = document.getElementById(inputId);
   let elbody = document.getElementById(inputId + "Content");
@@ -65,7 +154,7 @@ const tabsetAdd = function(inputId, title, body, active = true){
 
 };
 
-Shiny.addCustomMessageHandler("shinytemplates.insert_card_tab", (params) => {
+Shiny.addCustomMessageHandler("shinytemplates.card_tabset_insert", (params) => {
   const added = tabsetAdd(
     params.inputId,
     params.title,
@@ -83,14 +172,127 @@ Shiny.addCustomMessageHandler("shinytemplates.insert_card_tab", (params) => {
   }
 });
 
-Shiny.addCustomMessageHandler("shinytemplates.clear_notification", (params) => {
-  $(params.selector).toast("hide");
+Shiny.addCustomMessageHandler("shinytemplates.card_tabset_remove", (params) => {
+  const removed = tabsetRemove(
+    params.inputId,
+    params.title
+  );
+  if(params.notify_on_failure === true && removed !== true){
+    $(document).Toasts('create', {
+      "autohide": true,
+      "delay" : 2000,
+      "title" : "Cannot remove tab " + params.title,
+      "body"  : removed,
+      "class" : "bg-warning"
+    });
+  }
 });
 
+Shiny.addCustomMessageHandler("shinytemplates.card_tabset_activate", (params) => {
+  const activated = tabsetActivate(
+    params.inputId,
+    params.title
+  );
+  if(params.notify_on_failure === true && activated !== true){
+    $(document).Toasts('create', {
+      "autohide": true,
+      "delay" : 2000,
+      "title" : "Cannot activate tab " + params.title,
+      "body"  : activated,
+      "class" : "bg-warning"
+    });
+  }
+});
+
+Shiny.addCustomMessageHandler("shinytemplates.cardwidget", (params) => {
+  $("#" + params.inputId).CardWidget(params.method);
+});
+
+Shiny.addCustomMessageHandler("shinytemplates.card2widget", (params) => {
+  $(params.selector).DirectChat("toggle");
+});
 
 });
 
+// progress output
+$(function() {
 
+const progressOutputBinding = new Shiny.OutputBinding();
+progressOutputBinding.name = "shinytemplates.progressOutputBinding";
+$.extend(progressOutputBinding, {
+  find: function(scope) {
+    return $(scope).find(".shinytemplates-progress-output");
+  },
+  renderValue: function(el, value) {
+    const v = parseInt(value.value);
+    if(isNaN(v)){ return; }
+    if(v < 0){ v = 0; }
+    if(v > 100){ v = 100; }
+    $(el).find(".progress-bar").css("width", `${v}%`);
+    if(typeof(value.description) === "string"){
+      $(el)
+        .find(".progress-description.progress-message")
+        .text(value.description);
+    }
+  },
+  renderError: function(el, err) {
+    $(el).addClass("shinytemplates-progress-error");
+    $(el)
+      .find(".progress-description.progress-error")
+      .text(err.message);
+  },
+  clearError: function(el) {
+    $(el).removeClass("shinytemplates-progress-error");
+  }
+});
+
+Shiny.outputBindings.register(
+  progressOutputBinding,
+  "shinytemplates.progressOutputBinding");
+});
+
+// clipboard output
+$(function() {
+
+const clipboardOutputBinding = new Shiny.OutputBinding();
+clipboardOutputBinding.name = "shinytemplates.clipboardOutputBinding";
+let clipboard;
+
+$.extend(clipboardOutputBinding, {
+  find: function(scope) {
+    return $(scope).find(".shinytemplates-clipboard-output");
+  },
+  renderValue: function(el, value) {
+    let el_ = $(el);
+    if(!el_.hasClass("clipboard-btn")){
+      el_ = $(el).find(".clipboard-btn");
+    }
+    $(el_).attr("data-clipboard-text", value)
+  },
+  renderError: function(el, err) {
+  },
+  clearError: function(el) {
+  }
+});
+
+Shiny.outputBindings.register(
+  clipboardOutputBinding,
+  "shinytemplates.clipboardOutputBinding");
+
+var cp = new ClipboardJS(".clipboard-btn");
+
+cp.on('success', function(e) {
+  $(document).Toasts('create', {
+    title : "Copied to clipboard",
+    delay: 1000,
+    autohide: true,
+    icon: "fa fas fa-copy",
+    "class" : "bg-success"
+  });
+  e.clearSelection();
+});
+
+});
 
 // Notification
 $(function() {
@@ -100,6 +302,10 @@ Shiny.addCustomMessageHandler(
   (params) => {
     $(document).Toasts('create', params);
   });
+
+Shiny.addCustomMessageHandler("shinytemplates.clear_notification", (params) => {
+  $(params.selector).toast("hide");
+});
 
 });
 
@@ -173,7 +379,6 @@ $(function() {
   const sessionStorage = window.sessionStorage;
 
   const session_data = {};
-  window.ssss = session_data;
 
   // Clean the localStorage
   for(let key in localStorage){
@@ -268,3 +473,4 @@ $(function() {
     } catch (e) {}
   });
 });
+

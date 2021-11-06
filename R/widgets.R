@@ -48,7 +48,6 @@ flex_container <- function(
   shiny::div(style = style, ...)
 }
 
-
 #' @export
 flex_item <- function(
   ..., style = NULL, order = NULL, flex = "1",

@@ -7,6 +7,7 @@ show_notification <- function(
   close = TRUE,
   position = c("topRight", "topLeft", "bottomRight", "bottomLeft"),
   autohide = TRUE,
+  fixed = TRUE,
   delay = 5000,
   icon = NULL,
   collapse = "",
@@ -36,6 +37,7 @@ show_notification <- function(
     subtitle = subtitle,
     close = !isFALSE(close),
     body = message,
+    fixed = !isFALSE(fixed),
     class = paste(c(class, sprintf("bg-%s", type)), collapse = " "),
     ...
   ))

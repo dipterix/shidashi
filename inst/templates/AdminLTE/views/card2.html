@@ -3,17 +3,17 @@
     <h3 class="card-title">{{ title }}</h3>
     <!-- Buttons, labels, and many other things can be placed here! -->
     <div class="card-tools">
-      <button type="button" class="btn btn-tool" title="Configurations" data-widget="chat-pane-toggle">
+      {{ tools }}
+      <button type="button" class="btn btn-tool card2-switch" title="Configurations" data-widget="chat-pane-toggle">
         <i class="fas fa-ellipsis-v"></i>
       </button>
-      {{ tools }}
     </div>
   </div>
   <div class="card-body card2-body {{ class_body }}" style="{{ ifelse(length(style_body), paste(style_body, collapse=';'), '') }};">
-    <div class="direct-chat-messages fill-height no-padding mh-400">
+    <div class="direct-chat-messages fill-height no-padding">
       {{ body_main }}
     </div>
-    <div class="direct-chat-contacts fill-height no-padding">
+    <div class="direct-chat-contacts fill-height padding-20 opacity-07">
       {{ body_side }}
     </div>
   </div>

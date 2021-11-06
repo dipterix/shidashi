@@ -1,6 +1,6 @@
 
 #' @export
-card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE){
+card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE, ...){
   widget <- match.arg(widget)
 
   if(missing(icon)){
@@ -10,7 +10,7 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
       collapse = shiny::icon(ifelse(start_collapsed, "plus", "minus")),
       remove = shiny::icon("times"),
       refresh = shiny::icon("sync-alt"),
-      link = shiny::icon("external-link"),
+      link = shiny::icon("external-link-alt"),
       {
         stop("Custom widget must provide a valid icon; see ?shiny::icon")
       }
@@ -40,7 +40,8 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
     class=class,
     `data-card-widget` = widget,
     title = title,
-    icon
+    icon,
+    ...
   ))
 
 }
