@@ -3,7 +3,7 @@ ui_card2 <- function(){
 
   card_ui <- card2(
     title = "Card2 Example",
-    class_body = "height-600",
+    class_body = "height-300",
     tools = list(
       card_tool(widget = "link", href = "https://github.com/dipterix"),
       card_tool(widget = "refresh"),
@@ -26,11 +26,11 @@ ui_card2 <- function(){
   )
 
   shiny::tagList(
-    shiny::column( width = 5L, card_ui ),
+    shiny::column( width = 4L, card_ui ),
     shiny::column(
-      width = 7L,
+      width = 8L,
       card_tabset(
-        class = "min-height-400",
+        class_body = "height-300 overflow-y-auto",
         inputId = ns("card2_code_cardset"),
         "demo-card.R" = fluidRow(
           column(

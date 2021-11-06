@@ -2,9 +2,9 @@
 
 ui_card_tools <- function(){
   shiny::tagList(
-    shiny::column( width = 3L, card_with_code(
+    shiny::column( width = 2L, card_with_code(
       card(
-        class_body = "min-height-400",
+        class_body = "min-height-300",
         title = "Badges",
         tools = list(
           as_badge("New|badge-info"),
@@ -18,6 +18,7 @@ ui_card_tools <- function(){
     shiny::column( width = 3L, card_with_code(
       card(
         title = "Default Tools",
+        class_body = "height-300",
         resizable = TRUE,
         tools = list(
           card_tool(widget = "link", href = "https://github.com/dipterix"),
@@ -29,10 +30,10 @@ ui_card_tools <- function(){
         plotOutput(ns("card_defaulttool_plot"), height = "100%")
       )
     )),
-    shiny::column( width = 3L, card_with_code(
+    shiny::column( width = 4L, card_with_code(
       card(
         title = "Custom Tools",
-        class_body = "min-height-400",
+        class_body = "min-height-300",
         tools = list(
           card_tool(inputId = ns("card_tool_modal"), widget = "custom",
                     title = "Show alert", icon = "bell")
@@ -41,21 +42,30 @@ ui_card_tools <- function(){
         ') at the top-right corner to show a pop-up alert', br(),
         "The reaction requires server-side shiny observer. ",
         "Go to 'server.R', add:",
-        pre(
-          'observeEvent(input$card_tool_modal, {',
-          '  shiny::showModal(shiny::modalDialog(',
-          '    "Click to dismiss",',
-          '    title = "Alert", easyClose = TRUE',
-          '  ))',
-          '})'
+        html_highlight_code(
+          observeEvent(input$card_tool_modal, {
+            shiny::showModal(shiny::modalDialog(
+              "Click to dismiss",
+              title = "Alert", easyClose = TRUE
+            ))
+          }), width.cutoff = 15L, args.newline = FALSE,
+          hover = "overflow-auto"
         )
+        # pre(tags$code(class = "r",
+        #   'observeEvent(input$card_tool_modal, {',
+        #   '  shiny::showModal(shiny::modalDialog(',
+        #   '    "Click to dismiss",',
+        #   '    title = "Alert", easyClose = TRUE',
+        #   '  ))',
+        #   '})'
+        # ))
       )
     )),
     shiny::column( width = 3L, card_with_code(
       card(
         title = "Collapsed",
         start_collapsed = TRUE,
-        class_body = "min-height-400 no-padding",
+        class_body = "height-300 no-padding",
         tools = list(
           as_badge("30 messages |badge-primary"),
           card_tool(inputId = ns("card_tool_rerun"), widget = "custom",
@@ -66,7 +76,7 @@ ui_card_tools <- function(){
           style = "padding: 10px; margin: 0;",
           "Click the shuffle (", as_icon("random"), ") button."
         ),
-        plotOutput(ns("card_tool_plot"), height = "354px")
+        plotOutput(ns("card_tool_plot"), height = "254px")
       )
     )),
   )

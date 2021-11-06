@@ -1,13 +1,13 @@
 
 #' @export
 as_icon <- function(icon = NULL, class = "fas"){
-  class <- paste(class, collapse = " ")
+  class <- combine_class(class)
 
   if(is.null(icon)){
     icon <- ""
   } else {
     if(inherits(icon, "shiny.tag")) {
-      icon$attribs$class <- paste(icon$attribs$class, class)
+      icon$attribs$class <- combine_class(icon$attribs$class, class)
     } else {
       icon <- shiny::icon(icon, class = class)
     }
@@ -60,7 +60,7 @@ menu_item <- function(
   shiny::htmlTemplate(
     template_path,
     document_ = FALSE,
-    text = text, href = href, icon = icon, badge = badge, active = active,
+    text = text, href = shiny::HTML(href), icon = icon, badge = badge, active = active,
     target = target, module = module)
 }
 

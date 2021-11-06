@@ -8,7 +8,7 @@
   {{ shinytemplates::include_view("header.html") }}
 
 </head>
-<body class="layout-top-nav {{ ifelse('dark-mode' %in% body_class(), 'dark-mode', '') }}">
+<body class="layout-top-nav {{ shinytemplates::guess_body_class(body_class()) }}">
 <div class="wrapper">
 
   <!-- Navbar, TODO: copy index navbar -->

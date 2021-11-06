@@ -26,7 +26,8 @@ body_class <- function(){
     # "sidebar-collapse",
     # "control-sidebar-slide-open",
     "layout-fixed", "dark-mode", #"layout-navbar-fixed",
-    "sidebar-mini", "sidebar-mini-md", "sidebar-mini-xs"
+    "sidebar-mini", "sidebar-mini-md", "sidebar-mini-xs",
+    "fancy-scroll-y"
   )
 }
 nav_class <- function(){

@@ -11,7 +11,7 @@ progressOutput <- function(
     shiny::div(
       class = "progress",
       shiny::div(
-        class = paste(c("progress-bar", class), collapse = " "),
+        class = combine_class("progress-bar", class),
         style = "width: 0%",
       )
     ),
@@ -57,7 +57,7 @@ clipboardOutput <- function(
 
   if(as_card_tool){
     card_tool(
-      class = paste(c('clipboard-btn', "shinytemplates-clipboard-output", class), collapse = " "),
+      class = combine_class('clipboard-btn', "shinytemplates-clipboard-output", class),
       icon = "copy",
       title = message,
       inputId = outputId,
@@ -69,7 +69,7 @@ clipboardOutput <- function(
       id = outputId,
       class = "shinytemplates-clipboard-output",
       shiny::tags$button(
-        class = paste(c('clipboard-btn btn btn-default', class), collapse = " "),
+        class = combine_class('clipboard-btn btn btn-default', class),
         "data-clipboard-text" = clip_text,
         role = 'button',
         message

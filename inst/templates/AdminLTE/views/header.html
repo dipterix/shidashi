@@ -13,7 +13,7 @@
 <!-- Theme style -->
 <link rel="stylesheet" href="dist/css/adminlte.css">
 <!-- overlayScrollbars -->
-<link rel="stylesheet" href="plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+<link rel="stylesheet" href="plugins/overlayScrollbars/css/OverlayScrollbars.css">
 <!-- summernote -->
 <link rel="stylesheet" href="plugins/summernote/summernote-bs4.min.css">
 
@@ -28,10 +28,10 @@
 <!-- Bootstrap 4 -->
 <script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 
+<!-- Additional cutomized styles that overwrites -->
+<link rel="stylesheet" href="dist/css/shinytemplates.css">
+
 <!-- shiny header -->
 <!-- if above libraries conflict with shiny, you can suppress here -->
 {{ suppressDependencies("jquery") }}
 {{ headContent() }}
-
-<!-- Additional cutomized styles that overwrites -->
-<link rel="stylesheet" href="dist/css/shinytemplates.css">

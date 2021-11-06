@@ -100,6 +100,56 @@ $color-secondary: #adb5bd;
   }
 }
 
+/** Some misc first **/
+.theme-switch {
+  display: inline-block;
+  height: 24px;
+  position: relative;
+  width: 50px;
+}
+
+.theme-switch input {
+  display: none;
+}
+
+.slider {
+  background-color: #ccc;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: 400ms;
+}
+
+.slider::before {
+  background-color: #fff;
+  bottom: 4px;
+  content: "";
+  height: 16px;
+  left: 4px;
+  position: absolute;
+  transition: 400ms;
+  width: 16px;
+}
+
+input:checked + .slider {
+  background-color: #66bb6a;
+}
+
+input:checked + .slider::before {
+  transform: translateX(26px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round::before {
+  border-radius: 50%;
+}
+
 /** General rules: display, visibility **/
 .hidden {
   @include display(none, true);
@@ -136,10 +186,17 @@ $color-secondary: #adb5bd;
   }
 }
 
-
-.overflow-visible {
-  @include overflow(visible);
+@each $type in hidden, auto, visible, scroll {
+  .overflow-#{$type} {
+    @include overflow($type);
+  }
+  @each $d in x, y {
+    .overflow-#{$d}-#{$type} {
+      @include overflow($type, $d);
+    }
+  }
 }
+
 .overflow-visible-on-hover {
   @include overflow(hidden);
 
@@ -153,10 +210,12 @@ $color-secondary: #adb5bd;
 }
 
 /** General rules: dimensions **/
-
-.row .shiny-bound-input {
-  width: 100%;
+@for $factor from 1 through 12 {
+  .row .col-sm-#{$factor}>.shiny-bound-input {
+    @include fill-width;
+  }
 }
+
 
 @for $factor from 0 through 20 {
   $size: $factor * 50;
@@ -192,7 +251,7 @@ $color-secondary: #adb5bd;
 
 .space-vertical-5 {
   width: 100%;
-  
+
   &::before {
     content: " ";
     display: block;

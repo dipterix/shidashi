@@ -13,7 +13,7 @@ card <- function(
 
   if(length(footer)){
     footer <- shiny::div(
-      class = paste(c("card-footer", class_foot), collapse = " "),
+      class = combine_class("card-footer", class_foot),
       footer
     )
   } else {
@@ -39,19 +39,35 @@ card <- function(
   }
 
   if(resizable){
-    class_body <- paste(c(
-      "height-400 resize-vertical flex-container no-padding",
+    default_class_body <- "height-400 resize-vertical flex-container no-padding"
+    if(length(class_body)){
+      class_body <- unlist(strsplit(class_body, " "))
+      tmp <- class_body[
+        startsWith(class_body, "height-") |
+          startsWith(class_body, "min-height-")
+      ]
+      size <- sapply(strsplit(tmp, "-"), function(x){ x[[length(x)]] })
+      suppressWarnings({
+        size <- as.numeric(size)
+        size <- size[!is.na(size)]
+        if(size %% 50 == 0){
+          default_class_body <- "resize-vertical flex-container no-padding"
+        }
+      })
+    }
+    class_body <- combine_class(
+      default_class_body,
       class_body
-    ), collapse = " ")
+    )
     body <- flex_item(
-      class = "fill-height fill-width",
+      class = "fill-height fill-width fill-max-width",
       body
     )
   } else {
-    class_body <- paste(c(
+    class_body <- combine_class(
       "fill-width fill-height",
       class_body
-    ), collapse = " ")
+    )
   }
 
   set_attr_call(shiny::htmlTemplate(
@@ -85,7 +101,7 @@ card2 <- function(
 
   if(length(footer)){
     footer <- shiny::div(
-      class = paste(c("card-footer", class_foot), collapse = " "),
+      class = combine_class("card-footer", class_foot),
       footer
     )
   } else {

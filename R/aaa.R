@@ -21,12 +21,26 @@ combine_class <- function(..., collapse = " "){
   paste(s, collapse = collapse)
 }
 
+
+#' @export
+guess_body_class <- function(cls){
+  if(missing(cls)){
+    cls <- "fancy-scroll-y darm-mode"
+  } else {
+    cls <- unlist(strsplit(paste(cls, collapse = ' '), " "))
+    combine_class(cls[startsWith(cls, "fancy-scroll-") | cls %in% 'dark-mode'])
+  }
+}
+
 #' @export
 get_construct_string <- function(x){
   attr(x, "shinytemplates.code")
 }
 
-format_text_r <- function(expr, quoted = FALSE, reformat = TRUE, ...){
+#' @export
+format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
+                          width.cutoff = 80L, indent = 2, wrap=TRUE,
+                          args.newline = TRUE, blank = FALSE, ...){
   if(!quoted){
     expr <- substitute(expr)
   }
@@ -36,7 +50,12 @@ format_text_r <- function(expr, quoted = FALSE, reformat = TRUE, ...){
   }
 
   if(reformat){
-    expr <- formatR::tidy_source(text = expr, output = FALSE, ...)$text.tidy
+    expr <- formatR::tidy_source(
+      text = expr, output = FALSE,
+      width.cutoff = width.cutoff, indent = indent, wrap=wrap,
+      args.newline = args.newline, blank = blank,
+      ...
+    )$text.tidy
   }
   paste(expr, collapse = "\n")
 }
@@ -92,7 +111,7 @@ show_ui_code <- function(
   )
 
   res <- info_box(
-    class = paste(c("no-margin overflow-visible-on-hover", class), collapse = " "),
+    class = combine_class("no-margin overflow-visible-on-hover", class),
     class_content = "display-block bg-gray-90 no-padding code-display",
     icon = NULL,
     html_highlight_code(code, quoted = TRUE, reformat = FALSE,

@@ -29,12 +29,12 @@ ui_card_controls <- function(){
         ),
         footer = tagList(
           fluidRow(
-            column(width = 6L, actionButton(ns("card_control_3_collapse"), "Collapse", width = "100%")),
-            column(width = 6L, actionButton(ns("card_control_3_expand"), "Expand", width = "100%"))),
+            column(width = 6L, actionButton(ns("card_control_3_collapse"), "Collapse")),
+            column(width = 6L, actionButton(ns("card_control_3_expand"), "Expand"))),
           div(class = "space-vertical-5"),
           fluidRow(
-            column(width = 6L, actionButton(ns("card_control_3_maximize"), "Maximize", width = "100%")),
-            column(width = 6L, actionButton(ns("card_control_3_minimize"), "Minimize", width = "100%"))
+            column(width = 6L, actionButton(ns("card_control_3_maximize"), "Maximize")),
+            column(width = 6L, actionButton(ns("card_control_3_minimize"), "Minimize"))
           )
         )
       )
@@ -45,15 +45,17 @@ ui_card_controls <- function(){
         inputId = ns("card_control_1"),
         title = "Cardset",
         active = "Tab B",
-        class_body = "no-padding min-height-50",
-        "Tab A" = html_highlight_code(
-          card_tabset_activate(inputId = "card_control_1",
-                               title = "Tab A"),
-          args.newline = FALSE, copy_on_click = TRUE,
-          hover = "overflow-auto", width.cutoff = 20L
+        class_body = "padding-20 min-height-100",
+        "Tab A" = div(
+          p(
+            class = "inline-all",
+            "To activate a tab, use ",
+            verbatim("card_tabset_activate(...)"), ". ",
+            "For example, ",
+            verbatim('card_tabset_activate(inputId = "card_control_1", title = "Tab A")')
+          )
         ),
         "Tab B" = div(
-          class = "padding-20",
           p(
             class = "inline-all",
             "By specifying ", span(
@@ -64,11 +66,11 @@ ui_card_controls <- function(){
         footer = fluidRow(
           column(
             width = 6L,
-            actionButton(ns('switch_tab_a'), "Switch to Tab A", width = "100%")
+            actionButton(ns('switch_tab_a'), "Switch to Tab A")
           ),
           column(
             width = 6L,
-            actionButton(ns('add_tab_a'), "New Tab", width = "100%")
+            actionButton(ns('add_tab_a'), "New Tab")
           )
         )
       )
@@ -83,16 +85,18 @@ ui_card_controls <- function(){
           class = "padding-20",
           p(
             class = 'inline-all',
+            "use ",
             verbatim("card2_open(...)"), ", ",
             verbatim("card2_close(...)"), ", ",
-            verbatim("card2_toggle(...)"), "."
+            verbatim("card2_toggle(...)"),
+            " to control the B-side from within R."
           )
         ),
         body_side = p("Card - side B"),
         footer = fluidRow(
-          column(width = 4L, actionButton(ns("card_control_2_open"), "Open B-side", width = "100%")),
-          column(width = 4L, actionButton(ns("card_control_2_close"), "Close B-side", width = "100%")),
-          column(width = 4L, actionButton(ns("card_control_2_toggle"), "Toggle B-side", width = "100%"))
+          column(width = 4L, actionButton(ns("card_control_2_open"), "Open B-side")),
+          column(width = 4L, actionButton(ns("card_control_2_close"), "Close B-side")),
+          column(width = 4L, actionButton(ns("card_control_2_toggle"), "Toggle B-side"))
         )
       )
     )

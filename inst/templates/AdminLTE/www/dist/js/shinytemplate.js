@@ -329,7 +329,7 @@ $('.content-wrapper').IFrame({
   autoItemActive: true,
   autoShowNewTab: true,
   allowDuplicates: false,
-  loadingScreen: 750,
+  loadingScreen: false,
   useNavbarItems: true
 })
 
@@ -474,3 +474,72 @@ $(function() {
   });
 });
 
+// fancy scrolls
+$(function() {
+
+  const dark_mode = $("body").hasClass("dark-mode");
+
+  const scroll_theme = dark_mode ? "os-theme-round-light" : "os-theme-round-dark";
+  const scroll_style = {
+      visibility       : "auto",
+      autoHide         : "move",
+      autoHideDelay    : 800,
+      dragScrolling    : true,
+      clickScrolling   : true,
+      touchSupport     : true
+  };
+  const scroll_callbacks = {
+      onInitialized               : null,
+      onInitializationWithdrawn   : null,
+      onDestroyed                 : null,
+      onScrollStart               : null,
+      onScroll                    : null,
+      onScrollStop                : null,
+      onOverflowChanged           : null,
+      onOverflowAmountChanged     : null,
+      onDirectionChanged          : null,
+      onContentSizeChanged        : null,
+      onHostSizeChanged           : null,
+      onUpdated                   : null
+  };
+  const scroll_textarea = {
+      dynWidth       : false,
+      dynHeight      : true,
+      inheritedAttrs : ["style", "class"]
+  };
+
+  $(".fancy-scroll-y, .overflow-y-auto").overlayScrollbars({
+      className  : scroll_theme,
+      overflowBehavior : {
+          x : "hidden",
+          y : "scroll"
+      },
+      scrollbars : scroll_style,
+      textarea : scroll_textarea,
+      callbacks : scroll_callbacks
+  });
+
+  $(".overflow-x-auto").overlayScrollbars({
+      className  : scroll_theme,
+      overflowBehavior : {
+          x : "scroll",
+          y : "hidden"
+      },
+      scrollbars : scroll_style,
+      textarea : scroll_textarea,
+      callbacks : scroll_callbacks
+  });
+
+  $(".overflow-auto").overlayScrollbars({
+      className  : scroll_theme,
+      overflowBehavior : {
+          x : "scroll",
+          y : "scroll"
+      },
+      scrollbars : scroll_style,
+      textarea : scroll_textarea,
+      callbacks : scroll_callbacks
+  });
+
+
+});

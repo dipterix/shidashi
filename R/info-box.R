@@ -7,7 +7,7 @@ info_box <- function(..., icon = "envelope", class = "",
   call <- match.call(expand.dots = TRUE)
   if(length(icon)){
     icon <- shiny::span(
-      class = paste(c("info-box-icon", class_icon), collapse = " "),
+      class = combine_class("info-box-icon", class_icon),
       as_icon(icon)
     )
   }
@@ -19,8 +19,8 @@ info_box <- function(..., icon = "envelope", class = "",
     document_ = FALSE,
     icon = icon,
     body = shiny::tagList(...),
-    class = paste(class, collapse = ' '),
-    class_content = paste(class_content, collapse = ' ')
+    class = combine_class(class),
+    class_content = combine_class(class_content)
   )
 
   set_attr_call(re, call)

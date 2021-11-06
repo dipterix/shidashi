@@ -19,9 +19,9 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
   icon <- as_icon(icon)
 
   if(length(inputId) == 1){
-    class <- paste("btn btn-tool action-button", paste(class, collapse = " "))
+    class <- combine_class("btn btn-tool action-button", class)
   } else {
-    class <- paste("btn btn-tool", paste(class, collapse = " "))
+    class <- combine_class("btn btn-tool", class)
   }
 
   if( widget == "custom" ){

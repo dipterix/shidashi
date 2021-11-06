@@ -38,7 +38,7 @@ show_notification <- function(
     close = !isFALSE(close),
     body = message,
     fixed = !isFALSE(fixed),
-    class = paste(c(class, sprintf("bg-%s", type)), collapse = " "),
+    class = combine_class(sprintf("bg-%s", type), class),
     ...
   ))
 
