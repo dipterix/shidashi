@@ -2,7 +2,7 @@
 adminlte_ui <- function(root_path = template_root()){
   function(req){
     # req <- (list(QUERY_STRING = "/"))
-    # root_path <- "/Users/dipterix/Dropbox/projects/shinytemplates/inst/templates/AdminLTE"
+    # root_path <- "/Users/dipterix/Dropbox/projects/shinytemplates/inst/template"
 
     # tryCatch({
       resource <- load_module(root_path = root_path, request = req)

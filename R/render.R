@@ -18,7 +18,7 @@ template_settings <- local({
 template_root <- function(){
   template_settings$get(
     name = 'root_path',
-    default = "inst/templates/AdminLTE/"
+    default = "inst/template/"
   )
 }
 
