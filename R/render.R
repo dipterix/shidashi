@@ -70,12 +70,18 @@ template_render <- function(
       test.mode = test_mode,
       appDir = tempdir
     )
+    call <- as.call(list(
+      quote(shiny::runApp),
+      ...,
+      launch.browser = launch_browser,
+      test.mode = test_mode,
+      appDir = tempdir
+    ))
+    s <- sprintf("shinytemplates::template_settings$set('root_path' = '%s')", tempdir)
+    s <- c(s, deparse(call))
     writeLines(
       con = script,
-      deparse(bquote({
-        shinytemplates::template_settings$set('root_path' = .(tempdir))
-        do.call(shiny::runApp, .(args))
-      }))
+      s
     )
     rstudioapi::jobRunScript(
       path = script, workingDir = tempdir,
