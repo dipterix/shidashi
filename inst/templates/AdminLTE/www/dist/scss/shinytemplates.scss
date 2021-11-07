@@ -1,7 +1,7 @@
 @use "sass:meta";
 @use "sass:map";
 /** global variables **/
-$sizes-margin-padding: 0,5,6,7,8,9,10,11,12,15,20,25,30,50,60,80,100;
+$sizes-margin-padding: 0,1,2,3,4,5,6,7,8,9,10,11,12,15,20,25,30,50,60,80,100;
 
 $code-background: #e5e5e5;
 $code-color-operator: rgb(104, 118, 135);
@@ -16,6 +16,8 @@ $code-font-family: "'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Con
 $color-error: #dc3545;
 $color-primary: #3f6791;
 $color-secondary: #adb5bd;
+$color-dark: #343a40;
+$color-light-dark: #454d55;
 
 /** Some macros **/
 @function add_force($force: false) {
@@ -271,8 +273,14 @@ input:checked + .slider::before {
 /** Colors **/
 
 @for $factor from 0 through 9 {
+  $gray: adjust-color($color: #000000, $lightness: $factor * 10%);
   .bg-gray-#{$factor}0 {
-    background-color: adjust-color($color: #000000, $lightness: $factor * 10%);
+    background-color: $gray;
+  }
+  @each $d in bottom, top, lef, right {
+    .border-#{$d}-gray#{$factor}0 {
+      border-#{$d}: 1px solid $gray;
+    }
   }
   .opacity-0#{$factor} {
     opacity: $factor * 0.1;
@@ -316,6 +324,37 @@ pre, code {
 }
 
 /** shinytemplates objects **/
+// navbar-nav-iframe (iframe tablist)
+.navbar-nav-iframe {
+  padding: 0;
+  padding-top: 1px;
+
+  ul.navbar-nav[role="tablist"]>li.nav-item>.nav-link {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+
+  &.navbar-dark ul.navbar-nav[role="tablist"]>li.nav-item {
+    &:hover {
+      background-color: adjust-color($color: $color-dark, $lightness: 3%);
+    }
+    &>.nav-link.active {
+      background-color: $color-light-dark;
+    }
+  }
+}
+
+.back-to-top {
+  opacity: 0.4;
+  transition: opacity 200ms;
+  z-index: 10000;
+
+  &show,
+  &:hover {
+    opacity: 1;
+  }
+}
+
 // code-display
 .info-box .code-display {
   @include padding($size: 0);

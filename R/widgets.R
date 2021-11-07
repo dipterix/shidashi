@@ -75,13 +75,37 @@ flex_item <- function(
 }
 
 #' @export
-back_top_button <- function(icon = "chevron-up"){
-  shiny::a(
-    href = "#",
-    class = "btn btn-info back-to-top",
-    role = "button",
-    `aria-label`="Scroll to top",
-    as_icon(icon)
+back_top_button <- function(icon = "chevron-up", title = "Jump to"){
+  if(!length(title)){
+    title <- NULL
+  } else {
+    title <- shiny::h6(class="dropdown-header", title)
+  }
+  shiny::div(
+    class = "back-to-top",
+    shiny::div(
+      class = "btn-group dropup",
+      role="group",
+      shiny::a(
+        type="button", class="btn btn-default btn-go-top border-right-1", href="#",
+        as_icon(icon)
+      ),
+      shiny::tags$button(
+        type="button",
+        class="btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
+        "data-toggle"="dropdown",
+        "aria-haspopup"="false",
+        "aria-expanded"="false",
+        shiny::span(
+          class = "sr-only",
+          "Dropdown-Open"
+        )
+      ),
+      shiny::div(
+        class = "dropdown-menu dropdown-menu-right",
+        title
+      )
+    )
   )
 }
 

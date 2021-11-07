@@ -796,32 +796,27 @@
   </aside>
 
   <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper iframe-mode" data-widget="iframe" data-loading-screen="750">
-    <div class="nav navbar navbar-expand navbar-white navbar-light border-bottom p-0">
+  <div class="content-wrapper iframe-mode" data-widget="iframe">
+    <div class="nav navbar navbar-nav-iframe navbar-expand {{ ifelse('dark-mode' %in% body_class(), 'navbar-dark', 'navbar-light') }}">
       <div class="nav-item dropdown">
-        <a class="nav-link bg-danger dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
           <i class="fa fa-times" role="presentation" aria-label="times icon"></i>
         </a>
-        <div class="dropdown-menu mt-0">
+        <div class="dropdown-menu" style="margin-top:-1px">
           <a class="dropdown-item" href="#" data-widget="iframe-close" data-type="all">Close all tabs</a>
           <a class="dropdown-item" href="#" data-widget="iframe-close" data-type="all-other">Close other tabs</a>
         </div>
       </div>
 
-      <a class="nav-link bg-light" href="#" data-widget="iframe-scrollleft"><i class="fas fa-angle-double-left"></i></a>
+      <a class="nav-link" href="#" data-widget="iframe-scrollleft"><i class="fas fa-angle-double-left"></i></a>
       <ul class="navbar-nav overflow-hidden" role="tablist"></ul>
-      <a class="nav-link bg-light" href="#" data-widget="iframe-scrollright"><i class="fas fa-angle-double-right"></i></a>
-      <a class="nav-link bg-light" href="#" data-widget="iframe-fullscreen"><i class="fas fa-expand"></i></a>
+      <a class="nav-link" href="#" data-widget="iframe-scrollright"><i class="fas fa-angle-double-right"></i></a>
+      <a class="nav-link" href="#" data-widget="iframe-fullscreen"><i class="fas fa-expand"></i></a>
 
     </div>
     <div class="tab-content">
       <div class="tab-empty">
         <h2 class="display-4">Please choose any module to start.</h2>
-      </div>
-      <div class="tab-loading">
-        <div>
-          <h2 class="display-4">Tab is loading <i class="fa fa-sync fa-spin"></i></h2>
-        </div>
       </div>
     </div>
   </div>

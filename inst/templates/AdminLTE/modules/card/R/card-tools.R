@@ -4,15 +4,24 @@ ui_card_tools <- function(){
   shiny::tagList(
     shiny::column( width = 2L, card_with_code(
       card(
-        class_body = "min-height-300",
+        class_body = "height-300",
+        resizable = TRUE,
         title = "Badges",
         tools = list(
           as_badge("New|badge-info"),
           as_badge("3|badge-warning")
         ),
-        'Add badges to the top-right corder. ',
-        'Use "|" to indicate the badge classes; ',
-        'for example: "badge-info", "badge-warning"...'
+        div(
+          class = "padding-20",
+          p(
+            'Add badges to the top-right corder. ',
+            'Use "|" to indicate the badge classes; ',
+            'for example: "badge-info", "badge-warning"...'),
+          hr(),
+          p(
+            "Use `resizable = TRUE` to make card resizable."
+          )
+        )
       )
     )),
     shiny::column( width = 3L, card_with_code(
@@ -22,7 +31,6 @@ ui_card_tools <- function(){
         resizable = TRUE,
         tools = list(
           card_tool(widget = "link", href = "https://github.com/dipterix"),
-          card_tool(widget = "refresh"),
           card_tool(widget = "collapse"),
           card_tool(widget = "maximize")
         ),

@@ -32,7 +32,7 @@ ui_card2 <- function(){
       card_tabset(
         class_body = "height-300 overflow-y-auto",
         inputId = ns("card2_code_cardset"),
-        "demo-card.R" = fluidRow(
+        "UI code" = fluidRow(
           column(
             width = 12L,
             html_highlight_code(
