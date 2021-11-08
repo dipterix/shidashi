@@ -25,3 +25,30 @@ info_box <- function(..., icon = "envelope", class = "",
 
   set_attr_call(re, call)
 }
+
+
+#' @export
+flip_box <- function(front, back, active_on = c(
+  "click", "hover", "manual"
+)){
+  active_on <- match.arg(active_on)
+  shiny::div(
+    class = "flip-box",
+    "data-toggle" = active_on,
+    shiny::div(
+      class = "flip-box-inner",
+      shiny::div
+    )
+  )
+  <div class="flip-box">
+    <div class="flip-box-inner">
+    <div class="flip-box-back">
+    <h2>Back Side</h2>
+    <p>bgbib</p>
+    </div>
+    <div class="flip-box-front">
+    <h2>Front Side</h2>
+    </div>
+    </div>
+    </div>
+}

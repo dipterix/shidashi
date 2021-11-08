@@ -443,6 +443,47 @@ pre, code {
   }
 }
 
+// flip-box
+.flip-box {
+  background-color: transparent;
+  border: none;
+  perspective: 1000px;
+  padding: 0 !important;
+}
+
+.flip-box-inner {
+  position: relative;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: transform 0.8s;
+  transition-timing-function: cubic-bezier(1, 0, 1, 1);
+  transform-style: preserve-3d;
+}
+
+.flip-box.active .flip-box-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-box-front,
+.flip-box-back {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.flip-box-front {
+	position: relative;
+  transform: rotateY(360deg);
+}
+
+.flip-box-back {
+  position: absolute;
+  transform: rotateY(180deg);
+}
+
 // shiny-notification
 #shiny-notification-panel {
   width: 350px;
