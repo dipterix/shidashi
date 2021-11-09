@@ -353,6 +353,11 @@ pre, code {
 
 /** shinytemplates objects **/
 // navbar-nav-iframe (iframe tablist)
+
+.content-wrapper.iframe-mode {
+  max-height: calc(-56px + 100vh);
+}
+
 .navbar-nav-iframe {
   padding: 0;
   padding-top: 1px;
@@ -467,7 +472,7 @@ pre, code {
     width: 100%;
     margin: 0 !important;
     padding: 0 !important;
-    transition: transform 0.8s;
+    transition: transform 0.5s;
     transition-timing-function: cubic-bezier(1, 0, 1, 1);
     transform-style: preserve-3d;
 

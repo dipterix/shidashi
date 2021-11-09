@@ -45,7 +45,6 @@ $(function() {
 
   const clipboardOutputBinding = new Shiny.OutputBinding();
   clipboardOutputBinding.name = "shinytemplates.clipboardOutputBinding";
-  let clipboard;
 
   $.extend(clipboardOutputBinding, {
     find: function(scope) {
@@ -392,7 +391,7 @@ class ShinyTemplates {
     })
 
     if(active){
-      header_a.click();
+      return(this.tabsetActivate(inputId, title));
     }
 
     return(true);
@@ -466,8 +465,10 @@ class ShinyTemplates {
     existing_items.each((i, item) => {
       const link = $(item).children(".nav-link");
       if(link.text() === title){
-        link.click();
+        link.addClass("active");
         activated = true;
+      } else {
+        link.removeClass("active");
       }
     });
 
