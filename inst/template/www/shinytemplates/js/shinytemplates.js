@@ -20,10 +20,15 @@ $(function() {
       }
     },
     renderError: function(el, err) {
-      $(el).addClass("shinytemplates-progress-error");
-      $(el)
-        .find(".progress-description.progress-error")
-        .text(err.message);
+      if(err.message === "argument is of length zero"){
+        $(el).removeClass("shinytemplates-progress-error");
+        $(el).find(".progress-bar").css("width", "0%");
+      } else {
+        $(el)
+          .addClass("shinytemplates-progress-error")
+          .find(".progress-description.progress-error")
+          .text(err.message);
+      }
     },
     clearError: function(el) {
       $(el).removeClass("shinytemplates-progress-error");
@@ -116,6 +121,7 @@ class ShinyTemplates {
     this._keyPrefix = "shinytemplates-session-";
     this._keyNotification = "shinytemplates-session";
     this._keyTheme = "shinytemplates-theme";
+    this._listeners = {};
     this._storageDuration = 1000 * 60 * 60 * 24; // 1000 days
     this.sessionData = {};
     this.scroller = this.makeFancyScroll(
@@ -242,6 +248,28 @@ class ShinyTemplates {
       "last_saved": now
     }));
 
+  }
+  broadcastEvent(type, message = {}) {
+    const event = new CustomEvent("shinytemplates-event-" + type, {
+      "detail": message
+    });
+    this._dummy.dispatchEvent(event);
+  }
+  registerListener(type, callback, replace = true) {
+    const event_str = "shinytemplates-event-" + type;
+    if(replace){
+      const old_function = this._listeners[type];
+      if(typeof(old_function) === "function"){
+        this._dummy.removeEventListener(event_str, old_function);
+      }
+    }
+    if(typeof(callback) === "function"){
+      const cb_ = (evt) => {
+        return(callback(evt.detail));
+      };
+      this._dummy.addEventListener(event_str, cb_);
+      this._listeners[type] = cb_;
+    }
   }
 
   // theme-mode
@@ -457,6 +485,17 @@ class ShinyTemplates {
 
   toggleCard2(selector){
     $(selector).DirectChat("toggle");
+  }
+
+  flipBox(inputId){
+    let el = document.getElementById(inputId);
+    if(el && el.classList.contains("flip-box")) {
+      if( el.classList.contains("active") ){
+        el.classList.remove("active");
+      } else {
+        el.classList.add("active");
+      }
+    }
   }
 
   // notification
@@ -684,6 +723,20 @@ class ShinyTemplates {
         }
       );
 
+      this.matchSelector(
+        evt.target,
+        '.flip-box',
+        (item) => {
+          const $el = $(item);
+          const action = $el.attr("data-toggle");
+          if(action === "click"){
+            $el.toggleClass("active");
+          } else if (action === "click-front"){
+            $el.addClass("active");
+          }
+        }
+      );
+
     });
 
   }
@@ -702,6 +755,9 @@ class ShinyTemplates {
 
     this.shinyHandler("click", (params) => {
       this.click(params.selector);
+    });
+    this.shinyHandler("box_flip", (params) => {
+      this.flipBox(params.inputId);
     });
 
     this.shinyHandler("card_tabset_insert", (params) => {
@@ -767,7 +823,7 @@ class ShinyTemplates {
     this.shinyHandler("cache_session_input", (params) => {
       this.sessionData = params.inputs;
       this.broadcastSessionData(params.shared_id, params.private_id);
-    })
+    });
 
   }
 }
@@ -776,7 +832,7 @@ window.ShinyTemplates = new ShinyTemplates();
 $(document).ready(() => {
   window.ShinyTemplates._finalize_initialization();
   window.ShinyTemplates._register_shiny(window.Shiny);
-})
+});
 
 })();
 
@@ -816,4 +872,3 @@ if (window.hljs) {
     window.setTimeout(function() { hljs.initHighlighting(); }, 0);
   }
 }
-

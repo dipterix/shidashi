@@ -31,16 +31,20 @@ renderProgress <- function(expr, env=parent.frame(), quoted=FALSE, outputArgs = 
 
   func <- shiny::installExprFunction(expr, "func", env, quoted, label = "renderProgress")
   shiny::createRenderFunction(func, function(value, session, name, ...) {
-
     if(is.list(value)){
       description <- value$description
       value <- value$value
     } else {
       description <- NULL
     }
-    value <- as.integer(value)
-    if( value < 0 ){ value <- 0 }
-    if( value > 100 ){ value <- 100 }
+    if(!length(value)){
+      value <- 0L
+    } else {
+      value <- as.integer(value)
+    }
+
+    if( value < 0L ){ value <- 0L }
+    if( value > 100L ){ value <- 100L }
     list(
       value = value,
       description = description

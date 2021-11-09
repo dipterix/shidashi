@@ -1,63 +1,60 @@
-
-infobox_with_code <- function(x, title = "",
-                              class = "height-100",
-                              class_body = "padding-5 bg-gray-70"){
-  # Display code with width-cutoff=15
-
-  shiny::div(
-    class = "fill-width position-relative",
-    shiny::span(
-      class = "position-absolute padding-bottom-5 bg-gray",
-      style = "right: 0; z-index: 100;",
-      clipboardOutput(clip_text = get_construct_string(x),
-                      as_card_tool = TRUE, message = "Copy to clipboard")
-    ),
-    x
-  )
-
-}
-
-ui_info_box <- function(){
-
-
-  shiny::tagList(
-    # Displays Code
+ui_info_box_basic <- function(){
+  tagList(
     column(width = 3L,
-           infobox_with_code(title = "Basic info-box",
-                             info_box("Message", icon = NULL))),
-    column(
-      width = 3L,
-      infobox_with_code(
-        title = "Info-box with icons",
-        info_box(
-          "Icon (flag)",
-          icon = "exclamation-circle",
-          class_icon = "bg-danger",
-          class = "bg-gradient-warning"
-        )
-      )
+           infobox_with_code(
+             info_box("Message", icon = NULL)
+           )),
+    column(width = 3L,
+           infobox_with_code(
+             info_box(icon = NULL,
+                      span(class = "info-box-text", "Likes"),
+                      span(class = "info-box-number", "20,331"))
+           ))
+  )
+}
+
+ui_info_box_advanced <- function(){
+
+  tagList(
+    column(width = 3L,
+           infobox_with_code(
+             info_box(icon = "gear",
+                      span(class = "info-box-text", 'Configurations'),
+                      span(class = "info-box-number", "With icon")))
+           ),
+    column(width = 3L,
+           infobox_with_code(
+             info_box(icon = "thumbs-up",
+                      class_icon = "bg-green",
+                      span(class = "info-box-text", 'Likes'),
+                      span(class = "info-box-number", "Colored icon")))
+           ),
+    column(width = 3L,
+           infobox_with_code(
+             info_box(span(class = "info-box-text", 'Calendars'),
+                      span(class = "info-box-number", "4 items"),
+                      icon = "calendar-alt",
+                      class = "bg-yellow", class_icon = NULL)
+           )
     ),
-    column(
-      width = 3L,
-      infobox_with_code(title = "Info-box (fancy text)",
-                        info_box(
-                          icon = "copy",
-                          span(class = "info-box-text", "Uploads"),
-                          span(class = "info-box-number", "20,331")
-                        ))
+    column(width = 3L,
+           infobox_with_code(
+             info_box(span(class = "info-box-text", 'Yes!'),
+                      span(class = "info-box-number", 'Colored differently'), icon = "star",
+                      class = "bg-yellow")
+             )
     ),
-    column(
-      width = 3L,
-      infobox_with_code(title = "Info-box (progress bar)",
-                        info_box(
-                          span(class = "info-box-text", "Progress | ",
-                               actionLink(
-                                 ns("infobox_make_progress"), "Keep clicking me"
-                               )),
-                          progressOutput(ns("infobox_progress")),
-                          icon = "sync"
-                        ))
-    )
+    column(width = 6L,
+           infobox_with_code(info_box(
+             span(class = "info-box-text", "With Progress | ",
+                  actionLink(
+                    ns("infobox_make_progress"), "Keep clicking me"
+                  )),
+             progressOutput(ns("infobox_progress")),
+             icon = "sync"
+           )))
   )
 
 }
+
+

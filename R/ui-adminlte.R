@@ -4,7 +4,7 @@ adminlte_ui <- function(root_path = template_root()){
     # req <- (list(QUERY_STRING = "/"))
     # root_path <- "/Users/dipterix/Dropbox/projects/shinytemplates/inst/template"
 
-    # tryCatch({
+    tryCatch({
       resource <- load_module(root_path = root_path, request = req)
       env <- new.env(parent = resource$environment)
 
@@ -26,25 +26,25 @@ adminlte_ui <- function(root_path = template_root()){
 
       `@args` <- as.list(resource$environment, all.names = TRUE)
       `@args`$filename <- template_path
-      env$`@args` <- `@args`
+      call <- as.call(c(list(quote(shiny::htmlTemplate)), `@args`))
+      return(eval(call, envir = env))
+    }, error = function(e){
+      module_template <- file.path(root_path, 'views', '500.html')
+      error <- shiny::pre(
+        style = "word-wrap: break-word; white-space: break-spaces;",
+        paste(
+          sep = "\n",
+          "Error message:",
+          e$message
+        )
+      )
+      if(file.exists(module_template)){
 
-      return(with(env, {
-        do.call(shiny::htmlTemplate, `@args`)
-      }))
-    # }, error = function(e){
-    #   module_template <- file.path(root_path, 'views', '500.html')
-    #   error <- shiny::pre(paste(
-    #     sep = "\n",
-    #     "Error message:",
-    #     e$message
-    #   ))
-    #   if(file.exists(module_template)){
-    #
-    #     return(shiny::htmlTemplate(module_template, error = error, req = req))
-    #   } else {
-    #     return(paste("Internal error: <br/>", error))
-    #   }
-    # })
+        return(shiny::htmlTemplate(module_template, error = error, req = req))
+      } else {
+        return(paste("Internal error: <br/>", error))
+      }
+    })
 
   }
 

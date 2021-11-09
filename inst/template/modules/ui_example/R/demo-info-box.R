@@ -1,9 +1,9 @@
-infobox_with_code <- function(x, title = "",
+infobox_with_code <- function(x,
                               class = "height-100",
-                              width.cutoff = 15L){
+                              width.cutoff = 15L, ...){
   # Display code with width-cutoff=15
   show_ui_code(x, class = class, width.cutoff = width.cutoff,
-               as_card = TRUE, card_title = title)
+               as_card = TRUE)
 }
 
 ui_info_box <- function(){

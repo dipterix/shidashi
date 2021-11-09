@@ -3,7 +3,7 @@ page_title <- function(complete = TRUE){
   if(complete){
     "AdminLTE 3 | Shiny Dashboard"
   } else {
-    "AdminLTE-Shiny Template"
+    "Shiny Template"
   }
 }
 page_logo <- function(size = c("normal", "small", "large")){

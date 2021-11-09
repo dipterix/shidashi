@@ -28,27 +28,33 @@ info_box <- function(..., icon = "envelope", class = "",
 
 
 #' @export
-flip_box <- function(front, back, active_on = c(
-  "click", "hover", "manual"
-)){
+flip_box <- function(front, back, active_on = c("click", "click-front", "manual"), inputId = NULL){
+  call <- match.call()
   active_on <- match.arg(active_on)
-  shiny::div(
+  if(active_on != 'click' && length(inputId) != 1){
+    stop("`inputId` must be specified if `active_on` is not 'click'")
+  }
+  set_attr_call(shiny::div(
     class = "flip-box",
     "data-toggle" = active_on,
+    id = inputId,
     shiny::div(
       class = "flip-box-inner",
-      shiny::div
+      shiny::div(
+        class = "flip-box-back",
+        back
+      ),
+      shiny::div(
+        class = "flip-box-front",
+        front
+      )
     )
-  )
-  <div class="flip-box">
-    <div class="flip-box-inner">
-    <div class="flip-box-back">
-    <h2>Back Side</h2>
-    <p>bgbib</p>
-    </div>
-    <div class="flip-box-front">
-    <h2>Front Side</h2>
-    </div>
-    </div>
-    </div>
+  ), call)
+}
+
+#' @export
+flip <- function(inputId, session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("shinytemplates.box_flip", list(
+    inputId = session$ns(inputId)
+  ))
 }
