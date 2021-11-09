@@ -11,7 +11,13 @@ as_icon <- function(icon = NULL, class = "fas"){
     } else {
       icon <- shiny::icon(icon, class = class)
     }
+    # remove class fa
+    if ( class != "fa" ){
+      remove_class(icon$attribs$class, "fa")
+    }
   }
+
+
   icon
 }
 

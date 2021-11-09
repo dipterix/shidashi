@@ -726,6 +726,20 @@ class ShinyTemplates {
 
       this.matchSelector(
         evt.target,
+        '.card-tools .btn-tool[data-card-widget="flip"]',
+        (el) => {
+          const $card = $(el).parents(".card");
+          if(!$card.length){ return; }
+          $($card[0]).find(".card-body .flip-box").toggleClass("active");
+        }
+      );
+
+    });
+
+    this.$document.on("dblclick", (evt) => {
+
+      this.matchSelector(
+        evt.target,
         '.flip-box',
         (item) => {
           const $el = $(item);

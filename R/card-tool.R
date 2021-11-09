@@ -1,22 +1,24 @@
 
 #' @export
-card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE, ...){
+card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "flip", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE, ...){
   widget <- match.arg(widget)
 
   if(missing(icon)){
     icon <- switch (
       widget,
-      maximize = shiny::icon("expand"),
-      collapse = shiny::icon(ifelse(start_collapsed, "plus", "minus")),
-      remove = shiny::icon("times"),
-      refresh = shiny::icon("sync-alt"),
-      link = shiny::icon("external-link-alt"),
+      maximize = as_icon("expand"),
+      collapse = as_icon(ifelse(start_collapsed, "plus", "minus")),
+      remove = as_icon("times"),
+      refresh = as_icon("sync-alt"),
+      link = as_icon("external-link-alt"),
+      flip = as_icon('adjust'),
       {
         stop("Custom widget must provide a valid icon; see ?shiny::icon")
       }
     )
+  } else {
+    icon <- as_icon(icon)
   }
-  icon <- as_icon(icon)
 
   if(length(inputId) == 1){
     class <- combine_class("btn btn-tool action-button", class)

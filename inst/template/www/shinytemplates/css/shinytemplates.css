@@ -2130,11 +2130,9 @@ pre[class], code[class] {
   border: none;
   perspective: 1000px;
   padding: 0 !important;
+  position: relative;
 }
-.flip-box[data-toggle=click] {
-  cursor: pointer;
-}
-.flip-box[data-toggle=click-front] .flip-box-front {
+.flip-box[data-toggle=click] .flip-box-front, .flip-box[data-toggle=click-front] .flip-box-front {
   cursor: pointer;
 }
 .flip-box .flip-box-inner {
@@ -2162,8 +2160,16 @@ pre[class], code[class] {
   z-index: 9999;
   transform: rotateY(180deg);
 }
+.flip-box.active {
+  z-index: 1;
+}
 .flip-box.active .flip-box-inner {
   transform: rotateY(180deg);
+}
+
+.card-body .flip-box .flip-box-inner .flip-box-back {
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 #shiny-notification-panel {

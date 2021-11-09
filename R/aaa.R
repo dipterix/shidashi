@@ -13,14 +13,20 @@ set_attr_call <- function(x, call, collapse = "\n", ...) {
   x
 }
 
-combine_class <- function(..., collapse = " "){
+combine_class <- function(...){
   s <- paste(c(...), collapse = " ", sep = " ")
   s <- unlist(strsplit(s, " "))
   s <- unique(s)
   s <- s[!s %in% '']
-  paste(s, collapse = collapse)
+  paste(s, collapse = " ")
 }
-
+remove_class <- function(target, class){
+  if (!length(target)) { return("") }
+  s <- unlist(strsplit(target, " "))
+  s <- unique(s)
+  s <- s[!s %in% c('', class)]
+  paste(s, collapse = " ")
+}
 
 #' @export
 guess_body_class <- function(cls){

@@ -30,7 +30,11 @@ shiny_progress <- function (title, max = 1, ..., quiet = FALSE, session = shiny:
         log(...)
       }
       else {
-        cat2(..., level = level, bullet = bullet)
+        s <- paste(..., collapse = "", sep = "")
+        nz <- nchar(s, allowNA = TRUE, keepNA = TRUE)
+        w <- getOption("width", 80L)
+        s <- paste0(s, paste(rep(' ', w - nz %% w), collapse = ""))
+        message("\r", s, appendLF = identical(bullet, "stop"))
       }
     }
   }
@@ -39,7 +43,7 @@ shiny_progress <- function (title, max = 1, ..., quiet = FALSE, session = shiny:
     logger(sprintf("[%s]: initializing...", title), level = "DEFAULT",
            bullet = "play")
     inc <- function(detail, message = NULL, amount = 1, ...) {
-      stopifnot2(!closed, msg = "progress is closed")
+      stopifnot(!closed)
       quiet <- c(list(...)[["quiet"]], quiet)[[1]]
       if (!is.null(message) && length(message) == 1) {
         title <<- message

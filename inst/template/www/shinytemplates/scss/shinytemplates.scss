@@ -33,7 +33,6 @@ $light-dark: #454d55;
 
 /** global variables **/
 $sizes-margin-padding: 0,1,2,3,4,5,6,7,8,9,10,11,12,15,20,25,30,50,60,80,100;
-
 $code-background: #e5e5e5;
 $code-color-operator: rgb(104, 118, 135);
 $code-color-parenthesis: rgb(104, 118, 135);
@@ -459,10 +458,9 @@ pre, code {
   border: none;
   perspective: 1000px;
   padding: 0 !important;
+  position: relative;
 
-  &[data-toggle="click"] {
-    cursor: pointer;
-  }
+  &[data-toggle="click"] .flip-box-front,
   &[data-toggle="click-front"] .flip-box-front {
     cursor: pointer;
   }
@@ -494,9 +492,17 @@ pre, code {
       transform: rotateY(180deg);
     }
   }
+  &.active {
+    z-index: 1;
+  }
   &.active .flip-box-inner {
     transform: rotateY(180deg);
   }
+}
+
+.card-body .flip-box .flip-box-inner .flip-box-back {
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 // shiny-notification

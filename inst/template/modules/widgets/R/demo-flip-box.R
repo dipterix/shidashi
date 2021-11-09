@@ -9,12 +9,12 @@ ui_flip_box <- function(){
           front = info_box(
             icon = "bookmark",
             p(
-              "This is the front side. Click me"
+              "This is the front side. Double-click me"
             )
           ),
           back = info_box(
             icon = NULL,
-            p("This is the back side. Click me to toggle back.")
+            p("This is the back side. Double-click me to toggle back.")
           )
         )
       )
@@ -28,7 +28,7 @@ ui_flip_box <- function(){
           front = info_box(
             icon = "th",
             p(
-              "This is the front side. Click me"
+              "This is the front side. Double-click me"
             )
           ),
           back = info_box(
@@ -68,4 +68,34 @@ ui_flip_box <- function(){
     )
   )
 
+}
+
+ui_flip_card <- function(){
+  tagList(
+    column(
+      width = 5L,
+      card(
+        title = "Card with flip box",
+        class_body = "no-padding",
+        tools = list(
+          card_tool(widget = "flip")
+        ),
+        flip_box(
+          front = div(
+            p(
+              class = "padding-20",
+              "While you can still flip the box by double-clicking, ",
+              "alternatively, clicking the 'flip' icon in the tool bar also flips the box."
+            ),
+            plotOutput(ns("flip_card_plot"))
+          ),
+          back = div(
+            class = "padding-20",
+            p("The data used to generate the figure"),
+            tableOutput(ns("flip_card_table"))
+          )
+        )
+      )
+    )
+  )
 }

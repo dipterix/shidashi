@@ -18,7 +18,7 @@ ui_info_box_advanced <- function(){
   tagList(
     column(width = 3L,
            infobox_with_code(
-             info_box(icon = "gear",
+             info_box(icon = "cogs",
                       span(class = "info-box-text", 'Configurations'),
                       span(class = "info-box-number", "With icon")))
            ),
