@@ -2,3 +2,4 @@
 ^\.Rproj\.user$
 node_modules$
 ^LICENSE\.md$
+^inst/template/www/AdminLTE/js/\.eslintrc\.json$

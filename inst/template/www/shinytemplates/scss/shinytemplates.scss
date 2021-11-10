@@ -503,6 +503,7 @@ pre, code {
 .card-body .flip-box {
   & .flip-box-inner .flip-box-back {
     max-height: 100%;
+    max-width: 100%;
     &, & * {
       overflow: hidden;
     }

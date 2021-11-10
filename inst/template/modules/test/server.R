@@ -36,7 +36,7 @@ server <- function(input, output, session, ...){
     card_tabset_insert("output_tabset", title = "A new tab", session = session,
                     shiny::textInput(ns("in3"), "New input"))
 
-    p <- dipsaus::progress2("title")
+    p <- shiny_progress("title", max = 1)
     Sys.sleep(2)
 
     p$inc("details")

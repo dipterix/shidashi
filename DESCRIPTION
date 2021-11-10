@@ -20,10 +20,12 @@ LazyData: true
 RoxygenNote: 7.1.2
 Imports: 
     digest (>= 0.6.27),
+    fastmap (>= 1.1.0),
     formatR (>= 1.11),
     httr (>= 1.4.2),
     RcppSimdJson (>= 0.1.6),
     shiny (>= 1.7.0),
     yaml (>= 2.2.1)
 Suggests: 
+    logger (>= 0.2.1),
     rstudioapi (>= 0.13)
