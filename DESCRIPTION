@@ -2,11 +2,28 @@ Package: shinytemplates
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Authors@R: c(
+    person("Zhengjia", "Wang", email="dipterix.wang@gmail.com", 
+            role = c("cph", "aut", "cre"), comment = c(ORCID = "0000-0001-5629-1116")),
+    person(family = "ColorlibHQ", role = c("cph"), comment = "AdminLTE - Bootstrap 4 Admin Dashboard"),
+    person(family = "Bootstrap contributors", role = "ctb", comment = "Bootstrap library"),
+    person(family = "Twitter, Inc", role = "cph", comment = "Bootstrap library"),
+    person("Ivan", "Sagalaev", role = c("ctb", "cph"), comment = "highlight.js library"),
+    person("Rene", "Haas", role = c("ctb", "cph"), comment = "OverlayScrollbars library"),
+    person("Zeno", "Rocha", role = c("ctb", "cph"), comment = "Clipboard.js library")
+    )
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
+Imports: 
+    digest (>= 0.6.27),
+    formatR (>= 1.11),
+    httr (>= 1.4.2),
+    RcppSimdJson (>= 0.1.6),
+    shiny (>= 1.7.0),
+    yaml (>= 2.2.1)
+Suggests: 
+    rstudioapi (>= 0.13)

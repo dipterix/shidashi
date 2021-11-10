@@ -37,7 +37,7 @@
 
       <!-- Should be customized code -->
       <div class="container-fluid">
-
+        {{  dipsaus::actionButtonStyled('asd', 'asda') }}
         <h3>Info box</h3>
         <p>
           The info box can be used to display statistical snippets,
@@ -55,27 +55,33 @@
         <hr />
 
         <h3>Flip box</h3>
-        <p>
-          Flip box provides a box that has two sides. There are three ways to trigger the flip box:
-        </p>
-        <ul>
-          <li><code class='inline-all'>active_on="click"</code>: the boxes flip when clicking both the front side and the back side.</li>
-          <li><code class='inline-all'>active_on="click-front"</code>: the boxes flip only when clicking the front side and you have to manually flip them back by calling <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
-          <li><code class='inline-all'>active_on="manual"</code>: the boxes flip manually. You have to call <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
-        </ul>
 
-        <p>
-          Here are the examples of flip-boxes containing info-boxes.
-        </p>
         <div class="row">
-          {{ ui_flip_box() }}
-        </div>
-        <p>
-          The flip box can be used within card body, with
-          <code>card_tool(widget="flip")</code>
-        </p>
-        <div class="row">
-          {{ ui_flip_card() }}
+          <div class="col-sm-6">
+            <p>
+              Flip box provides a box that has two sides. There are three ways to trigger the flip box:
+            </p>
+            <ul>
+              <li><code class='inline-all'>active_on="click"</code>: the boxes flip when clicking both the front side and the back side.</li>
+              <li><code class='inline-all'>active_on="click-front"</code>: the boxes flip only when clicking the front side and you have to manually flip them back by calling <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
+              <li><code class='inline-all'>active_on="manual"</code>: the boxes flip manually. You have to call <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
+            </ul>
+            <p>
+              Here are the examples of flip-boxes containing info-boxes.
+            </p>
+            <div class="row">
+              {{ ui_flip_box() }}
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <p>
+              The flip box can be used within card body, with
+              <code>card_tool(widget="flip")</code>
+            </p>
+            <div class="row">
+              {{ ui_flip_card() }}
+            </div>
+          </div>
         </div>
         <hr />
 

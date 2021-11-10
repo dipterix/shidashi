@@ -2169,6 +2169,11 @@ pre[class], code[class] {
 
 .card-body .flip-box .flip-box-inner .flip-box-back {
   max-height: 100%;
+}
+.card-body .flip-box .flip-box-inner .flip-box-back, .card-body .flip-box .flip-box-inner .flip-box-back * {
+  overflow: hidden;
+}
+.card-body .flip-box.active .flip-box-inner .flip-box-back {
   overflow-y: auto;
 }
 

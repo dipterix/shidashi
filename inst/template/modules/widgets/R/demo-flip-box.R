@@ -3,7 +3,7 @@ ui_flip_box <- function(){
   shiny::tagList(
     # Displays Code
     column(
-      width = 3L,
+      width = 12L,
       infobox_with_code(
         flip_box(
           front = info_box(
@@ -20,7 +20,7 @@ ui_flip_box <- function(){
       )
     ),
     column(
-      width = 5L,
+      width = 12L,
       infobox_with_code(
         flip_box(
           active_on = "click-front",
@@ -44,7 +44,7 @@ ui_flip_box <- function(){
       )
     ),
     column(
-      width = 4L,
+      width = 12L,
       infobox_with_code(
         flip_box(
           active_on = "manual",
@@ -73,7 +73,7 @@ ui_flip_box <- function(){
 ui_flip_card <- function(){
   tagList(
     column(
-      width = 5L,
+      width = 12L,
       card(
         title = "Card with flip box",
         class_body = "no-padding",

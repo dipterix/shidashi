@@ -195,14 +195,32 @@ load_module <- function(
 }
 
 #' @export
-include_view <- function(file, ..., root_path = template_root()){
+include_view <- function(file, ..., .env = parent.frame(),
+                         .root_path = template_root()){
   tryCatch({
-    file <- normalizePath(file.path(root_path, 'views', file), mustWork = TRUE)
+    file <- normalizePath(file.path(.root_path, 'views', file),
+                          mustWork = TRUE)
   }, error = function(e){
     stop(call. = NULL, "Cannot find views/", file)
   })
-
-  shiny::htmlTemplate(file, ..., document_ = FALSE)
+  list2env(list(.env = .env), envir=.GlobalEnv)
+  args <- NULL
+  if(is.environment(.env$env)) {
+    args <- get0("@args", envir = .env$env, ifnotfound = NULL)
+  }
+  if(!is.list(args)) {
+    args <- as.list(.env)
+  }
+  argnames <- names(args)
+  args <- args[!argnames %in% c("headContent", "suppressDependencies", "filename", "document_", "text_")]
+  call <- as.call(c(
+    list(quote(shiny::htmlTemplate),
+         filename = file,
+         document_ = FALSE),
+    args
+  ))
+  return(eval(call, envir = .env))
+  # shiny::htmlTemplate(file, ..., document_ = FALSE)
 }
 
 
