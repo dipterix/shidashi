@@ -2,7 +2,8 @@
 #' @title Generates 'AdminLTE' theme-related 'HTML' tags
 #' @description These functions should be called in 'HTML' templates.
 #' Please see vignettes for details.
-#' @param root_path the root path of the website project
+#' @param root_path the root path of the website project; see
+#' \code{\link{template_settings}}
 #' @param settings_file the settings file containing the module information
 #' @param shared_id a shared identification by session to synchronize the
 #' inputs; assigned internally.

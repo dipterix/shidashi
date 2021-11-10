@@ -15,7 +15,8 @@ adminlte_sidebar(
 )
 }
 \arguments{
-\item{root_path}{the root path of the website project}
+\item{root_path}{the root path of the website project; see
+\code{\link{template_settings}}}
 
 \item{settings_file}{the settings file containing the module information}
 

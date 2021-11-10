@@ -3,3 +3,7 @@
 node_modules$
 ^LICENSE\.md$
 ^inst/template/www/AdminLTE/js/\.eslintrc\.json$
+^\.github$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

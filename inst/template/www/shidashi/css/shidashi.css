@@ -2039,8 +2039,26 @@ pre[class], code[class] {
 }
 
 /** shidashi objects **/
+body.navbar-iframe-hidden .navbar-nav-iframe {
+  display: none;
+}
+
+body.iframe-mode-fullscreen .navbar-nav-iframe {
+  display: flex;
+}
+
 .content-wrapper.iframe-mode {
   max-height: calc(-56px + 100vh);
+}
+.content-wrapper.iframe-mode .tab-content {
+  min-height: calc(-57px + 100vh);
+}
+.content-wrapper.iframe-mode .tab-content .tab-empty, .content-wrapper.iframe-mode .tab-content .tab-pane, .content-wrapper.iframe-mode .tab-content .tab-pane > iframe {
+  min-height: calc(-57px + 100vh);
+}
+
+body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
+  max-height: 100vh;
 }
 
 .navbar-nav-iframe {
