@@ -350,7 +350,7 @@ pre, code {
   }
 }
 
-/** shinytemplates objects **/
+/** shidashi objects **/
 // navbar-nav-iframe (iframe tablist)
 
 .content-wrapper.iframe-mode {
@@ -439,7 +439,7 @@ pre, code {
 // progress-bar
 .progress-error { @include display(none, true); }
 .progress-message { @include display(block); }
-.shinytemplates-progress-error {
+.shidashi-progress-error {
   & .progress-error {
     @include display(block, true);
     color: $color-error !important;

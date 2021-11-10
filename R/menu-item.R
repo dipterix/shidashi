@@ -61,7 +61,7 @@ menu_item <- function(
   }
   template_path <- file.path(root_path, "views", "menu-item.html")
   # if(!file.exists(template_path)){
-  #   template_path <- system.file('snippets', 'menu-item.html', package = 'shinytemplates')
+  #   template_path <- system.file('snippets', 'menu-item.html', package = 'shidashi')
   # }
   shiny::htmlTemplate(
     template_path,
@@ -80,7 +80,7 @@ menu_item_dropdown <- function(
   badge <- as_badge(badge)
   template_path <- file.path(root_path, "views", "menu-item-dropdown.html")
   # if(!file.exists(template_path)){
-  #   template_path <- system.file('snippets', 'menu-item-dropdown.html', package = 'shinytemplates')
+  #   template_path <- system.file('snippets', 'menu-item-dropdown.html', package = 'shidashi')
   # }
   shiny::htmlTemplate(
     template_path,

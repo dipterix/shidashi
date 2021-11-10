@@ -1,4 +1,4 @@
 {
-    shinytemplates::template_settings$set(root_path = "/Users/dipterix/Dropbox/projects/shinytemplates/inst/template")
-    shinytemplates::adminlte_ui()
+    shidashi::template_settings$set(root_path = "/Users/dipterix/Dropbox/projects/shidashi/inst/template")
+    shidashi::adminlte_ui()
 }

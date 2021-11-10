@@ -1,9 +1,9 @@
 library(shiny)
 page_title <- function(complete = TRUE){
   if(complete){
-    "AdminLTE 3 | Shiny Dashboard"
+    "Shi(ny) Dash(board) | AdminLTE 3"
   } else {
-    "Shiny Template"
+    "ShiDashi"
   }
 }
 page_logo <- function(size = c("normal", "small", "large")){
@@ -22,12 +22,28 @@ page_loader <- function(){
 }
 body_class <- function(){
   c(
-    # "hold-transition",
+    #--- Fix the navigation banner ---
+    #"layout-navbar-fixed",
+
+    #--- Collapse the sidebar at the beginning ---
     # "sidebar-collapse",
+
+    #--- Let control sidebar open at the beginning ---
     # "control-sidebar-slide-open",
-    "layout-fixed", "dark-mode", #"layout-navbar-fixed",
-    "sidebar-mini", "sidebar-mini-md", "sidebar-mini-xs",
+
+    #--- Fix the sidebar position ---
+    "layout-fixed",
+
+    #--- Default behavior when collapsing sidebar
+    # "sidebar-mini", "sidebar-mini-md", "sidebar-mini-xs"
+
+
+    #--- Start as dark-mode ---
+    "dark-mode",
+
+    #--- Make scrollbar thinner ---
     "fancy-scroll-y"
+
   )
 }
 nav_class <- function(){

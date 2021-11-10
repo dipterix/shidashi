@@ -28,7 +28,7 @@ show_notification <- function(
   }
   message <- paste(message, collapse = "")
 
-  session$sendCustomMessage("shinytemplates.show_notification", list(
+  session$sendCustomMessage("shidashi.show_notification", list(
     position = position,
     autohide = !isFALSE(autohide),
     delay = delay,
@@ -53,7 +53,7 @@ clear_notifications <- function(
   class <- gsub(" ", "", class)
   class <- class[class != ""]
   selector <- paste0(".", class, collapse = "")
-  session$sendCustomMessage("shinytemplates.clear_notification", list(
+  session$sendCustomMessage("shidashi.clear_notification", list(
     selector = selector
   ))
 }

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ module_title() }}</title>
 
-  {{ shinytemplates::include_view("header.html") }}
+  {{ shidashi::include_view("header.html") }}
 
 </head>
-<body class="layout-top-nav {{ shinytemplates::guess_body_class(body_class()) }}">
+<body class="layout-top-nav {{ shidashi::guess_body_class(body_class()) }}">
 <div class="wrapper">
 
   <!-- Navbar, TODO: copy index navbar -->
@@ -63,8 +63,8 @@
             </p>
             <ul>
               <li><code class='inline-all'>active_on="click"</code>: the boxes flip when clicking both the front side and the back side.</li>
-              <li><code class='inline-all'>active_on="click-front"</code>: the boxes flip only when clicking the front side and you have to manually flip them back by calling <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
-              <li><code class='inline-all'>active_on="manual"</code>: the boxes flip manually. You have to call <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.ShinyTemplates.flipBox("widget id")</code> in JavaScript.</li>
+              <li><code class='inline-all'>active_on="click-front"</code>: the boxes flip only when clicking the front side and you have to manually flip them back by calling <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.shidashi.flipBox("widget id")</code> in JavaScript.</li>
+              <li><code class='inline-all'>active_on="manual"</code>: the boxes flip manually. You have to call <code class='inline-all'>flip("widget id")</code> in R or <code class='inline-all'>window.shidashi.flipBox("widget id")</code> in JavaScript.</li>
             </ul>
             <p>
               Here are the examples of flip-boxes containing info-boxes.
@@ -97,8 +97,8 @@
 </div>
 <!-- ./wrapper -->
 
-{{ shinytemplates::back_top_button("rocket") }}
+{{ shidashi::back_top_button("rocket") }}
 
-{{ shinytemplates::include_view("footer.html") }}
+{{ shidashi::include_view("footer.html") }}
 </body>
 </html>

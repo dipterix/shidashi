@@ -50,8 +50,8 @@ template_render <- function(
 
   writeLines(
     deparse(bquote({
-      shinytemplates::template_settings$set('root_path' = .(tempdir))
-      shinytemplates::adminlte_ui()
+      shidashi::template_settings$set('root_path' = .(tempdir))
+      shidashi::adminlte_ui()
     })),
     file.path(tempdir, "ui.R")
   )
@@ -60,7 +60,7 @@ template_render <- function(
      !rstudioapi::isAvailable(version_needed = "1.4.1717",
                               child_ok = FALSE)){
 
-    shinytemplates::template_settings$set('root_path' = tempdir)
+    shidashi::template_settings$set('root_path' = tempdir)
     shiny::runApp(appDir = tempdir, launch.browser = launch_browser, test.mode = test_mode, ...)
   } else {
     script <- file.path(tempdir, "_rs_job.R")
@@ -77,7 +77,7 @@ template_render <- function(
       test.mode = test_mode,
       appDir = tempdir
     ))
-    s <- sprintf("shinytemplates::template_settings$set('root_path' = '%s')", tempdir)
+    s <- sprintf("shidashi::template_settings$set('root_path' = '%s')", tempdir)
     s <- c(s, deparse(call))
     writeLines(
       con = script,

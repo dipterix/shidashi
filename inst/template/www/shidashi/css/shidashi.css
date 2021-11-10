@@ -2038,7 +2038,7 @@ pre[class], code[class] {
   font-size: 92% !important;
 }
 
-/** shinytemplates objects **/
+/** shidashi objects **/
 .content-wrapper.iframe-mode {
   max-height: calc(-56px + 100vh);
 }
@@ -2114,14 +2114,14 @@ pre[class], code[class] {
   display: block;
 }
 
-.shinytemplates-progress-error .progress-error {
+.shidashi-progress-error .progress-error {
   display: block !important;
   color: #dc3545 !important;
 }
-.shinytemplates-progress-error .progress-message {
+.shidashi-progress-error .progress-message {
   display: none;
 }
-.shinytemplates-progress-error .progress-bar {
+.shidashi-progress-error .progress-bar {
   background-color: #dc3545 !important;
 }
 
@@ -2219,4 +2219,4 @@ body.dark-mode #shiny-notification-panel .shiny-notification {
   color: #1f2d3d;
 }
 
-/*# sourceMappingURL=shinytemplates.css.map */
+/*# sourceMappingURL=shidashi.css.map */

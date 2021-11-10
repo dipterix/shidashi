@@ -3,7 +3,7 @@
 <head>
   <title>{{ page_title() }}</title>
 
-  {{ shinytemplates::include_view("header.html") }}
+  {{ shidashi::include_view("header.html") }}
 
 </head>
 <body class="{{ paste(body_class(), collapse=' ') }}">
@@ -190,9 +190,9 @@
           <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
           <li class="nav-header">EXAMPLES</li>
-          {{ shinytemplates::adminlte_sidebar(shared_id=.shared_id) }}
-          <!-- shinytemplates::menu_item_dropdown("Dashboard", icon = 'tachometer-alt', active = TRUE, shinytemplates::menu_item('Dashboard v1', href = "./index.html", icon = 'circle'), shinytemplates::menu_item('Dashboard v2', href = "./index2.html", icon = 'circle'), shinytemplates::menu_item('Dashboard v3', href = "./index3.html", icon = 'circle'))
-           shinytemplates::menu_item(text = 'Widgets', href = 'pages/widgets.html', icon = 'th', badge = "New|badge-danger") }}-->
+          {{ shidashi::adminlte_sidebar(shared_id=.shared_id) }}
+          <!-- shidashi::menu_item_dropdown("Dashboard", icon = 'tachometer-alt', active = TRUE, shidashi::menu_item('Dashboard v1', href = "./index.html", icon = 'circle'), shidashi::menu_item('Dashboard v2', href = "./index2.html", icon = 'circle'), shidashi::menu_item('Dashboard v3', href = "./index3.html", icon = 'circle'))
+           shidashi::menu_item(text = 'Widgets', href = 'pages/widgets.html', icon = 'th', badge = "New|badge-danger") }}-->
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
@@ -245,6 +245,6 @@
 <!-- ./wrapper -->
 
 
-{{ shinytemplates::include_view("footer.html") }}
+{{ shidashi::include_view("footer.html") }}
 </body>
 </html>

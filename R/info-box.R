@@ -54,7 +54,7 @@ flip_box <- function(front, back, active_on = c("click", "click-front", "manual"
 
 #' @export
 flip <- function(inputId, session = shiny::getDefaultReactiveDomain()){
-  session$sendCustomMessage("shinytemplates.box_flip", list(
+  session$sendCustomMessage("shidashi.box_flip", list(
     inputId = session$ns(inputId)
   ))
 }

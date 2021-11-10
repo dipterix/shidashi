@@ -147,7 +147,7 @@ card2 <- function(
 #' @export
 card2_open <- function(inputId, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.card2widget",
+    "shidashi.card2widget",
     list(
       selector = sprintf("#%s:not(.direct-chat-contacts-open) .card-tools>.btn-tool.card2-switch", session$ns(inputId))
     )
@@ -157,7 +157,7 @@ card2_open <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 #' @export
 card2_close <- function(inputId, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.card2widget",
+    "shidashi.card2widget",
     list(
       selector = sprintf("#%s.direct-chat-contacts-open .card-tools>.btn-tool.card2-switch", session$ns(inputId))
     )
@@ -167,13 +167,13 @@ card2_close <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 #' @export
 card2_toggle <- function(inputId, session = shiny::getDefaultReactiveDomain()){
   # session$sendCustomMessage(
-  #   "shinytemplates.click",
+  #   "shidashi.click",
   #   list(
   #     selector = sprintf("#%s .card-tools>.btn-tool.card2-switch", session$ns(inputId))
   #   )
   # )
   session$sendCustomMessage(
-    "shinytemplates.card2widget",
+    "shidashi.card2widget",
     list(
       selector = sprintf("#%s .card-tools>.btn-tool.card2-switch", session$ns(inputId))
     )
@@ -190,7 +190,7 @@ card_operate <- function(
                         "maximize", "minimize", "toggleMaximize")
   )
   session$sendCustomMessage(
-    "shinytemplates.cardwidget",
+    "shidashi.cardwidget",
     list(
       inputId = session$ns(inputId),
       method = method

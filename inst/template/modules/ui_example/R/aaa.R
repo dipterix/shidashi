@@ -1,5 +1,5 @@
 library(shiny)
-library(shinytemplates)
+library(shidashi)
 if(FALSE){
   template_settings$set(
     'root_path' = "inst/template/"

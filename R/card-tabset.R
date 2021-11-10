@@ -107,7 +107,7 @@ card_tabset <- function(
 card_tabset_insert <- function(inputId, title, ..., active = TRUE,
                             notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.card_tabset_insert",
+    "shidashi.card_tabset_insert",
     list(
       inputId = session$ns(inputId),
       title = title,
@@ -121,7 +121,7 @@ card_tabset_insert <- function(inputId, title, ..., active = TRUE,
 #' @export
 card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.card_tabset_remove",
+    "shidashi.card_tabset_remove",
     list(
       inputId = session$ns(inputId),
       title = title,
@@ -133,7 +133,7 @@ card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session
 #' @export
 card_tabset_activate <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage(
-    "shinytemplates.card_tabset_activate",
+    "shidashi.card_tabset_activate",
     list(
       inputId = session$ns(inputId),
       title = title,

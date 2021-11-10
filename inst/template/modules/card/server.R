@@ -1,5 +1,5 @@
 library(shiny)
-library(shinytemplates)
+library(shidashi)
 
 #' During the run-time, the script in the following folders
 #' will be loaded:
@@ -15,7 +15,7 @@ if(FALSE){
 #' Defines the module server
 server <- function(input, output, session, ...){
 
-  shared_data <- shinytemplates::register_session_id(session)
+  shared_data <- shidashi::register_session_id(session)
 
   output$infobox_progress <- renderProgress({
     val <- input$infobox_make_progress %% 5

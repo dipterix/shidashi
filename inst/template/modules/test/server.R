@@ -1,5 +1,5 @@
 library(shiny)
-library(shinytemplates)
+library(shidashi)
 
 #' During the run-time, the script in the following folders
 #' will be loaded:
@@ -16,7 +16,7 @@ if(FALSE){
 server <- function(input, output, session, ...){
 
   list2env(list(session = session), envir=globalenv())
-  shared_data <- shinytemplates::register_session_id(session)
+  shared_data <- shidashi::register_session_id(session)
 
   shiny::observeEvent(input$configure_card, {
     shiny::showModal(

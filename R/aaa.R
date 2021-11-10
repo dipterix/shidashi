@@ -9,7 +9,7 @@ set_attr_call <- function(x, call, collapse = "\n", ...) {
     call <- deparse(call)
   }
   call <- paste(call, collapse = collapse, ...)
-  attr(x, "shinytemplates.code") <- call
+  attr(x, "shidashi.code") <- call
   x
 }
 
@@ -40,7 +40,7 @@ guess_body_class <- function(cls){
 
 #' @export
 get_construct_string <- function(x){
-  attr(x, "shinytemplates.code")
+  attr(x, "shidashi.code")
 }
 
 #' @export
@@ -88,7 +88,7 @@ html_highlight_code <- function(
       "<pre class='padding-8 no-margin bg-gray-90 %s %s %s' %s><code class='r'>%s</code></pre>",
       hover,
       paste(class, collapse = " "),
-      ifelse(copy_on_click, "clipboard-btn shinytemplates-clipboard-output", ""),
+      ifelse(copy_on_click, "clipboard-btn shidashi-clipboard-output", ""),
       ifelse(copy_on_click,
              sprintf("data-clipboard-text='%s' role='button' title='Click to copy!'", expr),
              ""),

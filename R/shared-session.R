@@ -1,7 +1,7 @@
 sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
-  shared_id <- session$cache$get("shinytemplates_shared_id")
-  private_id <- session$cache$get("shinytemplates_private_id")
+  shared_id <- session$cache$get("shidashi_shared_id")
+  private_id <- session$cache$get("shidashi_private_id")
   if(length(shared_id) != 1 || length(private_id) != 1 ||
      !is.character(shared_id) || !is.character(private_id)){
     stop("Invalid session IDs, run `register_session_id()` first to register.")
@@ -9,21 +9,21 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
   root_session <- session$rootScope()
 
-  reactives <- root_session$cache$get("shinytemplates_sync_inputs", NULL)
+  reactives <- root_session$cache$get("shidashi_sync_inputs", NULL)
 
   if(!shiny::is.reactivevalues(reactives)){
     reactives <- shiny::reactiveValues()
-    root_session$cache$set("shinytemplates_sync_inputs", reactives)
+    root_session$cache$set("shidashi_sync_inputs", reactives)
   }
 
-  observer <- root_session$cache$get("shinytemplates_sync_handler", NULL)
+  observer <- root_session$cache$get("shidashi_sync_handler", NULL)
 
   if(is.null(observer)){
     observer <- shiny::observeEvent({
-      root_session$input[["@shinytemplates@"]]
+      root_session$input[["@shidashi@"]]
     }, {
       try({
-        message <- RcppSimdJson::fparse(root_session$input[["@shinytemplates@"]])
+        message <- RcppSimdJson::fparse(root_session$input[["@shidashi@"]])
 
         if(identical(message$last_edit, private_id)){
           return()
@@ -54,7 +54,7 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
     }, domain = root_session, ignoreNULL = TRUE, ignoreInit = TRUE,
     suspended = TRUE)
 
-    root_session$cache$set("shinytemplates_sync_handler", observer)
+    root_session$cache$set("shidashi_sync_handler", observer)
   }
 
   list(
@@ -77,7 +77,7 @@ register_session_id <- function(
     }
   } else {
     # obtain the shared ID
-    shared_id <- session$cache$get("shinytemplates_shared_id", NULL)
+    shared_id <- session$cache$get("shidashi_shared_id", NULL)
     if(length(shared_id) != 1 || !is.character(shared_id)){
       # get from session
       query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
@@ -89,20 +89,20 @@ register_session_id <- function(
       }
     }
   }
-  session$cache$set("shinytemplates_shared_id", shared_id)
+  session$cache$set("shidashi_shared_id", shared_id)
 
-  if(!session$cache$exists("shinytemplates_private_id")){
+  if(!session$cache$exists("shidashi_private_id")){
     is_registerd <- FALSE
     private_id <- rand_string(length = 8)
-    session$cache$set("shinytemplates_private_id", private_id)
+    session$cache$set("shidashi_private_id", private_id)
   } else {
     is_registerd <- TRUE
-    private_id <- session$cache$get("shinytemplates_private_id")
+    private_id <- session$cache$get("shidashi_private_id")
   }
 
   # set up shared_id bucket
   broadcast_observer <- session$cache$get(
-    "shinytemplates_broadcast_handler", NULL)
+    "shidashi_broadcast_handler", NULL)
 
   if( is.null(broadcast_observer) ){
     broadcast_observer <- shiny::observe({
@@ -114,23 +114,23 @@ register_session_id <- function(
         nms <- nms[sel]
         inputs <- inputs[sel]
         names(inputs) <- session$ns(nms)
-        sig <- session$cache$get("shinytemplates_input_signature", NULL)
+        sig <- session$cache$get("shidashi_input_signature", NULL)
         sig2 <- digest::digest(inputs)
         if(!identical(sig2, sig)){
-          session$cache$set("shinytemplates_input_signature", sig2)
+          session$cache$set("shidashi_input_signature", sig2)
           message <- list(
             shared_id = shared_id,
             private_id = private_id,
             inputs = inputs
           )
-          session$sendCustomMessage("shinytemplates.cache_session_input", message)
+          session$sendCustomMessage("shidashi.cache_session_input", message)
         }
 
       }
     }, domain = session, priority = -100000, suspended = TRUE)
 
     session$cache$set(
-      "shinytemplates_broadcast_handler", broadcast_observer)
+      "shidashi_broadcast_handler", broadcast_observer)
 
   }
 

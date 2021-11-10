@@ -1,7 +1,7 @@
 
 verbatim <- function(code){
   tags$code(
-    class='clipboard-btn shinytemplates-clipboard-output',
+    class='clipboard-btn shidashi-clipboard-output',
     'data-clipboard-text'=code,
     role='button', title='Click to copy!',
     code)

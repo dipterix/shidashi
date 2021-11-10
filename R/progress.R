@@ -5,7 +5,7 @@ progressOutput <- function(
 ){
 
   shiny::div(
-    class = "shinytemplates-progress-output",
+    class = "shidashi-progress-output",
     id = outputId,
     style = sprintf("width: %s;", width),
     shiny::div(
@@ -61,7 +61,7 @@ clipboardOutput <- function(
 
   if(as_card_tool){
     card_tool(
-      class = combine_class('clipboard-btn', "shinytemplates-clipboard-output", class),
+      class = combine_class('clipboard-btn', "shidashi-clipboard-output", class),
       icon = "copy",
       title = message,
       inputId = outputId,
@@ -71,7 +71,7 @@ clipboardOutput <- function(
   } else {
     shiny::div(
       id = outputId,
-      class = "shinytemplates-clipboard-output",
+      class = "shidashi-clipboard-output",
       shiny::tags$button(
         class = combine_class('clipboard-btn btn btn-default', class),
         "data-clipboard-text" = clip_text,

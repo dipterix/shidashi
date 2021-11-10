@@ -2,10 +2,10 @@
 $(function() {
 
   const progressOutputBinding = new Shiny.OutputBinding();
-  progressOutputBinding.name = "shinytemplates.progressOutputBinding";
+  progressOutputBinding.name = "shidashi.progressOutputBinding";
   $.extend(progressOutputBinding, {
     find: function(scope) {
-      return $(scope).find(".shinytemplates-progress-output");
+      return $(scope).find(".shidashi-progress-output");
     },
     renderValue: function(el, value) {
       const v = parseInt(value.value);
@@ -21,34 +21,34 @@ $(function() {
     },
     renderError: function(el, err) {
       if(err.message === "argument is of length zero"){
-        $(el).removeClass("shinytemplates-progress-error");
+        $(el).removeClass("shidashi-progress-error");
         $(el).find(".progress-bar").css("width", "0%");
       } else {
         $(el)
-          .addClass("shinytemplates-progress-error")
+          .addClass("shidashi-progress-error")
           .find(".progress-description.progress-error")
           .text(err.message);
       }
     },
     clearError: function(el) {
-      $(el).removeClass("shinytemplates-progress-error");
+      $(el).removeClass("shidashi-progress-error");
     }
   });
 
   Shiny.outputBindings.register(
     progressOutputBinding,
-    "shinytemplates.progressOutputBinding");
+    "shidashi.progressOutputBinding");
 });
 
 // clipboard output
 $(function() {
 
   const clipboardOutputBinding = new Shiny.OutputBinding();
-  clipboardOutputBinding.name = "shinytemplates.clipboardOutputBinding";
+  clipboardOutputBinding.name = "shidashi.clipboardOutputBinding";
 
   $.extend(clipboardOutputBinding, {
     find: function(scope) {
-      return $(scope).find(".shinytemplates-clipboard-output");
+      return $(scope).find(".shidashi-clipboard-output");
     },
     renderValue: function(el, value) {
       let el_ = $(el);
@@ -66,11 +66,11 @@ $(function() {
     }
   });
 
-  Shiny.outputBindings.register(clipboardOutputBinding, "shinytemplates.clipboardOutputBinding");
+  Shiny.outputBindings.register(clipboardOutputBinding, "shidashi.clipboardOutputBinding");
 
   // No need to re-register because they use delegation
   new ClipboardJS(".clipboard-btn").on('success', function(e) {
-    window.ShinyTemplates.createNotification({
+    window.shidashi.createNotification({
       title : "Copied to clipboard",
       delay: 1000,
       autohide: true,
@@ -83,7 +83,7 @@ $(function() {
 });
 
 
-// Shinytemplates toolbox
+// shidashi toolbox
 (function(){
 
 const default_scroll_opt = {
@@ -104,7 +104,7 @@ const default_scroll_opt = {
   }
 };
 
-class ShinyTemplates {
+class shidashi {
 
   constructor (){
     this.$window = $(window);
@@ -117,9 +117,9 @@ class ShinyTemplates {
     this._dummy = document.createElement("div");
     this._localStorage = window.localStorage;
     this._sessionStorage = window.sessionStorage;
-    this._keyPrefix = "shinytemplates-session-";
-    this._keyNotification = "shinytemplates-session";
-    this._keyTheme = "shinytemplates-theme";
+    this._keyPrefix = "shidashi-session-";
+    this._keyNotification = "shidashi-session";
+    this._keyTheme = "shidashi-theme";
     this._listeners = {};
     this._storageDuration = 1000 * 60 * 60 * 24; // 1000 days
     this.sessionData = {};
@@ -249,13 +249,13 @@ class ShinyTemplates {
 
   }
   broadcastEvent(type, message = {}) {
-    const event = new CustomEvent("shinytemplates-event-" + type, {
+    const event = new CustomEvent("shidashi-event-" + type, {
       "detail": message
     });
     this._dummy.dispatchEvent(event);
   }
   registerListener(type, callback, replace = true) {
-    const event_str = "shinytemplates-event-" + type;
+    const event_str = "shidashi-event-" + type;
     if(replace){
       const old_function = this._listeners[type];
       if(typeof(old_function) === "function"){
@@ -284,8 +284,8 @@ class ShinyTemplates {
       );
       const $iframes = this.$iframeWrapper.find("iframe");
       $iframes.each((i, iframe) => {
-        if(iframe.contentWindow.ShinyTemplates){
-          iframe.contentWindow.ShinyTemplates.asLightMode();
+        if(iframe.contentWindow.shidashi){
+          iframe.contentWindow.shidashi.asLightMode();
         }
       });
     }
@@ -303,8 +303,8 @@ class ShinyTemplates {
       );
       const $iframes = this.$iframeWrapper.find("iframe");
       $iframes.each((i, iframe) => {
-        if(iframe.contentWindow.ShinyTemplates){
-          iframe.contentWindow.ShinyTemplates.asDarkMode();
+        if(iframe.contentWindow.shidashi){
+          iframe.contentWindow.shidashi.asDarkMode();
         }
       });
     }
@@ -570,7 +570,7 @@ class ShinyTemplates {
         return false;
       }
     }
-    this._shiny.addCustomMessageHandler("shinytemplates." + action, callback);
+    this._shiny.addCustomMessageHandler("shidashi." + action, callback);
   }
 
   // Finalize function when document is ready
@@ -591,7 +591,7 @@ class ShinyTemplates {
     const gotop_btn = $(".back-to-top .btn-go-top");
     const root_btn = $(".back-to-top [data-toggle='dropdown']");
     const menu = $(".back-to-top .dropdown-menu");
-    const anchors = $(".shinytemplates-anchor");
+    const anchors = $(".shidashi-anchor");
 
     // Scroll-top widgets
     anchors.each((i, item) => {
@@ -599,7 +599,7 @@ class ShinyTemplates {
       let item_id = $item.attr("id");
       if( typeof(item_id) !== "string" ){
         item_id = $item.text().replace(/[^a-zA-Z0-9_-]/gi, '-').replace(/(--)/gi, '');
-        item_id = "shinytemplates-anchor-id-" + item_id;
+        item_id = "shidashi-anchor-id-" + item_id;
         $item.attr("id", item_id);
       }
       const el = document.createElement("a");
@@ -697,7 +697,7 @@ class ShinyTemplates {
             if(item.storage_key === storage_key) {
               if(private_id !== item.private_id){
                 this.ensureShiny(() => {
-                  this._shiny.onInputChange("@shinytemplates@", this._localStorage.getItem(storage_key));
+                  this._shiny.onInputChange("@shidashi@", this._localStorage.getItem(storage_key));
                 });
               }
             }
@@ -843,10 +843,10 @@ class ShinyTemplates {
   }
 }
 
-window.ShinyTemplates = new ShinyTemplates();
+window.shidashi = new shidashi();
 $(document).ready(() => {
-  window.ShinyTemplates._finalize_initialization();
-  window.ShinyTemplates._register_shiny(window.Shiny);
+  window.shidashi._finalize_initialization();
+  window.shidashi._register_shiny(window.Shiny);
 });
 
 })();
