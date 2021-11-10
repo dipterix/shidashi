@@ -29,3 +29,4 @@ Imports:
 Suggests: 
     logger (>= 0.2.1),
     rstudioapi (>= 0.13)
+URL: http://dipterix.org/shidashi

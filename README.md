@@ -1,4 +1,4 @@
-# **Shi**ny **Dash**board
+# Shi(ny) Dash(board) using AdminLTE 3 Template
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/dipterix/shidashi/workflows/R-CMD-check/badge.svg)](https://github.com/dipterix/shidashi/actions)
