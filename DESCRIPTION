@@ -19,16 +19,16 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.2
 Imports: 
-    tools,
     digest (>= 0.6.27),
     fastmap (>= 1.1.0),
     formatR (>= 1.11),
     httr (>= 1.4.2),
-    RcppSimdJson (>= 0.1.6),
     shiny (>= 1.7.0),
     yaml (>= 2.2.1),
-    htmltools (>= 0.5.2)
+    jsonlite (>= 1.7.2)
 Suggests: 
+    htmltools (>= 0.5.2),
+    RcppSimdJson (>= 0.1.6),
     logger (>= 0.2.1),
     rstudioapi (>= 0.13),
     ggplot2,

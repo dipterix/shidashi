@@ -48,6 +48,6 @@ x <- flex_container(
   flex_item(style = 'background-color:black;'),
   flex_item(style = 'background-color:red;')
 )
-htmltools::html_print(x)
+# You can view it via `htmltools::html_print(x)`
 
 }

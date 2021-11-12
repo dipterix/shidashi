@@ -47,7 +47,7 @@ template_root <- function(){
     if(template_settings$get("dev.debug", FALSE)){
       path <- 'inst/template/'
     } else {
-      path <- tools::R_user_dir('shidashi', which = "data")
+      path <- R_user_dir('shidashi', which = "data")
       if(!dir.exists(file.path(path, "template"))){
         dir.create(path, showWarnings = FALSE, recursive = TRUE)
       }
