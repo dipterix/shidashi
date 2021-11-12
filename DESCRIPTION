@@ -2,6 +2,8 @@ Package: shidashi
 Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
+URL: https://dipterix.org/shidashi https://github.com/dipterix/shidashi
+BugReport: https://github.com/dipterix/shidashi/issues
 Authors@R: c(
     person("Zhengjia", "Wang", email="dipterix.wang@gmail.com", 
             role = c("cph", "aut", "cre"), comment = c(ORCID = "0000-0001-5629-1116")),
@@ -32,4 +34,3 @@ Suggests:
     rstudioapi (>= 0.13),
     ggplot2,
     ggExtra
-URL: http://dipterix.org/shidashi
