@@ -23,11 +23,11 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
       root_session$input[["@shidashi@"]]
     }, {
       try({
-        if(system.file('', package = "RcppSimdJson") != ''){
-          message <- RcppSimdJson::fparse(root_session$input[["@shidashi@"]])
-        } else {
+        # if(system.file('', package = "RcppSimdJson") != ''){
+        #   message <- RcppSimdJson::fparse(root_session$input[["@shidashi@"]])
+        # } else {
           message <- jsonlite::fromJSON(root_session$input[["@shidashi@"]])
-        }
+        # }
 
 
         if(identical(message$last_edit, private_id)){

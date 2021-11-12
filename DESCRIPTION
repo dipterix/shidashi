@@ -28,7 +28,6 @@ Imports:
     jsonlite (>= 1.7.2)
 Suggests: 
     htmltools (>= 0.5.2),
-    RcppSimdJson (>= 0.1.6),
     logger (>= 0.2.1),
     rstudioapi (>= 0.13),
     ggplot2,
