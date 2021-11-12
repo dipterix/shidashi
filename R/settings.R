@@ -29,9 +29,11 @@ template_settings <- local({
 })
 
 #' @rdname template_settings
+#' @export
 template_settings_set <- template_settings$set
 
 #' @rdname template_settings
+#' @export
 template_settings_get <- template_settings$get
 
 #' @rdname template_settings
@@ -42,16 +44,20 @@ template_root <- function(){
     default = NULL
   )
   if(!length(path)) {
-    path <- tools::R_user_dir('shidashi', which = "data")
-    if(!dir.exists(file.path(path, "template"))){
-      dir.create(path, showWarnings = FALSE, recursive = TRUE)
+    if(template_settings$get("dev.debug", FALSE)){
+      path <- 'inst/template/'
+    } else {
+      path <- tools::R_user_dir('shidashi', which = "data")
+      if(!dir.exists(file.path(path, "template"))){
+        dir.create(path, showWarnings = FALSE, recursive = TRUE)
+      }
       file.copy(
         from = system.file('template', package = "shidashi"),
         to = path, recursive = TRUE, overwrite = TRUE,
         copy.date = TRUE
       )
+      path <- file.path(path, "template")
     }
-    path <- file.path(path, "template")
   }
   normalizePath(path, mustWork = FALSE)
 }

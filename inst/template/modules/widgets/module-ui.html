@@ -37,7 +37,26 @@
 
       <!-- Should be customized code -->
       <div class="container-fluid">
-        {{  dipsaus::actionButtonStyled('asd', 'asda') }}
+
+        <h3>Notification</h3>
+        <p>
+          The new bootstrap notification is supported with more flexible
+          configurations. Try <code class = "inline-all">?show_notification</code> for more details.
+        </p>
+        <div class="row">
+          {{ ui_notification() }}
+        </div>
+        <hr />
+
+        <h3>Progress Bar</h3>
+        <p>
+          Besides native shiny progress bars, we have the new <code class = "inline-all">progressOutput</code> allowing your progress bar to be at any desired locations.
+        </p>
+        <div class="row">
+          {{ ui_progress() }}
+        </div>
+        <hr />
+
         <h3>Info box</h3>
         <p>
           The info box can be used to display statistical snippets,

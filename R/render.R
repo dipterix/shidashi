@@ -2,26 +2,26 @@
 
 #' @export
 template_render <- function(
-  template = template_root(),
+  root_path = template_root(),
   ...,
   launch_browser = TRUE,
   as_job = TRUE,
   test_mode = getOption("shiny.testmode", FALSE)
 ){
-  if(!dir.exists(template)){
-    stop("`template` cannot be found: ", template)
+  if(!dir.exists(root_path)){
+    stop("`root_path` cannot be found: ", root_path)
   }
-  template <- normalizePath(template, mustWork = TRUE)
+  root_path <- normalizePath(root_path, mustWork = TRUE)
 
   if(test_mode){
-    tempdir <- template
+    tempdir <- root_path
   } else {
     tempdir <- tempfile(pattern = "shiny_template_")
     if(dir.exists(tempdir)){
       unlink(tempdir, recursive = TRUE, force = TRUE)
     }
     dir.create(tempdir, showWarnings = FALSE, recursive = TRUE)
-    file.copy(list.files(template, all.files = TRUE, full.names = TRUE, no.. = TRUE), tempdir, recursive = TRUE, overwrite = TRUE)
+    file.copy(list.files(root_path, all.files = TRUE, full.names = TRUE, no.. = TRUE), tempdir, recursive = TRUE, overwrite = TRUE)
   }
 
 
@@ -63,7 +63,7 @@ template_render <- function(
     )
     rstudioapi::jobRunScript(
       path = script, workingDir = tempdir,
-      name = basename(template)
+      name = basename(root_path)
     )
   }
 
@@ -86,6 +86,12 @@ include_view <- function(file, ..., .env = parent.frame(),
   if(!is.list(args)) {
     args <- as.list(.env)
   }
+  # more_args <- list(...)
+  # for(nm in names(more_args)){
+  #   if(nm != ""){
+  #     args[[nm]] <- more_args[[nm]]
+  #   }
+  # }
   argnames <- names(args)
   args <- args[!argnames %in% c("headContent", "suppressDependencies", "filename", "document_", "text_")]
   call <- as.call(c(

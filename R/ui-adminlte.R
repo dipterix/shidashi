@@ -72,7 +72,6 @@ adminlte_sidebar <- function(root_path = template_root(),
   group_icons <- sapply(groups, function(x){ ifelse(length(x$icon) == 1, x$icon, "") })
   group_badge <- sapply(groups, function(x){ ifelse(length(x$badge) == 1, x$badge, "") })
   groups <- names(groups)
-  groups <- gsub(" ", "", groups)
   groups <- groups[groups != ""]
 
   modules <- settings$modules

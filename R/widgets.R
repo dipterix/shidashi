@@ -1,4 +1,21 @@
-
+#' @title Generate 'HTML' tags with 'flex' layout
+#' @param ... for \code{flex_container}, it's elements of \code{flex_item};
+#' for \code{flex_item}, \code{...} are shiny 'HTML' tags
+#' @param style the additional 'CSS' style for containers or inner items
+#' @param direction,wrap,justify,align_box,align_content 'CSS' styles for
+#' 'flex' containers
+#' @param order,align,flex CSS' styles for 'flex' items
+#' @return 'HTML' tags
+#'
+#' @examples
+#'
+#' x <- flex_container(
+#'   style = "position:absolute;height:100vh;top:0;left:0;width:100%",
+#'   flex_item(style = 'background-color:black;'),
+#'   flex_item(style = 'background-color:red;')
+#' )
+#' htmltools::html_print(x)
+#'
 #' @export
 flex_container <- function(
   ...,
@@ -48,6 +65,7 @@ flex_container <- function(
   shiny::div(style = style, ...)
 }
 
+#' @rdname flex_container
 #' @export
 flex_item <- function(
   ..., style = NULL, order = NULL, flex = "1",
@@ -74,6 +92,18 @@ flex_item <- function(
 
 }
 
+#' 'HTML' code to generate small back-to-top button
+#' @description This function is a template function that should be called
+#' in 'HTML' templates before closing the \code{"</body>"} tag.
+#' @param icon the icon for back-to-top button
+#' @param title the expanded menu title
+#' @return 'HTML' tags
+#'
+#' @examples
+#'
+#' back_top_button()
+#' back_top_button("rocket")
+#'
 #' @export
 back_top_button <- function(icon = "chevron-up", title = "Jump to"){
   if(!length(title)){

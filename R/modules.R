@@ -7,7 +7,6 @@ module_info <- function(root_path = template_root(),
   settings <- yaml::read_yaml(file.path(root_path, settings_file))
   # settings <- yaml::read_yaml('modules.yaml')
   groups <- names(settings$groups)
-  groups <- gsub(" ", "", groups)
   groups <- groups[groups != ""]
 
   modules <- settings$modules
@@ -79,6 +78,10 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       re$has_module <- TRUE
       env$ns <- shiny::NS(module_id)
       env$.module_id <- module_id
+      env$module_title <- function(){
+        modules <- module_info()
+        modules$label[modules$id == module_id]
+      }
 
       r_folder <- file.path(module_root, 'R')
       if(dir.exists(r_folder)){

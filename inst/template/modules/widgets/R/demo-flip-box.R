@@ -99,3 +99,40 @@ ui_flip_card <- function(){
     )
   )
 }
+
+
+server_flip_box <- function(input, output, session, ...){
+  # Flip-box
+  output$flip_box_plot <- renderPlot({
+    plot(rnorm(100, 10*sin(seq(0, 2, length.out = 100))), pch = 16,
+         ylab = "Response", las = 1)
+  })
+
+  observeEvent(input$show_progress, {
+    progress <- shiny_progress(title = "Running algorithms", max = 10, shiny_auto_close = TRUE)
+    for(i in 1:10){
+      progress$inc(sprintf("Running part %s", i))
+      Sys.sleep(0.1)
+    }
+    flip("flip_demo_2")
+  })
+
+  observeEvent(input$flip_btn_1, {
+    flip("flip_demo_3")
+  })
+  observeEvent(input$flip_btn_2, {
+    flip("flip_demo_3")
+  })
+
+  output$flip_card_plot <- renderPlot({
+    data(iris)
+    with(iris, {
+      plot(Sepal.Length, Sepal.Width, col = Species, pch = 20)
+    })
+  })
+  output$flip_card_table <- renderTable({
+    data(iris)
+    iris
+  })
+
+}

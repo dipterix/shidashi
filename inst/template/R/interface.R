@@ -38,7 +38,7 @@ body_class <- function(){
     # "sidebar-mini", "sidebar-mini-md", "sidebar-mini-xs"
 
     #--- Hide the navbar-nav-iframe
-    "navbar-iframe-hidden",
+    # "navbar-iframe-hidden",
 
     #--- Start as dark-mode ---
     "dark-mode",

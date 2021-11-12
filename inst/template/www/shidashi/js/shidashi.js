@@ -8,7 +8,7 @@ $(function() {
       return $(scope).find(".shidashi-progress-output");
     },
     renderValue: function(el, value) {
-      const v = parseInt(value.value);
+      let v = parseInt(value.value);
       if(isNaN(v)){ return; }
       if(v < 0){ v = 0; }
       if(v > 100){ v = 100; }
@@ -106,7 +106,8 @@ const default_scroll_opt = {
 
 class shidashi {
 
-  constructor (){
+  constructor (Shiny){
+    this._shiny = Shiny;
     this.$window = $(window);
     this.$document = $(document);
     this.$body = $("body");
@@ -115,6 +116,7 @@ class shidashi {
     this.$iframeWrapper = $(".content-wrapper.iframe-mode");
 
     this._dummy = document.createElement("div");
+    this._dummy2 = document.createElement("div");
     this._localStorage = window.localStorage;
     this._sessionStorage = window.sessionStorage;
     this._keyPrefix = "shidashi-session-";
@@ -139,7 +141,12 @@ class shidashi {
       this._shiny = window.Shiny;
     }
     if(this._shiny && typeof(then) === "function"){
-      then(this._shiny);
+      try{
+        then(this._shiny);
+      }catch(e){
+        console.warn(e);
+      }
+
     }
   }
 
@@ -201,7 +208,6 @@ class shidashi {
   }
 
   _setSharedId(shared_id) {
-    const has_id = typeof(this._shared_id) === "string";
     if(typeof(this._shared_id) !== "string" && typeof(shared_id) === "string"){
       this._shared_id = shared_id;
       this._storage_key = this._keyPrefix + this._shared_id;
@@ -209,7 +215,6 @@ class shidashi {
     return this._storage_key;
   }
   _setPrivateId(private_id) {
-    const has_id = typeof(this._private_id) === "string";
     if(typeof(this._private_id) !== "string"){
       if(typeof(private_id) === "string"){
         this._private_id = private_id;
@@ -253,6 +258,16 @@ class shidashi {
       "detail": message
     });
     this._dummy.dispatchEvent(event);
+    // also send to shiny
+    this.ensureShiny(() => {
+      if(typeof(this._shiny.onInputChange) !== "function"){ return; }
+      this._shiny.onInputChange("@shidashi_event@", {
+        type: type,
+        message: message,
+        shared_id: this._shared_id,
+        private_id: this._private_id
+      });
+    })
   }
   registerListener(type, callback, replace = true) {
     const event_str = "shidashi-event-" + type;
@@ -271,6 +286,41 @@ class shidashi {
     }
   }
 
+  _col2Hex(color){
+    let col = color.trim();
+    if(col.length < 4){ return("#000000"); }
+    if(col[0] === "#"){
+      if(col.length === 7){ return(col); }
+      col = "#"+col[1]+col[1]+col[2]+col[2]+col[3]+col[3]
+      return(col);
+    }
+    let parts = col.match(/rgb[a]{0,1}\((\d+),\s*(\d+),\s*(\d+)[\),]/);
+    delete(parts[0]);
+    for (var i = 1; i <= 3; ++i) {
+      parts[i] = parseInt(parts[i]).toString(16);
+      if (parts[i].length == 1) parts[i] = '0' + parts[i];
+    }
+    col = '#' + parts.join('');
+    return(col);
+  }
+  _reportTheme(mode){
+    if(typeof(mode) !== "string"){
+      const isDark = this.isDarkMode();
+      mode = isDark ? "dark": "light";
+    }
+    const $card_body = $(".card, .info-box");
+    let bgcolor = this._col2Hex(this.$body.css("background-color"));
+    if($card_body.length){
+      bgcolor = this._col2Hex($($card_body[0]).css("background-color"));
+    } else if (mode === "dark"){
+      bgcolor = "#343a40";
+    }
+    this.broadcastEvent("theme.changed", {
+      mode: mode,
+      background: bgcolor,
+      foreground: this._col2Hex(this.$body.css("color"))
+    });
+  }
   // theme-mode
   asLightMode(){
     this.$body.removeClass("dark-mode");
@@ -283,15 +333,17 @@ class shidashi {
         this._keyTheme, "light"
       );
       const $iframes = this.$iframeWrapper.find("iframe");
-      $iframes.each((i, iframe) => {
+      $iframes.each((_, iframe) => {
         if(iframe.contentWindow.shidashi){
           iframe.contentWindow.shidashi.asLightMode();
         }
       });
     }
+    this._reportTheme("light");
   }
 
   asDarkMode(){
+
     this.$body.addClass("dark-mode");
     this.$aside.removeClass("sidebar-light-primary")
       .addClass("sidebar-dark-primary");
@@ -302,12 +354,13 @@ class shidashi {
         this._keyTheme, "dark"
       );
       const $iframes = this.$iframeWrapper.find("iframe");
-      $iframes.each((i, iframe) => {
+      $iframes.each((_, iframe) => {
         if(iframe.contentWindow.shidashi){
           iframe.contentWindow.shidashi.asDarkMode();
         }
       });
     }
+    this._reportTheme("dark");
   }
 
   // Trigger actions
@@ -324,8 +377,8 @@ class shidashi {
         this.triggerResize();
       }, timeout);
     } else {
-      // this.$window.trigger("resize");
-      this._shiny.unbindAll(this._dummy);
+      this.$window.trigger("resize");
+      this._shiny.unbindAll(this._dummy2);
     }
 
   }
@@ -462,13 +515,14 @@ class shidashi {
     }
 
     let activated = false;
-    existing_items.each((i, item) => {
+    existing_items.each((_, item) => {
       const link = $(item).children(".nav-link");
       if(link.text() === title){
-        link.addClass("active");
+        link.click();
         activated = true;
       } else {
-        link.removeClass("active");
+        // link.removeClass("active");
+        // link.attr("aria-selected", "false");
       }
     });
 
@@ -507,6 +561,23 @@ class shidashi {
 
   clearNotification(selector) {
     $(selector || ".toast").toast("hide");
+  }
+
+  // set progressOutput
+  setProgress(inputId, value, max = 100, description = null){
+    if(typeof(value) !== "number" || isNaN(value)){ return; }
+    const el = document.getElementById(inputId);
+    if(!el){ return; }
+
+    let v = parseInt(value / max * 100);
+    if(v < 0){ v = 0; }
+    if(v > 100){ v = 100; }
+    $(el).find(".progress-bar").css("width", `${v}%`);
+    if(typeof(description) === "string"){
+      $(el)
+        .find(".progress-description.progress-message")
+        .text(description);
+    }
   }
 
   // theme-mode
@@ -580,7 +651,7 @@ class shidashi {
 
     // set theme first
     const theme = this._sessionStorage.getItem(this._keyTheme);
-    if( theme === "light"){
+    if( theme === "light" ){
       this.asLightMode();
     } else if( theme === "dark"){
       this.asDarkMode();
@@ -649,6 +720,19 @@ class shidashi {
       this.triggerResize(50);
     });
 
+    // --------------- Notification system -----------
+    this.$body.on('show.bs.toast', (evt)=>{
+      this.ensureShiny(() => {
+        this._shiny.bindAll($(evt.target));
+      });
+    });
+    this.$body.on('hide.bs.toast', (evt)=>{
+      this.ensureShiny(() => {
+        this._shiny.unbindAll($(evt.target));
+      });
+    });
+
+    // --------------- Fancy scroll ---------------
     this.makeFancyScroll(".fancy-scroll-y, .overflow-y-auto", {
         overflowBehavior : {
             x : "hidden",
@@ -827,6 +911,11 @@ class shidashi {
       this.clearNotification(params.selector);
     });
 
+    this.shinyHandler("set_progress", (params) => {
+      this.setProgress(params.outputId, params.value,
+        params.max || 100, params.description);
+    })
+
     this.shinyHandler("make_scroll_fancy", (params) => {
       if(!params.selector || params.selector === ''){ return; }
       this.makeFancyScroll(
@@ -840,10 +929,15 @@ class shidashi {
       this.broadcastSessionData(params.shared_id, params.private_id);
     });
 
+    this.shinyHandler("get_theme", (params) => {
+      this._reportTheme();
+    });
+
   }
 }
 
-window.shidashi = new shidashi();
+window.shidashi = new shidashi(window.Shiny);
+
 $(document).ready(() => {
   window.shidashi._finalize_initialization();
   window.shidashi._register_shiny(window.Shiny);

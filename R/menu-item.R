@@ -1,4 +1,19 @@
 
+#' Convert characters, shiny icons into 'fontawesome' 4
+#' @param icon character or \code{\link[shiny]{icon}}
+#' @param class icon class; change this when you are using 'fontawesome'
+#' professional version. The choices are \code{'fa'} (compatible),
+#' \code{'fas'} (strong), \code{'far'} (regular), \code{'fal'} (light),
+#' and \code{'fad'} ('duotone').
+#' @return 'HTML' tag
+#' @examples
+#'
+#' as_icon("bookmark", class = "far")
+#' as_icon("bookmark", class = "fas")
+#'
+#' # no icon
+#' as_icon(NULL)
+#'
 #' @export
 as_icon <- function(icon = NULL, class = "fas"){
   class <- combine_class(class)
@@ -12,8 +27,8 @@ as_icon <- function(icon = NULL, class = "fas"){
       icon <- shiny::icon(icon, class = class)
     }
     # remove class fa
-    if ( class != "fa" ){
-      remove_class(icon$attribs$class, "fa")
+    if ( !"fa" %in% class ){
+      icon$attribs$class <- remove_class(icon$attribs$class, "fa")
     }
   }
 
@@ -21,13 +36,34 @@ as_icon <- function(icon = NULL, class = "fas"){
   icon
 }
 
- #' @export
+#' @title Generates badge icons
+#' @description Usually used along with \code{\link{card}},
+#' \code{\link{card2}}, and \code{\link{card_tabset}}. See \code{tools}
+#' parameters in these functions accordingly.
+#' @param badge characters, \code{"shiny.tag"} object or \code{NULL}
+#' @return 'HTML' tags
+#' @details When \code{badge} is \code{NULL} or empty, then \code{as_badge}
+#' returns empty strings. When \code{badge} is a \code{"shiny.tag"} object,
+#' then 'HTML' class \code{'right'} and \code{'badge'} will be appended.
+#' When \code{badge} is a string, it should follow the syntax of
+#' \code{"message|class"}. The text before \code{"|"} will be the badge
+#' message, and the text after the \code{"|"} becomes the class string.
+#' @examples
+#'
+#' # Basic usage
+#' as_badge("New")
+#'
+#' # Add class `bg-red` and `no-padding`
+#' as_badge("New|bg-red no-padding")
+#'
+#'
+#' @export
 as_badge <- function(badge = NULL){
-  if(is.null(badge) || nchar(badge) == 0){
+  if(!length(badge) || nchar(badge) == 0){
     badge <- ''
   } else {
     if(inherits(badge, "shiny.tag")) {
-      badge$attribs$class <- c(badge$attribs$class, " right badge")
+      badge$attribs$class <- combine_class(badge$attribs$class, "right badge")
     } else {
       badge <- strsplit(badge, "\\|")[[1]]
       if(length(badge) > 1){
@@ -40,7 +76,6 @@ as_badge <- function(badge = NULL){
   badge
 }
 
-#' @export
 menu_item <- function(
   text, href = "#", icon = NULL, active = FALSE, badge = NULL,
   target = "_blank", root_path = template_root()){
@@ -70,7 +105,6 @@ menu_item <- function(
     target = target, module = module)
 }
 
-#' @export
 menu_item_dropdown <- function(
   text, ..., .list = NULL, icon = NULL, active = FALSE,
   badge = NULL, root_path = template_root()){

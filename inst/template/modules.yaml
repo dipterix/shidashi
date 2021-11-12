@@ -1,13 +1,18 @@
 groups:
-  yaya:
-    icon: times
-    badge: New|badge-danger
+  "Show Case":
+    icon: "tachometer-alt"
 modules:
+  demo:
+    order: 0.0
+    icon: "circle"
+    label: "Dashboard"
+    group: "Show Case"
+    badge: New|bg-red
   card:
     order: 1.0
     icon: "columns"
     label: "Cards"
   widgets:
     order: 2.0
-    icon: th
+    icon: "th"
     label: "Widgets"

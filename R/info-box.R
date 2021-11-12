@@ -26,16 +26,44 @@ info_box <- function(..., icon = "envelope", class = "",
   set_attr_call(re, call)
 }
 
-
+#' @title An 'HTML' container that can flip
+#' @param inputId element 'HTML' id; must be speficied if \code{active_on} is
+#' not \code{'click'}
+#' @param front 'HTML' elements to show in the front
+#' @param back 'HTML' elements to show when the box is flipped
+#' @param active_on the condition when a box shoould be flipped; choices are
+#' \code{'click'}: flip when double-click on both sides; \code{'click-front'}:
+#' only flip when the front face is double-clicked; \code{'manual'}: manually
+#' flip in \code{R} code (see \code{{flip(inputId)}} function)
+#' @param session shiny session; default is current active domain
+#' @param class 'HTML' class
+#' @return \code{flip_box} returns 'HTML' tags; \code{flip} should be called
+#' from shiny session, and returns nothing
+#' @examples
+#'
+#' # More examples are available in demo
+#'
+#' library(shiny)
+#' library(shidashi)
+#' session <- MockShinySession$new()
+#'
+#' flip_box(front = info_box("Side A"),
+#'          back = info_box("Side B"),
+#'          inputId = 'flip_box1')
+#'
+#' if(interactive()) {
+#'   flip('flip_box1', session = session)
+#' }
+#'
 #' @export
-flip_box <- function(front, back, active_on = c("click", "click-front", "manual"), inputId = NULL){
+flip_box <- function(front, back, active_on = c("click", "click-front", "manual"), inputId = NULL, class = NULL){
   call <- match.call()
   active_on <- match.arg(active_on)
   if(active_on != 'click' && length(inputId) != 1){
     stop("`inputId` must be specified if `active_on` is not 'click'")
   }
   set_attr_call(shiny::div(
-    class = "flip-box",
+    class = combine_class("flip-box", class),
     "data-toggle" = active_on,
     id = inputId,
     shiny::div(
@@ -52,6 +80,7 @@ flip_box <- function(front, back, active_on = c("click", "click-front", "manual"
   ), call)
 }
 
+#' @rdname flip_box
 #' @export
 flip <- function(inputId, session = shiny::getDefaultReactiveDomain()){
   session$sendCustomMessage("shidashi.box_flip", list(

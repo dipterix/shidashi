@@ -241,23 +241,28 @@ input:checked + .slider::before {
 /** General rules: dimensions **/
 @for $factor from 1 through 12 {
   .row .col-sm-#{$factor}>.shiny-bound-input {
-    @include fill-width;
+    @include fill-width();
   }
 }
 
+.fill {
+  @include fill-width();
+  @include fill-height();
+}
+.fill-width { @include fill-width(); }
+.fill-height { @include fill-height(); }
+.fill-min {
+  min-width: 100%;
+  min-height: 100%;
+}
+.fill-min-height { min-height: 100%; }
+.fill-min-width { min-width: 100%; }
 
 @for $factor from 0 through 20 {
   $size: $factor * 50;
   .min-height-#{$size} { @include min-height($size: $size); }
   .max-height-#{$size} { @include max-height($size: $size); }
   .height-#{$size} { @include height($size: $size); }
-}
-
-.fill-width { @include fill-width; }
-.fill-height { @include fill-height; }
-.fill {
-  @include fill-width;
-  @include fill-height;
 }
 
 
@@ -294,6 +299,10 @@ input:checked + .slider::before {
 
   &:hover {
     @include overflow(auto);
+  }
+
+  & .os-content {
+    min-height: 100%;
   }
 }
 
@@ -361,9 +370,23 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
 }
 
 .content-wrapper.iframe-mode {
+  max-height: calc(-96px + 100vh);
+
+  &>.tab-content {
+    min-height: calc(-97px + 100vh);
+
+    & .tab-empty,
+    & .tab-pane,
+    & .tab-pane > iframe {
+      min-height: calc(-97px + 100vh);
+    }
+  }
+}
+
+body.navbar-iframe-hidden.content-wrapper.iframe-mode {
   max-height: calc(-56px + 100vh);
 
-  & .tab-content {
+  &>.tab-content {
     min-height: calc(-57px + 100vh);
 
     & .tab-empty,
@@ -373,6 +396,7 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
     }
   }
 }
+
 body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
   max-height: 100vh;
 }
@@ -512,6 +536,13 @@ body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
       transform: rotateY(180deg);
     }
   }
+
+  &.fill .flip-box-inner,
+  &.fill .flip-box-front {
+    @include fill-height();
+    @include fill-width();
+  }
+
   &.active {
     z-index: 1;
   }

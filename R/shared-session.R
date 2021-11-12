@@ -64,11 +64,73 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
 }
 
+#' @name javascript-tunnel
+#' @title The 'JavaScript' tunnel
+#' @param session shiny reactive domain
+#' @param shared_id the shared id of the session, usually automatically set
+#' @param shared_inputs the input names to share to/from other sessions
+#' @param event_data a reactive value list returned by
+#' \code{register_session_events}
+#' @param type event type; see 'Details'
+#' @param default default value if \code{type} is missing
+#' @return \code{register_session_id} returns a list of function to control
+#' "sharing" inputs with other shiny sessions with the same \code{shared_id}.
+#' \code{register_session_events} returns a reactive value list that reflects
+#' the session state.
+#' \code{get_jsevent} returns events fired by
+#' \code{shidashi.broadcastEvent} in 'JavaScript'.
+#' \code{get_theme} returns a list of theme, foreground, and background color.
+#'
+#' @details The \code{register_session_id} should be used in the module
+#' server function. It registers a \code{shared_id} and a \code{private_id}
+#' to the session. The sessions with the same \code{shared_id} can synchronize
+#' their inputs, specified by \code{shared_inputs} even on different browser
+#' tabs.
+#'
+#' \code{register_session_events} will read the session events from 'JavaScript'
+#' and passively update these information. Any the event fired by
+#' \code{shidashi.broadcastEvent} in 'JavaScript' will be available as
+#' reactive value. \code{get_jsevent} provides a convenient way to read
+#' these events provided the right
+#' event types. \code{get_theme} is a special \code{get_jsevent} that with
+#' event type \code{"theme.changed"}.
+#'
+#' Function \code{register_session_id} and \code{register_session_events}
+#' should be called at the beginning of server functions. They can be
+#' called multiple times safely. Function
+#' \code{get_jsevent} and \code{get_theme} should be called in reactive
+#' contexts (such as \code{\link[shiny]{observe}},
+#' \code{\link[shiny]{observeEvent}}).
+#'
+#' @examples
+#'
+#' # shiny server function
+#'
+#' library(shiny)
+#' server <- function(input, output, session){
+#'   sync_tools <- register_session_id(session = session)
+#'   event_data <- register_session_events(session = session)
+#'
+#'   # if you want to enable syncing. They are suspended by default
+#'   sync_tools$enable_broadcast()
+#'   sync_tools$enable_sync()
+#'
+#'   # get_theme should be called within reactive context
+#'   output$plot <- renderPlot({
+#'     theme <- get_theme(event_data)
+#'     mar(bg = theme$background, fg = theme$foreground)
+#'     plot(1:10)
+#'   })
+#'
+#' }
+#'
+NULL
 
+#' @rdname javascript-tunnel
 #' @export
 register_session_id <- function(
   session = shiny::getDefaultReactiveDomain(),
-  shared_id = NULL, env = parent.frame(),
+  shared_id = NULL,
   shared_inputs = NA){
 
   if(length(shared_id)){
@@ -83,7 +145,7 @@ register_session_id <- function(
       query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
       shared_id <- query_list$query$shared_id
       shared_id <- tolower(shared_id)
-      if(is.null(shared_id) || grepl("[^a-z0-9_]", shared_id)){
+      if(!length(shared_id) || grepl("[^a-z0-9_]", shared_id)){
         shared_id <- rand_string(length = 26)
         shared_id <- tolower(shared_id)
       }
@@ -160,6 +222,68 @@ register_session_id <- function(
 
   res
 }
+
+#' @rdname javascript-tunnel
+#' @export
+register_session_events <- function(session = shiny::getDefaultReactiveDomain()){
+  if(is.environment(session)){
+    root_session <- session$rootScope()
+
+    event_data <- root_session$cache$get("shidashi_event_data", NULL)
+    if(!shiny::is.reactivevalues(event_data)){
+      event_data <- shiny::reactiveValues()
+      root_session$cache$set("shidashi_event_data", event_data)
+    }
+
+    observer <- root_session$cache$get("shidashi_event_handler", NULL)
+
+    if(is.null(observer)){
+      observer <- shiny::observeEvent({
+        root_session$input[["@shidashi_event@"]]
+      }, {
+        event <- root_session$input[["@shidashi_event@"]]
+        if(is.list(event) && length(event$type) == 1 && is.character(event$type) ){
+          event_data[[event$type]] <- event$message
+        }
+      }, domain = root_session)
+
+      session$sendCustomMessage("shidashi.get_theme", list())
+
+    }
+  } else {
+    event_data <- list()
+  }
+  event_data
+}
+
+
+#' @rdname javascript-tunnel
+#' @export
+get_theme <- function(event_data, session = shiny::getDefaultReactiveDomain()){
+  get_jsevent(event_data, "theme.changed", list(
+    theme = "light",
+    background = "#FFFFFF",
+    foreground = "#000000"
+  ), session = session)
+}
+
+#' @rdname javascript-tunnel
+#' @export
+get_jsevent <- function(event_data, type, default = NULL,
+                        session = shiny::getDefaultReactiveDomain()){
+  if(shiny::is.reactivevalues(event_data)){
+    shiny::withReactiveDomain(domain = session, {
+      if(is.list(event_data[[type]])){
+        return(event_data[[type]])
+      } else {
+        return(default)
+      }
+    })
+  } else {
+    return(default)
+  }
+}
+
 
 
 
