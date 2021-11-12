@@ -383,7 +383,7 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
   }
 }
 
-body.navbar-iframe-hidden.content-wrapper.iframe-mode {
+body.navbar-iframe-hidden .content-wrapper.iframe-mode {
   max-height: calc(-56px + 100vh);
 
   &>.tab-content {

@@ -44,5 +44,5 @@ renderProgress(expr, env = parent.frame(), quoted = FALSE, outputArgs = list())
 }
 \description{
 For detailed usage, see demo application by
-running \code{template_render()}.
+running \code{render()}.
 }

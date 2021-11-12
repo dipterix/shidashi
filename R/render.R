@@ -1,7 +1,27 @@
 
-
+#' Render a 'shidashi' project
+#' @param root_path the project path, default is the demo folder from
+#' \code{template_root()}
+#' @param ... additional parameters passed to \code{\link[shiny]{runApp}},
+#' such as \code{host}, \code{port}
+#' @param launch_browser whether to launch browser; default is \code{TRUE}
+#' @param as_job whether to run as 'RStudio' jobs; this options is only
+#' available when 'RStudio' is available
+#' @param test_mode whether to test the project; this options is helpful when
+#' you want to debug the project without relaunching shiny applications
+#' @return This functions runs a 'shiny' application, and returns the job id
+#' if 'RStudio' is available.
+#'
+#' @examples
+#'
+#' template_root()
+#'
+#' if(interactive()){
+#'   render()
+#' }
+#'
 #' @export
-template_render <- function(
+render <- function(
   root_path = template_root(),
   ...,
   launch_browser = TRUE,
@@ -69,6 +89,25 @@ template_render <- function(
 
 }
 
+#' Template function to include 'snippets' in the view folder
+#' @description Store the reusing 'HTML' segments in the
+#' \code{views} folder. This function should be used in the
+#' \code{'index.html'} template
+#' @param file files in the template \code{views} folder
+#' @param ... ignored
+#' @param .env,.root_path internally used
+#' @return rendered 'HTML' segments
+#' @examples
+#' \dontrun{
+#' # in your 'index.html' file
+#' <html>
+#' <header>
+#' {{ shidashi::include_view("header.html") }}
+#' </header>
+#'
+#' {{ shidashi::include_view("footer.html") }}
+#' </html>
+#' }
 #' @export
 include_view <- function(file, ..., .env = parent.frame(),
                          .root_path = template_root()){

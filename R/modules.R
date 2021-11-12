@@ -1,6 +1,51 @@
 #' @title Obtain the module information
 #' @param root_path the root path of the website project
 #' @param settings_file the settings file containing the module information
+#' @param request 'HTTP' request string
+#' @param env environment to load module variables into
+#' @details The module files are stored in \code{modules/} folder in your
+#' project. The folder names are the module id. Within each folder,
+#' there should be one \code{"server.R"}, \code{R/}, and a
+#' \code{"module-ui.html"}.
+#'
+#' The \code{R/} folder stores R code files that generate variables,
+#' which will be available to the other two files. These variables, along
+#' with some built-ins, will be used to render \code{"module-ui.html"}.
+#' The built-in functions are
+#' \describe{
+#' \item{ns}{shiny name-space function; should be used to generate the id for
+#' inputs and outputs. This strategy avoids conflict id effectively.}
+#' \item{.module_id}{a variable of the module id}
+#' \item{module_title}{a function that returns the module label}
+#' }
+#'
+#' The \code{"server.R"} has access to all the code in \code{R/} as well.
+#' Therefore it is highly recommended that you write each 'UI' component
+#' side-by-side with their corresponding server functions and call
+#' these server functions in \code{"server.R"}.
+#'
+#' @examples
+#'
+#' library(shiny)
+#' module_info()
+#'
+#' # load master module
+#' load_module()
+#'
+#' # load specific module
+#' module_data <- load_module(
+#'   request = list(QUERY_STRING = "/?module=card"))
+#' env <- module_data$environment
+#'
+#' # get module title
+#' env$module_title()
+#'
+#' # generate module-specific shiny id
+#' env$ns("input1")
+#'
+#' # generate part of the UI
+#' env$ui_card2()
+#'
 #' @export
 module_info <- function(root_path = template_root(),
                         settings_file = "modules.yaml"){
@@ -121,6 +166,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
   re
 }
 
+#' @rdname module_info
 #' @export
 load_module <- function(
   root_path = template_root(),

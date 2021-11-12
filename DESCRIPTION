@@ -30,5 +30,7 @@ Imports:
     htmltools (>= 0.5.2)
 Suggests: 
     logger (>= 0.2.1),
-    rstudioapi (>= 0.13)
+    rstudioapi (>= 0.13),
+    ggplot2,
+    ggExtra
 URL: http://dipterix.org/shidashi

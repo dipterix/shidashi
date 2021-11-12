@@ -2073,13 +2073,13 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
   min-height: calc(-97px + 100vh);
 }
 
-body.navbar-iframe-hidden.content-wrapper.iframe-mode {
+body.navbar-iframe-hidden .content-wrapper.iframe-mode {
   max-height: calc(-56px + 100vh);
 }
-body.navbar-iframe-hidden.content-wrapper.iframe-mode > .tab-content {
+body.navbar-iframe-hidden .content-wrapper.iframe-mode > .tab-content {
   min-height: calc(-57px + 100vh);
 }
-body.navbar-iframe-hidden.content-wrapper.iframe-mode > .tab-content .tab-empty, body.navbar-iframe-hidden.content-wrapper.iframe-mode > .tab-content .tab-pane, body.navbar-iframe-hidden.content-wrapper.iframe-mode > .tab-content .tab-pane > iframe {
+body.navbar-iframe-hidden .content-wrapper.iframe-mode > .tab-content .tab-empty, body.navbar-iframe-hidden .content-wrapper.iframe-mode > .tab-content .tab-pane, body.navbar-iframe-hidden .content-wrapper.iframe-mode > .tab-content .tab-pane > iframe {
   min-height: calc(-57px + 100vh);
 }
 

@@ -1,5 +1,29 @@
 
-
+#' Generates 'HTML' info box
+#' @param ... box content
+#' @param icon the box icon; default is \code{"envelope"}, can be hidden by
+#' specifying \code{NULL}
+#' @param class class of the box container
+#' @param class_icon class of the icon
+#' @param class_content class of the box body
+#' @param root_path see \code{\link{template_root}}
+#' @return 'HTML' tags
+#' @examples
+#'
+#' library(shiny)
+#' library(shidashi)
+#'
+#' info_box("Message", icon = "cogs")
+#'
+#' info_box(
+#'   icon = "thumbs-up",
+#'   span(class = "info-box-text", "Likes"),
+#'   span(class = "info-box-number", "12,320"),
+#'   class_icon = "bg-red"
+#' )
+#'
+#' info_box("No icons", icon = NULL)
+#'
 #' @export
 info_box <- function(..., icon = "envelope", class = "",
                      class_icon = "bg-info", class_content = "",

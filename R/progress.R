@@ -182,7 +182,7 @@ shiny_progress <- function (
 
 #' Progress bar in shiny dashboard
 #' @description For detailed usage, see demo application by
-#' running \code{template_render()}.
+#' running \code{render()}.
 #' @param outputId the element id of the progress
 #' @param expr R expression that should return a named list of \code{value} and
 #' \code{description}

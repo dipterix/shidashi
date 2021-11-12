@@ -89,6 +89,7 @@ $(function() {
 const default_scroll_opt = {
   autoUpdate           : null,
   autoUpdateInterval   : 33,
+  sizeAutoCapable      : true,
   scrollbars : {
     visibility       : "auto",
     autoHide         : "move",
@@ -126,7 +127,7 @@ class shidashi {
     this._storageDuration = 1000 * 60 * 60 * 24; // 1000 days
     this.sessionData = {};
     this.scroller = this.makeFancyScroll(
-      "body",
+      "body:not(.overflow-hidden)",
       {
         overflowBehavior : {
             x : "hidden",
@@ -521,8 +522,8 @@ class shidashi {
         link.click();
         activated = true;
       } else {
-        // link.removeClass("active");
-        // link.attr("aria-selected", "false");
+        link.removeClass("active");
+        link.attr("aria-selected", "false");
       }
     });
 
@@ -733,7 +734,7 @@ class shidashi {
     });
 
     // --------------- Fancy scroll ---------------
-    this.makeFancyScroll(".fancy-scroll-y, .overflow-y-auto", {
+    this.makeFancyScroll(".fancy-scroll-y:not(.overflow-hidden), .overflow-y-auto", {
         overflowBehavior : {
             x : "hidden",
             y : "scroll"
