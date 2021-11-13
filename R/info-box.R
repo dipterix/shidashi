@@ -69,15 +69,14 @@ info_box <- function(..., icon = "envelope", class = "",
 #'
 #' library(shiny)
 #' library(shidashi)
+#'
 #' session <- MockShinySession$new()
 #'
 #' flip_box(front = info_box("Side A"),
 #'          back = info_box("Side B"),
 #'          inputId = 'flip_box1')
 #'
-#' if(interactive()) {
-#'   flip('flip_box1', session = session)
-#' }
+#' flip('flip_box1', session = session)
 #'
 #' @export
 flip_box <- function(front, back, active_on = c("click", "click-front", "manual"), inputId = NULL, class = NULL){

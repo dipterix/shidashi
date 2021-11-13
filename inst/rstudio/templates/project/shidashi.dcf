@@ -1,7 +1,7 @@
 Binding: create_project
 Title: Shidashi Shiny Template
 Caption: Create a Shidashi Project from Github Template
-OpenFiles: .Rprofiles, debug.yaml, start.R
+OpenFiles: start.R
 Icon: icon.png
 
 Parameter: user

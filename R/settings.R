@@ -38,6 +38,14 @@ template_settings_get <- template_settings$get
 
 #' @rdname template_settings
 #' @export
+download_builtin_templates <- function(){
+  path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3")
+  unlink(path, recursive = TRUE, force = TRUE)
+  create_project(path, user = "dipterix", theme = "AdminLTE3")
+}
+
+#' @rdname template_settings
+#' @export
 template_root <- function(){
   path <- template_settings$get(
     name = 'root_path',
@@ -45,19 +53,23 @@ template_root <- function(){
   )
   if(!length(path)) {
     if(template_settings$get("dev.debug", FALSE)){
-      path <- 'inst/template/'
+      path <- 'inst/buildin-templates/AdminLTE3/'
     } else {
-      path <- R_user_dir('shidashi', which = "data")
-      if(!dir.exists(file.path(path, "template"))){
-        dir.create(path, showWarnings = FALSE, recursive = TRUE)
+      path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3")
+      if(isTRUE(template_settings$get("update_defaults", FALSE))){
+        download_builtin_templates()
+        template_settings$set("update_defaults" = FALSE)
       }
-      file.copy(
-        from = system.file('template', package = "shidashi"),
-        to = path, recursive = TRUE, overwrite = TRUE,
-        copy.date = TRUE
-      )
-      path <- file.path(path, "template")
+      if(!dir.exists(path)){
+        stop(
+          "No template found. Please set correct `root_path` if you haven't done so via:\n",
+          "  template_settings_set(root_path = '...')\n\n",
+          "Alternatively, you could download the builtin demo via:\n",
+          "  download_builtin_templates()"
+        )
+      }
     }
+
   }
   normalizePath(path, mustWork = FALSE)
 }

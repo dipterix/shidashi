@@ -47,6 +47,7 @@ To insert, remove, or active card panels, see
 
 library(shiny)
 library(shidashi)
+
 # Fake session to operate on card_tabset without shiny
 session <- MockShinySession$new()
 
@@ -86,6 +87,7 @@ card_tabset_remove(
   title = "Tab 2",
   session = session
 )
+
 
 
 }

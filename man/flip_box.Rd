@@ -45,14 +45,13 @@ An 'HTML' container that can flip
 
 library(shiny)
 library(shidashi)
+
 session <- MockShinySession$new()
 
 flip_box(front = info_box("Side A"),
          back = info_box("Side B"),
          inputId = 'flip_box1')
 
-if(interactive()) {
-  flip('flip_box1', session = session)
-}
+flip('flip_box1', session = session)
 
 }

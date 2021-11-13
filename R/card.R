@@ -27,8 +27,6 @@
 #' @return 'HTML' tags
 #'
 #' @examples
-#'
-#'
 #' library(shiny)
 #' library(shidashi)
 #'
@@ -106,7 +104,6 @@
 #'   ),
 #'   class_body = "height-300"
 #' )
-#'
 #'
 #' @export
 card <- function(

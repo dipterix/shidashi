@@ -45,6 +45,7 @@ some situations. Please use it at your own risk.
 
 library(shiny)
 library(shidashi)
+
 accordion(
   id = "input-set",
   accordion_item(

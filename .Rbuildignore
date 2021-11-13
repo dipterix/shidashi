@@ -2,9 +2,10 @@
 ^\.Rproj\.user$
 node_modules$
 ^LICENSE\.md$
-^inst/template/www/AdminLTE/js/\.eslintrc\.json$
 ^\.github$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
 ^adhoc$
+^tools/buildin-templates/\.git$
+^tools/buildin-templates/AdminLTE3/www/AdminLTE/js/\.eslintrc\.json$

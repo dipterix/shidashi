@@ -5,6 +5,7 @@
 \alias{template_settings}
 \alias{template_settings_set}
 \alias{template_settings_get}
+\alias{download_builtin_templates}
 \alias{template_root}
 \title{Configure template options that are shared across the sessions}
 \format{
@@ -16,6 +17,8 @@ template_settings
 template_settings_set(...)
 
 template_settings_get(name, default = NULL)
+
+download_builtin_templates()
 
 template_root()
 }

@@ -79,6 +79,7 @@ accordion_item <- function(
 #'
 #' library(shiny)
 #' library(shidashi)
+#'
 #' accordion(
 #'   id = "input-set",
 #'   accordion_item(

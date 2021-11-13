@@ -101,8 +101,6 @@ and \code{"toggleMaximize"}}
 Card-like 'HTML' element
 }
 \examples{
-
-
 library(shiny)
 library(shidashi)
 
@@ -180,6 +178,5 @@ card2(
   ),
   class_body = "height-300"
 )
-
 
 }

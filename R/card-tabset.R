@@ -45,6 +45,7 @@ card_tabset_content <- function(id_tabset, index, active, ...){
 #'
 #' library(shiny)
 #' library(shidashi)
+#'
 #' # Fake session to operate on card_tabset without shiny
 #' session <- MockShinySession$new()
 #'
@@ -84,6 +85,7 @@ card_tabset_content <- function(id_tabset, index, active, ...){
 #'   title = "Tab 2",
 #'   session = session
 #' )
+#'
 #'
 #'
 #' @export
