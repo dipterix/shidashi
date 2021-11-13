@@ -172,210 +172,31 @@ these server functions in <code>"server.R"</code>.</p>
     <pre class="examples"><span class='r-in'></span>
 <span class='r-in'><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://shiny.rstudio.com/'>shiny</a></span><span class='op'>)</span></span>
 <span class='r-in'><span class='fu'>module_info</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>        id order     group     label    icon      badge              url</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> 1    demo     0 Show Case Dashboard  circle New|bg-red    /?module=demo</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> 2    card     1      &lt;NA&gt;     Cards columns               /?module=card</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> 3 widgets     2      &lt;NA&gt;   Widgets      th            /?module=widgets</span>
+<span class='r-wrn co'><span class='r-pr'>#&gt;</span> <span class='warning'>Warning: </span>cannot open file '/home/runner/.local/share/R/shidashi/template/modules.yaml': No such file or directory</span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in file(file, "rt", encoding = fileEncoding):</span> cannot open the connection</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># load master module</span></span>
 <span class='r-in'><span class='fu'>load_module</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $environment</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x5607b40536a8&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $has_module</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] FALSE</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $root_path</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "/home/runner/.local/share/R/shidashi/template"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $template_path</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "/home/runner/.local/share/R/shidashi/template/index.html"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $module</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $module$id</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> NULL</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $module$server</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> function (input, output, session, ...) </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> {</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;bytecode: 0x5607b57cf540&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x5607b57d1850&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> $module$template_path</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> NULL</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in normalizePath(root_path, mustWork = TRUE):</span> path[1]="/home/runner/.local/share/R/shidashi/template": No such file or directory</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># load specific module</span></span>
 <span class='r-in'><span class='va'>module_data</span> <span class='op'>&lt;-</span> <span class='fu'>load_module</span><span class='op'>(</span></span>
 <span class='r-in'>  request <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>QUERY_STRING <span class='op'>=</span> <span class='st'>"/?module=card"</span><span class='op'>)</span><span class='op'>)</span></span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in normalizePath(root_path, mustWork = TRUE):</span> path[1]="/home/runner/.local/share/R/shidashi/template": No such file or directory</span>
 <span class='r-in'><span class='va'>env</span> <span class='op'>&lt;-</span> <span class='va'>module_data</span><span class='op'>$</span><span class='va'>environment</span></span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in eval(expr, envir, enclos):</span> object 'module_data' not found</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># get module title</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>module_title</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "Cards"</span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in eval(expr, envir, enclos):</span> object 'env' not found</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># generate module-specific shiny id</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>ns</span><span class='op'>(</span><span class='st'>"input1"</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "card-input1"</span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in eval(expr, envir, enclos):</span> object 'env' not found</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># generate part of the UI</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>ui_card2</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;div class="col-sm-4"&gt;&lt;div class="card card-single direct-chat  "&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;h3 class="card-title"&gt;Card2 Example&lt;/h3&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;!-- Buttons, labels, and many other things can be placed here! --&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="card-tools"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;a type="button" href="https://github.com/dipterix" target="_blank" class="btn btn-tool" data-card-widget="link"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;i class="fa-external-link-alt fas" role="presentation" aria-label="external-link-alt icon"&gt;&lt;/i&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;a type="button" href="#" target="_self" class="btn btn-tool" data-card-widget="refresh"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;i class="fa-sync-alt fas" role="presentation" aria-label="sync-alt icon"&gt;&lt;/i&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;a type="button" href="#" target="_self" class="btn btn-tool" data-card-widget="collapse"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;i class="fa-minus fas" role="presentation" aria-label="minus icon"&gt;&lt;/i&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;a type="button" href="#" target="_self" class="btn btn-tool" data-card-widget="maximize"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;i class="fa-expand fas" role="presentation" aria-label="expand icon"&gt;&lt;/i&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;button type="button" class="btn btn-tool card2-switch" title="Configurations" data-widget="chat-pane-toggle"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;i class="fas fa-ellipsis-v"&gt;&lt;/i&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/button&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="card-body card2-body height-300" style=";"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="direct-chat-messages fill no-padding overflow-hidden"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div id="card-card2_plot" class="shiny-plot-output" style="width:100%;height:100%;"&gt;&lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="direct-chat-contacts fill padding-20 opacity-07"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div class="row"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="col-sm-6"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div class="form-group shiny-input-container"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;label class="control-label" id="card-card2_plot_title-label" for="card-card2_plot_title"&gt;Plot title&lt;/label&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;input id="card-card2_plot_title" type="text" class="form-control" value=""/&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="col-sm-6"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div class="form-group shiny-input-container"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;label class="control-label" id="card-card2_plot_npts-label" for="card-card2_plot_npts"&gt;# of points&lt;/label&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;input class="js-range-slider" id="card-card2_plot_npts" data-skin="shiny" data-min="1" data-max="100" data-from="10" data-step="1" data-grid="true" data-grid-num="9.9" data-grid-snap="false" data-prettify-separator="," data-prettify-enabled="true" data-keyboard="true" data-data-type="number"/&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   </span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;div class="col-sm-8"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="card card-tabs "&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="card-header p-0 pt-1 "&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;ul class="nav nav-tabs" id="card-card2_code_cardset" role="tablist"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;li class="nav-item nav-tab-header"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;a class="nav-link active" id="card-card2_code_cardset-1-tab" data-toggle="pill" href="#card-card2_code_cardset-1" role="tab" aria-controls="card-card2_code_cardset-1" aria-selected="true" tab-index="1"&gt;UI code&lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;/li&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;li class="nav-item nav-tab-header"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;a class="nav-link" id="card-card2_code_cardset-2-tab" data-toggle="pill" href="#card-card2_code_cardset-2" role="tab" aria-controls="card-card2_code_cardset-2" aria-selected="false" tab-index="2"&gt;server.R&lt;/a&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;/li&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/ul&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="card-body height-300 overflow-y-auto"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div class="tab-content" id="card-card2_code_cardsetContent"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;div class="tab-pane fade active fill-min-height show position-relative" id="card-card2_code_cardset-1" role="tabpanel" aria-labelledby="card-card2_code_cardset-1-tab" tab-index="1"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;div class="row"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>             &lt;div class="col-sm-12"&gt;&lt;pre class='padding-8 no-margin bg-gray-90 overflow-auto  clipboard-btn shidashi-clipboard-output' data-clipboard-text='card2(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   title = "Card2 Example", body_main = plotOutput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     outputId = ns("card2_plot"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     height = "100%"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   body_side = fluidRow(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     column(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       6L, textInput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         ns("card2_plot_title"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         "Plot title"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     column(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       6L, sliderInput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         ns("card2_plot_npts"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         "# of points", min = 1, max = 100, value = 10, step = 1, round = TRUE</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   tools = list(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "link", href = "https://github.com/dipterix"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "refresh"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "collapse"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "maximize")</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   class_body = "height-300"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> )' role='button' title='Click to copy!'&gt;&lt;code class='r'&gt;card2(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   title = "Card2 Example", body_main = plotOutput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     outputId = ns("card2_plot"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     height = "100%"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   body_side = fluidRow(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     column(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       6L, textInput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         ns("card2_plot_title"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         "Plot title"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     column(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       6L, sliderInput(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         ns("card2_plot_npts"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         "# of points", min = 1, max = 100, value = 10, step = 1, round = TRUE</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   tools = list(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "link", href = "https://github.com/dipterix"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "refresh"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "collapse"),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     card_tool(widget = "maximize")</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   ),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   class_body = "height-300"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> )&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;div class="tab-pane fade fill-min-height position-relative" id="card-card2_code_cardset-2" role="tabpanel" aria-labelledby="card-card2_code_cardset-2-tab" tab-index="2"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;div class="row"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>             &lt;div class="col-sm-12"&gt;&lt;pre class='padding-8 no-margin bg-gray-90 overflow-auto  clipboard-btn shidashi-clipboard-output' data-clipboard-text='output$card2_plot &lt;- renderPlot(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   {</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     npoints &lt;- input$card2_plot_npts</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     title &lt;- input$card2_plot_title</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     if (!length(title) ||</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       title == "") {</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       title &lt;- "Normal Q-Q Plot"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     qqnorm(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       rnorm(npoints),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       main = title</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     abline(a = 0, b = 1, col = "orange3", lty = 2)</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> )' role='button' title='Click to copy!'&gt;&lt;code class='r'&gt;output$card2_plot &lt;- renderPlot(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   {</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     npoints &lt;- input$card2_plot_npts</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     title &lt;- input$card2_plot_title</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     if (!length(title) ||</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       title == "") {</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       title &lt;- "Normal Q-Q Plot"</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     qqnorm(</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       rnorm(npoints),</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       main = title</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     )</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     abline(a = 0, b = 1, col = "orange3", lty = 2)</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> )&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>           &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in eval(expr, envir, enclos):</span> object 'env' not found</span>
 <span class='r-in'></span>
 </pre>
   </div>
