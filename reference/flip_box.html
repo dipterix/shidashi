@@ -140,14 +140,14 @@
     </tr>
     <tr>
       <th>active_on</th>
-      <td><p>the condition when a box shoould be flipped; choices are
+      <td><p>the condition when a box should be flipped; choices are
 <code>'click'</code>: flip when double-click on both sides; <code>'click-front'</code>:
 only flip when the front face is double-clicked; <code>'manual'</code>: manually
 flip in <code>R</code> code (see <code>{flip(inputId)}</code> function)</p></td>
     </tr>
     <tr>
       <th>inputId</th>
-      <td><p>element 'HTML' id; must be speficied if <code>active_on</code> is
+      <td><p>element 'HTML' id; must be specified if <code>active_on</code> is
 not <code>'click'</code></p></td>
     </tr>
     <tr>
@@ -171,17 +171,42 @@ from shiny session, and returns nothing</p>
 <span class='r-in'></span>
 <span class='r-in'><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://shiny.rstudio.com/'>shiny</a></span><span class='op'>)</span></span>
 <span class='r-in'><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://dipterix.org/shidashi'>shidashi</a></span><span class='op'>)</span></span>
+<span class='r-in'></span>
 <span class='r-in'><span class='va'>session</span> <span class='op'>&lt;-</span> <span class='va'><a href='https://rdrr.io/pkg/shiny/man/MockShinySession.html'>MockShinySession</a></span><span class='op'>$</span><span class='fu'>new</span><span class='op'>(</span><span class='op'>)</span></span>
 <span class='r-in'></span>
 <span class='r-in'><span class='fu'>flip_box</span><span class='op'>(</span>front <span class='op'>=</span> <span class='fu'><a href='info_box.html'>info_box</a></span><span class='op'>(</span><span class='st'>"Side A"</span><span class='op'>)</span>,</span>
 <span class='r-in'>         back <span class='op'>=</span> <span class='fu'><a href='info_box.html'>info_box</a></span><span class='op'>(</span><span class='st'>"Side B"</span><span class='op'>)</span>,</span>
 <span class='r-in'>         inputId <span class='op'>=</span> <span class='st'>'flip_box1'</span><span class='op'>)</span></span>
-<span class='r-wrn co'><span class='r-pr'>#&gt;</span> <span class='warning'>Warning: </span>cannot open file '/home/runner/.local/share/R/shidashi/template/views/info-box.html': No such file or directory</span>
-<span class='r-err co'><span class='r-pr'>#&gt;</span> <span class='error'>Error in file(con, "rb"):</span> cannot open the connection</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;div class="flip-box" data-toggle="click" id="flip_box1"&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="flip-box-inner"&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="flip-box-back"&gt;&lt;div class="info-box "&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;span class="info-box-icon bg-info"&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;i class="fa-envelope fas" role="presentation" aria-label="envelope icon"&gt;&lt;/i&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/span&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="info-box-content "&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     Side B</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;!--span class="info-box-text"&gt;Messages&lt;/span&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;span class="info-box-number"&gt;1,410&lt;/span--&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="flip-box-front"&gt;&lt;div class="info-box "&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;span class="info-box-icon bg-info"&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>         &lt;i class="fa-envelope fas" role="presentation" aria-label="envelope icon"&gt;&lt;/i&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;/span&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="info-box-content "&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     Side A</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;!--span class="info-box-text"&gt;Messages&lt;/span&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;span class="info-box-number"&gt;1,410&lt;/span--&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
 <span class='r-in'></span>
-<span class='r-in'><span class='kw'>if</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/interactive.html'>interactive</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>{</span></span>
-<span class='r-in'>  <span class='fu'>flip</span><span class='op'>(</span><span class='st'>'flip_box1'</span>, session <span class='op'>=</span> <span class='va'>session</span><span class='op'>)</span></span>
-<span class='r-in'><span class='op'>}</span></span>
+<span class='r-in'><span class='fu'>flip</span><span class='op'>(</span><span class='st'>'flip_box1'</span>, session <span class='op'>=</span> <span class='va'>session</span><span class='op'>)</span></span>
 <span class='r-in'></span>
 </pre>
   </div>
