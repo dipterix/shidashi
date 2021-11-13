@@ -1,6 +1,19 @@
-# RStudio template
-
-create_project <- function(
+#' @title Download 'shidashi' templates from 'Github'
+#' @param path the path to create 'shidashi' project
+#' @param name 'Github' user name
+#' @param theme the theme to download
+#' @return the target project path
+#' @details To publish a 'shidashi' template, create a 'Github' repository
+#' called \code{'shidashi-templates'}, or fork the \href{https://github.com/dipterix/shidashi-templates}{built-in templates}. The \code{theme} is the sub-folder
+#' of the template repository.
+#'
+#' An easy way to use a template in your project is through the 'RStudio'
+#' project widget. In the 'RStudio' navigation bar, go to "File" menu,
+#' click on the "New Project..." button, select the "Create a new project"
+#' option, and find the item that creates 'shidashi' templates. Use the
+#' widget to set up template directory.
+#'
+use_template <- function(
   path, user = "dipterix", theme = "AdminLTE3", ...){
   # ensure path exists
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
@@ -56,5 +69,6 @@ create_project <- function(
     "shidashi::render(host = '127.0.0.1', port = 8310L)"
   ), con = file.path(path, "start.R"))
 
+  invisible(normalizePath(path))
 }
 

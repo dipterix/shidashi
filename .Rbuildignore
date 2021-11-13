@@ -7,5 +7,4 @@ node_modules$
 ^docs$
 ^pkgdown$
 ^adhoc$
-^tools/buildin-templates/\.git$
-^tools/buildin-templates/AdminLTE3/www/AdminLTE/js/\.eslintrc\.json$
+^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$

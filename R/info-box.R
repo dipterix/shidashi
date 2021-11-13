@@ -51,11 +51,11 @@ info_box <- function(..., icon = "envelope", class = "",
 }
 
 #' @title An 'HTML' container that can flip
-#' @param inputId element 'HTML' id; must be speficied if \code{active_on} is
+#' @param inputId element 'HTML' id; must be specified if \code{active_on} is
 #' not \code{'click'}
 #' @param front 'HTML' elements to show in the front
 #' @param back 'HTML' elements to show when the box is flipped
-#' @param active_on the condition when a box shoould be flipped; choices are
+#' @param active_on the condition when a box should be flipped; choices are
 #' \code{'click'}: flip when double-click on both sides; \code{'click-front'}:
 #' only flip when the front face is double-clicked; \code{'manual'}: manually
 #' flip in \code{R} code (see \code{{flip(inputId)}} function)

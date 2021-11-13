@@ -57,7 +57,7 @@ load_module()
 
 # load specific module
 module_data <- load_module(
-  request = list(QUERY_STRING = "/?module=card"))
+  request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
 # get module title
@@ -67,6 +67,6 @@ env$module_title()
 env$ns("input1")
 
 # generate part of the UI
-env$ui_card2()
+env$ui()
 
 }

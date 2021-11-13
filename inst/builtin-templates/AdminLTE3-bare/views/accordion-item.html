@@ -1,0 +1,16 @@
+<div class="card card-accordion {{ class }}">
+  <div class="card-header card-accordion" style="{{ ifelse(length(style_header), paste(style_header, collapse=';'), '') }}">
+    {{ tools }}
+    <h4 class="card-title w-100 {{ if(collapsed){'collapsed'}else{''} }}" data-toggle="collapse" href="#{{ itemId }}" aria-expanded="false">
+      <a class="d-block w-100 card-accordion-title">
+        {{ title }}
+      </a>
+    </h4>
+  </div>
+  <div id="{{ itemId }}" class="collapse" data-parent="#{{ parentId }}">
+    <div class="card-body", style="{{ ifelse(length(style_body), paste(style_header, collapse=';'), '') }}">
+      {{ body }}
+    </div>
+    {{ footer }}
+  </div>
+</div>

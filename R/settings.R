@@ -38,14 +38,6 @@ template_settings_get <- template_settings$get
 
 #' @rdname template_settings
 #' @export
-download_builtin_templates <- function(){
-  path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3")
-  unlink(path, recursive = TRUE, force = TRUE)
-  create_project(path, user = "dipterix", theme = "AdminLTE3")
-}
-
-#' @rdname template_settings
-#' @export
 template_root <- function(){
   path <- template_settings$get(
     name = 'root_path',
@@ -56,17 +48,9 @@ template_root <- function(){
       path <- 'inst/buildin-templates/AdminLTE3/'
     } else {
       path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3")
-      if(isTRUE(template_settings$get("update_defaults", FALSE))){
-        download_builtin_templates()
-        template_settings$set("update_defaults" = FALSE)
-      }
       if(!dir.exists(path)){
-        stop(
-          "No template found. Please set correct `root_path` if you haven't done so via:\n",
-          "  template_settings_set(root_path = '...')\n\n",
-          "Alternatively, you could download the builtin demo via:\n",
-          "  download_builtin_templates()"
-        )
+        path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3-bare")
+        create_barebone(path)
       }
     }
 

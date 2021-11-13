@@ -12,7 +12,7 @@ as_icon(icon = NULL, class = "fas")
 \item{class}{icon class; change this when you are using 'fontawesome'
 professional version. The choices are \code{'fa'} (compatible),
 \code{'fas'} (strong), \code{'far'} (regular), \code{'fal'} (light),
-and \code{'fad'} ('duotone').}
+and \code{'fad'} (duo-tone).}
 }
 \value{
 'HTML' tag

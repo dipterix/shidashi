@@ -1,0 +1,21 @@
+<div class="card card-single direct-chat {{ class }} {{ ifelse(start_collapsed, 'collapsed-card start-collapsed', '') }}"{{ card_id }}>
+  <div class="card-header {{ class_header }}" style="{{ ifelse(length(style_header), paste(style_header, collapse=';'), '') }}">
+    <h3 class="card-title">{{ title }}</h3>
+    <!-- Buttons, labels, and many other things can be placed here! -->
+    <div class="card-tools">
+      {{ tools }}
+      <button type="button" class="btn btn-tool card2-switch" title="Configurations" data-widget="chat-pane-toggle">
+        <i class="fas fa-ellipsis-v"></i>
+      </button>
+    </div>
+  </div>
+  <div class="card-body card2-body {{ class_body }}" style="{{ ifelse(length(style_body), paste(style_body, collapse=';'), '') }};">
+    <div class="direct-chat-messages fill no-padding overflow-hidden">
+      {{ body_main }}
+    </div>
+    <div class="direct-chat-contacts fill padding-20 opacity-07">
+      {{ body_side }}
+    </div>
+  </div>
+  {{ footer }}
+</div>
