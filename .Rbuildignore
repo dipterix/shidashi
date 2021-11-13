@@ -7,3 +7,4 @@ node_modules$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^adhoc$

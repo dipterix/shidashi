@@ -28,7 +28,10 @@ Store the reusing 'HTML' segments in the
 <header>
 {{ shidashi::include_view("header.html") }}
 </header>
+<body>
 
+</body>
+<!-- Before closing html tag -->
 {{ shidashi::include_view("footer.html") }}
 </html>
 }

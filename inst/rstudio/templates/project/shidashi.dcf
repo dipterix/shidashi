@@ -1,0 +1,24 @@
+Binding: create_project
+Title: Shidashi Shiny Template
+Caption: Create a Shidashi Project from Github Template
+OpenFiles: .Rprofiles, debug.yaml, start.R
+Icon: icon.png
+
+Parameter: user
+Widget: TextInput
+Label: Github User
+Default: dipterix
+Position: left
+
+Parameter: autorun
+Widget: CheckboxInput
+Label: Auto-run to debug
+Default: On
+Position: right
+
+Parameter: text
+Widget: TextInput
+Label: Theme name
+Default: AdminLTE3
+Position: left
+

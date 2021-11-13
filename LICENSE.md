@@ -20,17 +20,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-==============================
-
-This project includes several source files from other open-source projects. 
-The source files are included in the `inst/templates/www` folder. 
-The license, author lists (if applicable) are included in the source folders
-accordingly. Please include the license as-is and credit them when you 
-redistribute your code.
-
-* `AdminLTE - Bootstrap 4 Admin Dashboard` by `ColorlibHQ`, under MIT license.
-* `Bootstrap library` by `Twitter, Inc`, authored by `Bootstrap contributors`, under MIT license.
-* `highlight.js library` by `Ivan Sagalaev`, under BSD 3-Clause License.
-* `OverlayScrollbars library` by `Rene Haas`
-* `Clipboard.js library` by `Zeno Rocha`, under MIT license.
-

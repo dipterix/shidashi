@@ -33,56 +33,44 @@ render <- function(
   }
   root_path <- normalizePath(root_path, mustWork = TRUE)
 
-  if(test_mode){
-    tempdir <- root_path
-  } else {
-    tempdir <- tempfile(pattern = "shiny_template_")
-    if(dir.exists(tempdir)){
-      unlink(tempdir, recursive = TRUE, force = TRUE)
-    }
-    dir.create(tempdir, showWarnings = FALSE, recursive = TRUE)
-    file.copy(list.files(root_path, all.files = TRUE, full.names = TRUE, no.. = TRUE), tempdir, recursive = TRUE, overwrite = TRUE)
-  }
-
-
 
   writeLines(
-    deparse(bquote({
-      shidashi::template_settings$set('root_path' = .(tempdir))
-      shidashi::adminlte_ui()
-    })),
-    file.path(tempdir, "ui.R")
+    c(
+      sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
+      "shidashi::adminlte_ui()"
+    ),
+    file.path(root_path, "ui.R")
   )
 
   if(!as_job || system.file(package = 'rstudioapi') == '' ||
      !rstudioapi::isAvailable(version_needed = "1.4.1717",
                               child_ok = FALSE)){
 
-    shidashi::template_settings$set('root_path' = tempdir)
-    shiny::runApp(appDir = tempdir, launch.browser = launch_browser, test.mode = test_mode, ...)
+    shidashi::template_settings$set('root_path' = root_path)
+    shiny::runApp(appDir = root_path, launch.browser = launch_browser, test.mode = test_mode, ...)
   } else {
-    script <- file.path(tempdir, "_rs_job.R")
+    script <- file.path(root_path, "_rs_job.R")
     args <- list(
       ...,
       launch.browser = launch_browser,
       test.mode = test_mode,
-      appDir = tempdir
+      appDir = root_path
     )
     call <- as.call(list(
       quote(shiny::runApp),
       ...,
       launch.browser = launch_browser,
       test.mode = test_mode,
-      appDir = tempdir
+      appDir = root_path
     ))
-    s <- sprintf("shidashi::template_settings$set('root_path' = '%s')", tempdir)
+    s <- sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path)
     s <- c(s, deparse(call))
     writeLines(
       con = script,
       s
     )
     rstudioapi::jobRunScript(
-      path = script, workingDir = tempdir,
+      path = script, workingDir = root_path,
       name = basename(root_path)
     )
   }
@@ -104,7 +92,10 @@ render <- function(
 #' <header>
 #' {{ shidashi::include_view("header.html") }}
 #' </header>
+#' <body>
 #'
+#' </body>
+#' <!-- Before closing html tag -->
 #' {{ shidashi::include_view("footer.html") }}
 #' </html>
 #' }
