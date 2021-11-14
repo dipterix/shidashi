@@ -6,7 +6,10 @@
 
 The goal of shidashi is to provide framework for R-shiny templates, especially for dashboard applications.
 
-
+<div>
+<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-light.png" width="45%">
+<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-dark.png" width="45%">
+</div>
 
 ## Installation
 
