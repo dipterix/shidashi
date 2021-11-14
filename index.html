@@ -47,6 +47,9 @@
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
+<li>
+  <a href="news/index.html">Changelog</a>
+</li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
@@ -74,7 +77,7 @@
 
 <p>The goal of shidashi is to provide framework for R-shiny templates, especially for dashboard applications.</p>
 <div>
-<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-light.png" width="45%"><img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-dark.png" width="45%">
+<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-light.png" width="45%"><img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-dark.png" width="45%"><small> <em>Default template (using <a href="https://adminlte.io/">AdminLTE</a>) provides two themes: light vs dark</em> </small>
 </div>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
@@ -83,13 +86,52 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"shidashi"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="example" class="section level2">
+<div id="demo-application" class="section level2">
 <h2 class="hasAnchor">
-<a href="#example" class="anchor"></a>Example</h2>
-<p>This is a basic example which shows you how to solve a common problem:</p>
+<a href="#demo-application" class="anchor"></a>Demo Application</h2>
+<p>You can view the demo app via R command</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi">shidashi</a></span><span class="op">)</span>
-<span class="co">## basic example code</span></code></pre></div>
+<span class="va">temp_project</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempfile</a></span><span class="op">(</span><span class="op">)</span>
+<span class="fu"><a href="reference/use_template.html">use_template</a></span><span class="op">(</span><span class="va">temp_project</span><span class="op">)</span>
+<span class="fu"><a href="reference/render.html">render</a></span><span class="op">(</span><span class="va">temp_project</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="start-from-existing-templates" class="section level2">
+<h2 class="hasAnchor">
+<a href="#start-from-existing-templates" class="anchor"></a>Start From Existing Templates</h2>
+<p>To start a <code>shidashi</code> project, open <code>RStudio</code> menu from the navigation bar:</p>
+<blockquote>
+<p>File &gt; New Project… &gt; New Directory &gt; Shidashi Shiny Template (*)</p>
+</blockquote>
+<p>_*You might need to scroll down to find that template option_.</p>
+<p>Please enter the project information accordingly. By default, the <code>Github user</code> is <code>dipterix</code>, and theme is <code>AdminLTE3</code>, which lead to <a href="https://github.com/dipterix/shidashi-templates/tree/master/AdminLTE3">the default template</a>.</p>
+<div id="bare-bone-template" class="section level5">
+<h5 class="hasAnchor">
+<a href="#bare-bone-template" class="anchor"></a>Bare-bone Template</h5>
+<p>If you want to start from a bare-bone template, change the <code>theme</code> option to be <code>AdminLTE3-bare</code>.</p>
+</div>
+<div id="file-structure" class="section level3">
+<h3 class="hasAnchor">
+<a href="#file-structure" class="anchor"></a>File Structure</h3>
+<p>A typical <code>shidashi</code> project has the following file structure:</p>
+<pre><code>&lt;project root_path&gt;
+├─modules/
+│ └─&lt;module ID&gt; . . . . . - Module folder; folder name is module ID
+│   ├─R . . . . . . . . . - Module functions shared across UI and server
+│   ├─module-ui.html  . . - Module HTML template
+│   └─server.R  . . . . . - Module-level server function
+├─R/  . . . . . . . . . . - Common functions shared across modules
+├─views/. . . . . . . . . - Small snippets (see `?include_view` function)
+├─www/  . . . . . . . . . - Static files: css, js, img, ...
+├─index.html  . . . . . . - Template for homepage
+├─modules.yaml  . . . . . - Module label, order, icon, badge..
+└─server.R  . . . . . . . - Root server function, usually no modification is required</code></pre>
+</div>
+</div>
+<div id="contribute" class="section level2">
+<h2 class="hasAnchor">
+<a href="#contribute" class="anchor"></a>Contribute</h2>
+<p>Create your own <code>Github</code> repository with name <code>shidashi-templates</code>. Add folders named by the themes. Then people can install your themes as templates through <code>RStudio</code>. An easy start is to fork <a href="https://github.com/dipterix/shidashi-templates/">this repository</a></p>
 </div>
 </div>
   </div>
@@ -121,6 +163,7 @@
 <h2>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://github.com/dipterix/shidashi/actions"><img src="https://github.com/dipterix/shidashi/workflows/R-CMD-check/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://CRAN.R-project.org/package=shidashi"><img src="https://www.r-pkg.org/badges/version/shidashi" alt="CRAN status"></a></li>
 </ul>
 </div>
 </div>
