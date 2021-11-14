@@ -9,9 +9,11 @@ use_template(path, user = "dipterix", theme = "AdminLTE3", ...)
 \arguments{
 \item{path}{the path to create 'shidashi' project}
 
+\item{user}{'Github' user name}
+
 \item{theme}{the theme to download}
 
-\item{name}{'Github' user name}
+\item{...}{ignored}
 }
 \value{
 the target project path

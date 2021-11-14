@@ -72,9 +72,8 @@ module_info <- function(root_path = template_root(),
     }
     data.frame(
       id = mid,
-      order = x$order,
       group = x$group,
-      label = x$label,
+      label = ifelse(length(x$label) == 1, x$label, ""),
       icon = ifelse(length(x$icon) == 1, x$icon, ""),
       badge = ifelse(length(x$badge) == 1, x$badge, ""),
       url = gsub("^[^\\?]+", "/", url),

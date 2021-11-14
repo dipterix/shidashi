@@ -18,7 +18,7 @@
 as_icon <- function(icon = NULL, class = "fas"){
   class <- combine_class(class)
 
-  if(is.null(icon)){
+  if(is.null(icon) || icon == ""){
     icon <- ""
   } else {
     if(inherits(icon, "shiny.tag")) {

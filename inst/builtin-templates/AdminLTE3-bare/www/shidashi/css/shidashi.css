@@ -2102,6 +2102,31 @@ body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
   background-color: #454d55;
 }
 
+.nav-sidebar .nav-header.nav-divider {
+  display: flex;
+  color: #c8c9ca;
+}
+.nav-sidebar .nav-header.nav-divider::before, .nav-sidebar .nav-header.nav-divider::after {
+  content: " ";
+  border-top: 1px solid #c8c9ca;
+  width: auto;
+  display: block;
+  transform: translate(0, 50%);
+  flex: 1 1 1em;
+}
+.nav-sidebar .nav-header.nav-divider > span {
+  flex: 1;
+  padding: 0 12px;
+  text-align: center;
+}
+
+body.dark-mode .nav-sidebar .nav-header.nav-divider {
+  color: #454d55;
+}
+body.dark-mode .nav-sidebar .nav-header.nav-divider::before, body.dark-mode .nav-sidebar .nav-header.nav-divider::after {
+  border-top: 1px solid #454d55;
+}
+
 .back-to-top [role=group] {
   opacity: 0.4;
   transition: opacity 200ms;

@@ -66,11 +66,28 @@ adminlte_sidebar <- function(root_path = template_root(),
                              shared_id = rand_string(26)){
   settings <- yaml::read_yaml(file.path(root_path, settings_file))
   # settings <- yaml::read_yaml('modules.yaml')
+
+  divider <- settings$divider
+  if(length(divider)){
+    divider <- data.frame(
+      name = names(divider),
+      order = sapply(divider, function(x){ if(isTRUE(is.numeric(x$order))){x$order}else{NA} })
+    )
+    divider <- divider[!is.na(divider$order), ]
+  }
+  if(!length(divider) || !nrow(divider)){
+    divider <- data.frame(name = "END", order = Inf)
+  }
+
   groups <- settings$groups
+  if(length(groups)){
+    groups <- groups[names(groups) != '']
+  }
   group_icons <- sapply(groups, function(x){ ifelse(length(x$icon) == 1, x$icon, "") })
   group_badge <- sapply(groups, function(x){ ifelse(length(x$badge) == 1, x$badge, "") })
+  group_order <- sapply(groups, function(x){ ifelse(length(x$order) == 1, x$order, NA) })
+  group_open <- sapply(groups, function(x){ isTRUE(x$open) })
   groups <- names(groups)
-  groups <- groups[groups != ""]
 
   modules <- settings$modules
   modules_ids <- names(settings$modules)
@@ -84,20 +101,26 @@ adminlte_sidebar <- function(root_path = template_root(),
     y$module <- mid
     y$shared_id <- shared_id
     url <- httr::modify_url("/?module=", query = y)
-    if(length(x$group) == 1 && x$group %in% group_level){
-      x$group <- group_level[group_level == x$group][[1]]
-    } else {
-      x$group <- NA
-    }
     order <- x$order
     if(!length(order) || is.na(order)){
       order <- 9999L
     }
+
+    if(length(x$group) == 1 && x$group %in% group_level){
+      x$group <- group_level[group_level == x$group][[1]]
+      renderOrder <- group_order[group_level == x$group][[1]] + order / 10000
+    } else {
+      x$group <- NA
+      renderOrder <- order
+    }
+
+
     data.frame(
       id = mid,
       order = order,
+      renderOrder = renderOrder,
       group = x$group,
-      label = x$label,
+      label = ifelse(length(x$label) == 1, x$label, "No Label"),
       icon = ifelse(length(x$icon) == 1, x$icon, ""),
       badge = ifelse(length(x$badge) == 1, x$badge, ""),
       url = gsub("^[^\\?]+", "/", url),
@@ -106,33 +129,84 @@ adminlte_sidebar <- function(root_path = template_root(),
   }))
 
   if(nrow(module_tbl)){
-    max_order <- max(c(module_tbl$order, 10000), na.rm = TRUE) + 1
+    max_order <- max(c(module_tbl$renderOrder, 10000), na.rm = TRUE) + 1
     # group could be NA, resulting in warning
     suppressWarnings({
       module_tbl <- module_tbl[
-        order(as.integer(module_tbl$group) * max_order + module_tbl$order),
+        order(module_tbl$renderOrder),
       ]
     })
   }
 
-  shiny::tagList(
-    lapply(seq_along(groups), function(ii){
-      group <- groups[[ii]]
+  side_bar <- list()
+  ignore_group <- NULL
+  last_order <- -Inf
+
+  for(i in seq_len(nrow(module_tbl))){
+    x <- module_tbl[i, ]
+
+    current_order <- x$renderOrder
+
+    divide_item <- divider[divider$order <= current_order & divider$order > last_order,]
+    if(nrow(divide_item)){
+      for(j in seq_len(nrow(divide_item))){
+        tmp <- divide_item[j, ]
+        side_bar[[length(side_bar) + 1]] <- shiny::tags$li(
+          class="nav-header nav-divider",
+          shiny::span(
+            tmp$name
+          )
+        )
+      }
+    }
+    last_order <- current_order
+
+    if(is.na(x$group)){
+      item <- menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
+      side_bar[[length(side_bar) + 1]] <- item
+    } else if(!x$group %in% ignore_group){
+
+      # add group
+      group <- x$group
+      ignore_group <- c(ignore_group, group)
       sub <- module_tbl[!is.na(module_tbl$group) & module_tbl$group == group, ]
-      if(!nrow(sub)){ return(NULL) }
-      menu <- lapply(seq_len(nrow(sub)), function(ii){
-        x <- sub[ii, ]
-        menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
-      })
-      menu_item_dropdown(text = group, .list = menu, icon = group_icons[[ii]], badge = group_badge[[ii]])
-    }),
-    local({
-      sub <- module_tbl[is.na(module_tbl$group), ]
-      if(!nrow(sub)){ return(NULL) }
-      lapply(seq_len(nrow(sub)), function(ii){
-        x <- sub[ii, ]
-        menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
-      })
-    })
-  )
+      if(nrow(sub)){
+
+        menu <- lapply(seq_len(nrow(sub)), function(ii){
+          x <- sub[ii, ]
+          menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
+        })
+        sel <- which(groups %in% group)[[1]]
+        item <- menu_item_dropdown(text = group, .list = menu,
+                                   icon = group_icons[sel],
+                                   badge = group_badge[sel],
+                                   active = group_open[sel])
+        side_bar[[length(side_bar) + 1]] <- item
+      }
+
+    }
+  }
+
+  shiny::tagList(side_bar)
+
+  # shiny::tagList(
+  #   lapply(seq_along(groups), function(ii){
+  #     group <- groups[[ii]]
+  #     sub <- module_tbl[!is.na(module_tbl$group) & module_tbl$group == group, ]
+  #     if(!nrow(sub)){ return(NULL) }
+  #     menu <- lapply(seq_len(nrow(sub)), function(ii){
+  #       x <- sub[ii, ]
+  #       menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
+  #     })
+  #     menu_item_dropdown(text = group, .list = menu, icon = group_icons[[ii]], badge = group_badge[[ii]])
+  #   }),
+  #   local({
+  #     sub <- module_tbl[is.na(module_tbl$group), ]
+  #     if(!nrow(sub)){ return(NULL) }
+  #     lapply(seq_len(nrow(sub)), function(ii){
+  #       x <- sub[ii, ]
+  #       menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
+  #     })
+  #   })
+  # )
 }

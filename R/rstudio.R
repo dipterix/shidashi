@@ -1,7 +1,8 @@
 #' @title Download 'shidashi' templates from 'Github'
 #' @param path the path to create 'shidashi' project
-#' @param name 'Github' user name
+#' @param user 'Github' user name
 #' @param theme the theme to download
+#' @param ... ignored
 #' @return the target project path
 #' @details To publish a 'shidashi' template, create a 'Github' repository
 #' called \code{'shidashi-templates'}, or fork the \href{https://github.com/dipterix/shidashi-templates}{built-in templates}. The \code{theme} is the sub-folder

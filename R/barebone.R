@@ -62,7 +62,7 @@ create_barebone <- function(path){
         "}",
         "page_logo <- function(size = c(\"normal\", \"small\", \"large\")){",
         "  # Relative path to your logo icon in www/",
-        "  # \"logo.png\"",
+        "  # \"shidashi/img/icon.png\"",
         "  NULL",
         "}",
         "page_loader <- function(){",
