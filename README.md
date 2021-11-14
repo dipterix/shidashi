@@ -1,10 +1,12 @@
-# Shiny Dashboard Template System
+# A Shiny Template System
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/dipterix/shidashi/workflows/R-CMD-check/badge.svg)](https://github.com/dipterix/shidashi/actions)
 <!-- badges: end -->
 
-The goal of shidashi is to ...
+The goal of shidashi is to provide framework for R-shiny templates, especially for dashboard applications.
+
+
 
 ## Installation
 
@@ -22,4 +24,3 @@ This is a basic example which shows you how to solve a common problem:
 library(shidashi)
 ## basic example code
 ```
-

@@ -8,3 +8,4 @@ node_modules$
 ^pkgdown$
 ^adhoc$
 ^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$
+^inst/screenshots$
