@@ -1,3 +1,26 @@
+
+// Theme configuration
+$('.content-wrapper').IFrame({
+  onTabClick: (item) => {
+    console.log(item);
+    return item;
+  },
+  onTabChanged: (item) => {
+    console.log(item);
+    return item;
+  },
+  onTabCreated: (item) => {
+    console.log(item);
+    return item;
+  },
+  autoIframeMode: false,
+  autoItemActive: true,
+  autoShowNewTab: true,
+  allowDuplicates: false,
+  loadingScreen: false,
+  useNavbarItems: false
+})
+
 // progress output
 $(function() {
 
@@ -946,34 +969,6 @@ $(document).ready(() => {
 
 })();
 
-
-// Theme configuration
-(function() {
-
-  $('.content-wrapper').IFrame({
-    onTabClick: (item) => {
-      console.log(item);
-      return item;
-    },
-    onTabChanged: (item) => {
-      console.log(item);
-      return item;
-    },
-    onTabCreated: (item) => {
-      console.log(item);
-      return item;
-    },
-    autoIframeMode: false,
-    autoItemActive: true,
-    autoShowNewTab: true,
-    allowDuplicates: false,
-    loadingScreen: false,
-    useNavbarItems: true
-  })
-
-
-
-})();
 
 if (window.hljs) {
   hljs.configure({languages: []});

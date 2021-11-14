@@ -1541,7 +1541,13 @@
     IFrame._jQueryInterface = function _jQueryInterface(operation) {
       var data = $__default['default'](this).data(DATA_KEY$7);
 
-      var _options = $__default['default'].extend({}, Default$7, $__default['default'](this).data());
+      var _options;
+
+      if(typeof operation === "object"){
+        _options = $__default['default'].extend({}, Default$7, $__default['default'](this).data(), operation);
+      } else {
+        _options = $__default['default'].extend({}, Default$7, $__default['default'](this).data());
+      }
 
       if (!data) {
         data = new IFrame(this, _options);

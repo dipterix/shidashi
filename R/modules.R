@@ -37,6 +37,8 @@
 #'   request = list(QUERY_STRING = "/?module=module_id"))
 #' env <- module_data$environment
 #'
+#' if(interactive()){
+#'
 #' # get module title
 #' env$module_title()
 #'
@@ -45,6 +47,8 @@
 #'
 #' # generate part of the UI
 #' env$ui()
+#'
+#' }
 #'
 #' @export
 module_info <- function(root_path = template_root(),

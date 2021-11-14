@@ -2037,6 +2037,12 @@ pre .identifier {
 pre .string {
   color: #d14;
 }
+pre.pre-compact {
+  white-space: normal;
+}
+pre.pre-compact code {
+  white-space: break-spaces;
+}
 pre.overflow-visible-on-hover:hover {
   max-width: unset;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.125), 0 1px 50px rgba(0, 0, 0, 0.2);
@@ -2118,6 +2124,7 @@ body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
   flex: 1;
   padding: 0 12px;
   text-align: center;
+  display: ruby;
 }
 
 body.dark-mode .nav-sidebar .nav-header.nav-divider {
