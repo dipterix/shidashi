@@ -87,15 +87,20 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"shidashi"</span><span class="op">)</span></code></pre></div>
 </div>
-<div id="demo-application" class="section level2">
+<div id="demo--tutorial-application" class="section level2">
 <h2 class="hasAnchor">
-<a href="#demo-application" class="anchor"></a>Demo Application</h2>
-<p>You can view the demo app via R command</p>
+<a href="#demo--tutorial-application" class="anchor"></a>Demo &amp; Tutorial Application</h2>
+<p>The demo app requires to install the following extra packages</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi">shidashi</a></span><span class="op">)</span>
-<span class="va">temp_project</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html">tempfile</a></span><span class="op">(</span><span class="op">)</span>
-<span class="fu"><a href="reference/use_template.html">use_template</a></span><span class="op">(</span><span class="va">temp_project</span><span class="op">)</span>
-<span class="fu"><a href="reference/render.html">render</a></span><span class="op">(</span><span class="va">temp_project</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"ggExtra"</span>, <span class="st">"rmarkdown"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<p>Once you have installed these packages, run the following command from R:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/">shidashi</a></span><span class="op">)</span>
+<span class="va">project</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span><span class="op">(</span><span class="fu">tools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/tools/userdir.html">R_user_dir</a></span><span class="op">(</span><span class="st">'shidashi'</span>, which <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span>, <span class="st">"AdminLTE3"</span><span class="op">)</span>
+
+<span class="co"># `use_template` only needs to be called once</span>
+<span class="fu"><a href="reference/use_template.html">use_template</a></span><span class="op">(</span><span class="va">project</span><span class="op">)</span>
+<span class="fu"><a href="reference/render.html">render</a></span><span class="op">(</span><span class="va">project</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="start-from-existing-templates" class="section level2">
 <h2 class="hasAnchor">

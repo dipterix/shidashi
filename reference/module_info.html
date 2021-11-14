@@ -181,7 +181,7 @@ these server functions in <code>"server.R"</code>.</p>
 <span class='r-in'><span class='co'># load master module</span></span>
 <span class='r-in'><span class='fu'>load_module</span><span class='op'>(</span><span class='op'>)</span></span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> $environment</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x56071b195630&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x564f7c4ccb30&gt;</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> $has_module</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> [1] FALSE</span>
@@ -200,8 +200,8 @@ these server functions in <code>"server.R"</code>.</p>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> function (input, output, session, ...) </span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> {</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> }</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;bytecode: 0x56071adbeca0&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x56071adbd020&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;bytecode: 0x564f7c0c5938&gt;</span>
+<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;environment: 0x564f7c0be070&gt;</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> </span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> $module$template_path</span>
 <span class='r-out co'><span class='r-pr'>#&gt;</span> NULL</span>
@@ -213,23 +213,18 @@ these server functions in <code>"server.R"</code>.</p>
 <span class='r-in'>  request <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span>QUERY_STRING <span class='op'>=</span> <span class='st'>"/?module=module_id"</span><span class='op'>)</span><span class='op'>)</span></span>
 <span class='r-in'><span class='va'>env</span> <span class='op'>&lt;-</span> <span class='va'>module_data</span><span class='op'>$</span><span class='va'>environment</span></span>
 <span class='r-in'></span>
+<span class='r-in'><span class='kw'>if</span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/interactive.html'>interactive</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span><span class='op'>{</span></span>
+<span class='r-in'></span>
 <span class='r-in'><span class='co'># get module title</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>module_title</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "Module Label"</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># generate module-specific shiny id</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>ns</span><span class='op'>(</span><span class='st'>"input1"</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> [1] "module_id-input1"</span>
 <span class='r-in'></span>
 <span class='r-in'><span class='co'># generate part of the UI</span></span>
 <span class='r-in'><span class='va'>env</span><span class='op'>$</span><span class='fu'>ui</span><span class='op'>(</span><span class='op'>)</span></span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;div class="container-fluid"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;div class="row"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;div class="col-sm-12"&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>       &lt;div id="module_id-plot" class="shiny-plot-output" style="width:100%;height:400px;"&gt;&lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>     &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span>   &lt;/div&gt;</span>
-<span class='r-out co'><span class='r-pr'>#&gt;</span> &lt;/div&gt;</span>
+<span class='r-in'></span>
+<span class='r-in'><span class='op'>}</span></span>
 <span class='r-in'></span>
 </pre>
   </div>
