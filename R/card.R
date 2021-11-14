@@ -123,7 +123,7 @@ card <- function(
       footer
     )
   } else {
-    footer = ''
+    footer <- ''
   }
 
   if(length(tools)){
@@ -132,7 +132,7 @@ card <- function(
       tools
     )
   } else {
-    tools = ""
+    tools <- ""
   }
 
   if(length(inputId) == 1){
@@ -216,7 +216,7 @@ card2 <- function(
       footer
     )
   } else {
-    footer = ''
+    footer <- ''
   }
 
   if(length(tools)){
@@ -224,7 +224,7 @@ card2 <- function(
       tools
     )
   } else {
-    tools = ""
+    tools <- ""
   }
 
   if(length(inputId) == 1){

@@ -4,7 +4,7 @@ Title: A Shiny Dashboard Template System
 Version: 0.1.0
 Language: en-US
 URL: https://dipterix.org/shidashi https://github.com/dipterix/shidashi
-BugReport: https://github.com/dipterix/shidashi/issues
+BugReports: https://github.com/dipterix/shidashi/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.1.2

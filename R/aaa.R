@@ -1,3 +1,11 @@
+#' @importFrom fastmap fastmap
+#' @importFrom digest digest
+#' @importFrom formatR tidy_source
+#' @importFrom httr parse_url
+#' @importFrom httr modify_url
+#' @importFrom yaml read_yaml
+#' @importFrom jsonlite fromJSON
+NULL
 
 rand_string <- function (length = 10) {
   paste(sample(c(letters, LETTERS, 0:9), length, replace = TRUE),

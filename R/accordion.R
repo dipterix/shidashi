@@ -30,7 +30,7 @@ accordion_item <- function(
       footer
     )
   } else {
-    footer = ''
+    footer <- ''
   }
 
   if(length(tools)){
@@ -39,7 +39,7 @@ accordion_item <- function(
       tools
     )
   } else {
-    tools = ""
+    tools <- ""
   }
 
   shiny::htmlTemplate(
