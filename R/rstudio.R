@@ -14,6 +14,7 @@
 #' option, and find the item that creates 'shidashi' templates. Use the
 #' widget to set up template directory.
 #'
+#' @export
 use_template <- function(
   path, user = "dipterix", theme = "AdminLTE3", ...){
   # ensure path exists

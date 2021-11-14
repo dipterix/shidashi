@@ -9,3 +9,4 @@ node_modules$
 ^adhoc$
 ^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$
 ^inst/screenshots$
+^cran-comments\.md$
