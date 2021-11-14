@@ -77,8 +77,9 @@
 
 <p>The goal of shidashi is to provide framework for R-shiny templates, especially for dashboard applications.</p>
 <div>
-<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-light.png" width="45%"><img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-dark.png" width="45%"><small> <em>Default template (using <a href="https://adminlte.io/">AdminLTE</a>) provides two themes: light vs dark</em> </small>
+<img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-light.png" width="49%"><img src="https://raw.githubusercontent.com/dipterix/shidashi/main/inst/screenshots/theme-dark.png" width="49%">
 </div>
+<p><small> <em>Default template (using <a href="https://adminlte.io/">AdminLTE</a>) provides two themes: light vs dark</em> </small></p>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
@@ -116,22 +117,22 @@
 <p>A typical <code>shidashi</code> project has the following file structure:</p>
 <pre><code>&lt;project root_path&gt;
 ├─modules/
-│ └─&lt;module ID&gt; . . . . . - Module folder; folder name is module ID
-│   ├─R . . . . . . . . . - Module functions shared across UI and server
-│   ├─module-ui.html  . . - Module HTML template
-│   └─server.R  . . . . . - Module-level server function
-├─R/  . . . . . . . . . . - Common functions shared across modules
-├─views/. . . . . . . . . - Small snippets (see `?include_view` function)
-├─www/  . . . . . . . . . - Static files: css, js, img, ...
-├─index.html  . . . . . . - Template for homepage
-├─modules.yaml  . . . . . - Module label, order, icon, badge..
-└─server.R  . . . . . . . - Root server function, usually no modification is required</code></pre>
+│ └─&lt;module ID&gt;           - Module folder; folder name is module ID
+│   ├─R                   - Module functions shared across UI and server
+│   ├─module-ui.html      - Module HTML template
+│   └─server.R            - Module-level server function
+├─R/                      - Common functions shared across modules
+├─views/                  - Small snippets (see `?include_view` function)
+├─www/                    - Static files: css, js, img, ...
+├─index.html              - Template for homepage
+├─modules.yaml            - Module label, order, icon, badge..
+└─server.R                - Root server function, usually no modification is required</code></pre>
 </div>
 </div>
 <div id="contribute" class="section level2">
 <h2 class="hasAnchor">
 <a href="#contribute" class="anchor"></a>Contribute</h2>
-<p>Create your own <code>Github</code> repository with name <code>shidashi-templates</code>. Add folders named by the themes. Then people can install your themes as templates through <code>RStudio</code>. An easy start is to fork <a href="https://github.com/dipterix/shidashi-templates/">this repository</a></p>
+<p>Create your own <code>Github</code> repository with name <code>shidashi-templates</code>. Add folders named by the themes. Then people can install your themes as templates through <code>RStudio</code>. An easy start is to fork <a href="https://github.com/dipterix/shidashi-templates/">this repository</a>.</p>
 </div>
 </div>
   </div>
