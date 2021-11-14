@@ -23,15 +23,23 @@ You can install the released version of shidashi from [CRAN](https://CRAN.R-proj
 install.packages("shidashi")
 ```
 
-## Demo Application
+## Demo & Tutorial Application
 
-You can view the demo app via R command
+The demo app requires to install the following extra packages
+
+```r
+install.packages(c("ggExtra", "rmarkdown"))
+```
+
+Once you have installed these packages, run the following command from R:
 
 ```r
 library(shidashi)
-temp_project <- tempfile()
-use_template(temp_project)
-render(temp_project)
+project <- file.path(tools::R_user_dir('shidashi', which = "data"), "AdminLTE3")
+
+# `use_template` only needs to be called once
+use_template(project)
+render(project)
 ```
 
 ## Start From Existing Templates
@@ -66,6 +74,8 @@ A typical `shidashi` project has the following file structure:
 ├─modules.yaml            - Module label, order, icon, badge..
 └─server.R                - Root server function, usually no modification is required
 ```
+
+
 
 ## Contribute
 

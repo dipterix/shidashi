@@ -196,7 +196,7 @@ html_highlight_code <- function(
 
   shiny::HTML(
     sprintf(
-      "<pre class='padding-8 no-margin bg-gray-90 %s %s %s' %s><code class='r'>%s</code></pre>",
+      "<pre class='pre-compact no-padding bg-gray-90 %s %s %s' %s><code class='r'>%s</code></pre>",
       hover,
       paste(class, collapse = " "),
       ifelse(copy_on_click, "clipboard-btn shidashi-clipboard-output", ""),
