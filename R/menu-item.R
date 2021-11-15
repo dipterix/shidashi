@@ -8,11 +8,13 @@
 #' @return 'HTML' tag
 #' @examples
 #'
+#' if(interactive()){
 #' as_icon("bookmark", class = "far")
 #' as_icon("bookmark", class = "fas")
 #'
 #' # no icon
 #' as_icon(NULL)
+#' }
 #'
 #' @export
 as_icon <- function(icon = NULL, class = "fas"){

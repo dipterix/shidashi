@@ -22,10 +22,12 @@ Convert characters, shiny icons into 'fontawesome' 4
 }
 \examples{
 
+if(interactive()){
 as_icon("bookmark", class = "far")
 as_icon("bookmark", class = "fas")
 
 # no icon
 as_icon(NULL)
+}
 
 }

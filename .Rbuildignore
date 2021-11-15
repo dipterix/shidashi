@@ -10,3 +10,4 @@ node_modules$
 ^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$
 ^inst/screenshots$
 ^cran-comments\.md$
+^CRAN-RELEASE$
