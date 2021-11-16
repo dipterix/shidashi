@@ -26,6 +26,10 @@ template_root()
 
 \item{default}{default value if the key is missing}
 }
+\value{
+\code{template_settings_get} returns the values represented by the
+corresponding keys, or the default value if key is missing.
+}
 \description{
 Configure template options that are shared across the sessions
 }

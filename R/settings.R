@@ -2,6 +2,8 @@
 #' @param ... key-value pair to set options
 #' @param name character, key of the value
 #' @param default default value if the key is missing
+#' @return \code{template_settings_get} returns the values represented by the
+#' corresponding keys, or the default value if key is missing.
 #' @details The settings is designed to store static key-value pairs that
 #' are shared across the sessions. The most important key is
 #' \code{"root_path"}, which should be a path pointing to the template
