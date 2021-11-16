@@ -42,7 +42,34 @@ renderProgress(expr, env = parent.frame(), quoted = FALSE, outputArgs = list())
 
 \item{outputArgs}{a list of other parameters in \code{progressOutput}}
 }
+\value{
+\code{progressOutput} returns 'HTML' tags containing progress bars
+that can be rendered later via \code{\link{shiny_progress}} or
+\code{renderProgress}. \code{renderProgress} returns shiny render functions
+internally.
+}
 \description{
 For detailed usage, see demo application by
 running \code{render()}.
+}
+\examples{
+
+library(shiny)
+library(shidashi)
+progressOutput("sales_report_prog1",
+               description = "6 days left!",
+               "Add Products to Cart",
+               span(class="float-right", "123/150"),
+               value = 123/150 * 100)
+
+# server function
+server <- function(input, output, session, ...){
+  output$sales_report_prog1 <- renderProgress({
+    return(list(
+      value = 140 / 150 * 100,
+      description = "5 days left!"
+    ))
+  })
+}
+
 }

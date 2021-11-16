@@ -40,6 +40,10 @@ renderClipboard(
 
 \item{outputArgs}{used to replace default arguments of \code{clipboardOutput}}
 }
+\value{
+'HTML' elements that can write to clip-board once users click on
+them.
+}
 \description{
 Generates outputs that can be written to clipboards with one click
 }

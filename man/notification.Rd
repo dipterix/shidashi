@@ -60,6 +60,11 @@ types.}
 \item{...}{other options; see
 \url{https://adminlte.io/docs/3.1//javascript/toasts.html#options}}
 }
+\value{
+Both functions should be used in shiny reactive contexts. The
+messages will be sent to shiny 'JavaScript' interface and nothing will be
+returned.
+}
 \description{
 The 'Bootstrap' notification
 }

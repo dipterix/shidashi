@@ -22,6 +22,9 @@
 #' @param ... other options; see
 #' \url{https://adminlte.io/docs/3.1//javascript/toasts.html#options}
 #'
+#' @return Both functions should be used in shiny reactive contexts. The
+#' messages will be sent to shiny 'JavaScript' interface and nothing will be
+#' returned.
 #' @examples
 #' \dontrun{
 #'
@@ -96,7 +99,7 @@ show_notification <- function(
     class = combine_class(sprintf("bg-%s", type), class),
     ...
   ))
-
+  invisible()
 }
 
 #' @rdname notification
@@ -112,6 +115,7 @@ clear_notifications <- function(
   session$sendCustomMessage("shidashi.clear_notification", list(
     selector = selector
   ))
+  invisible()
 }
 
 

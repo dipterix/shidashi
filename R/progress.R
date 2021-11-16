@@ -196,6 +196,30 @@ shiny_progress <- function (
 #' @param value initial value, ranging from 0 to 100; default is 0
 #' @param size size of the progress bar; choices are \code{"md"}, \code{"sm"},
 #' \code{"xs"}
+#' @return \code{progressOutput} returns 'HTML' tags containing progress bars
+#' that can be rendered later via \code{\link{shiny_progress}} or
+#' \code{renderProgress}. \code{renderProgress} returns shiny render functions
+#' internally.
+#' @examples
+#'
+#' library(shiny)
+#' library(shidashi)
+#' progressOutput("sales_report_prog1",
+#'                description = "6 days left!",
+#'                "Add Products to Cart",
+#'                span(class="float-right", "123/150"),
+#'                value = 123/150 * 100)
+#'
+#' # server function
+#' server <- function(input, output, session, ...){
+#'   output$sales_report_prog1 <- renderProgress({
+#'     return(list(
+#'       value = 140 / 150 * 100,
+#'       description = "5 days left!"
+#'     ))
+#'   })
+#' }
+#'
 #' @export
 progressOutput <- function(
   outputId, ..., description = "Initializing",

@@ -9,7 +9,8 @@
 #' @param env environment to evaluate \code{expr}
 #' @param quoted whether \code{expr} is quoted
 #' @param outputArgs used to replace default arguments of \code{clipboardOutput}
-#'
+#' @return 'HTML' elements that can write to clip-board once users click on
+#' them.
 #' @examples
 #' clipboardOutput(clip_text = "Hey there")
 #'

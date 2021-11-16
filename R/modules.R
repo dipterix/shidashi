@@ -3,6 +3,19 @@
 #' @param settings_file the settings file containing the module information
 #' @param request 'HTTP' request string
 #' @param env environment to load module variables into
+#' @return A data frame with the following columns that contain the module
+#' information:
+#' \describe{
+#' \item{\code{id}}{module id, folder name}
+#' \item{\code{order}}{display order in side-bar}
+#' \item{\code{group}}{group menu name if applicable, otherwise \code{NA}}
+#' \item{\code{label}}{the readable label to be displayed on the side-bar}
+#' \item{\code{icon}}{icon that will be displayed ahead of label, will be
+#' passed to \code{\link{as_icon}}}
+#' \item{\code{badge}}{badge text that will be displayed
+#' following the module label, will be passed to \code{\link{as_badge}}}
+#' \item{\code{url}}{the relative 'URL' address of the module.}
+#' }
 #' @details The module files are stored in \code{modules/} folder in your
 #' project. The folder names are the module id. Within each folder,
 #' there should be one \code{"server.R"}, \code{R/}, and a

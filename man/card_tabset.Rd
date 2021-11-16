@@ -39,6 +39,9 @@ card_tabset(
 \item{class_header, class_body, class_foot}{additional 'HTML'
 class the of card header, body, and footer accordingly}
 }
+\value{
+'HTML' tags
+}
 \description{
 To insert, remove, or active card panels, see
 \code{\link{card_tabset_operate}}.

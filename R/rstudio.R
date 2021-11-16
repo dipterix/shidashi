@@ -23,14 +23,15 @@ use_template <- function(
   # Download template
   temppath <- tempfile()
   tempzip <- paste0(temppath, ".zip")
-  timeout <- getOption('timeout', 60L)
+  old <- options()
   on.exit({
-    options(timeout = timeout)
+    options(old)
     unlink(tempzip)
     unlink(temppath, recursive = TRUE, force = TRUE)
-  }, add = TRUE)
+  })
 
   options(timeout = 10000)
+
   url <- "https://github.com/dipterix/shidashi-templates/archive/refs/heads/master.zip"
   utils::download.file(url, destfile = tempzip, cacheOK = FALSE)
   utils::unzip(tempzip, exdir = temppath)
