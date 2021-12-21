@@ -131,6 +131,28 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 #'
 NULL
 
+#' @title Register global reactive list
+#' @description Creates or get reactive value list that is shared within the same
+#' shiny session
+#' @param name character, the key of the list
+#' @param session shiny session
+#' @return A shiny \code{\link[shiny]{reactiveValues}} object
+#' @export
+register_global_reactiveValues <- function(name, session = shiny::getDefaultReactiveDomain()){
+  if(is.null(session)){
+    return(shiny::reactiveValues())
+  }
+  root_session <- session$rootScope()
+  event_data <- root_session$cache$get(name, NULL)
+  if(!shiny::is.reactivevalues(event_data)){
+    event_data <- shiny::reactiveValues()
+    root_session$cache$set(name, event_data)
+  }
+  event_data
+}
+
+
+
 #' @rdname javascript-tunnel
 #' @export
 register_session_id <- function(
