@@ -1,7 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://dipterix.org/shidashi/404.html</loc>
+  </url>
+  <url>
+    <loc>http://dipterix.org/shidashi/LICENSE-text.html</loc>
+  </url>
+  <url>
+    <loc>http://dipterix.org/shidashi/LICENSE.html</loc>
+  </url>
+  <url>
+    <loc>http://dipterix.org/shidashi/authors.html</loc>
+  </url>
+  <url>
     <loc>http://dipterix.org/shidashi/index.html</loc>
+  </url>
+  <url>
+    <loc>http://dipterix.org/shidashi/news/index.html</loc>
   </url>
   <url>
     <loc>http://dipterix.org/shidashi/reference/accordion.html</loc>
@@ -55,6 +70,9 @@
     <loc>http://dipterix.org/shidashi/reference/include_view.html</loc>
   </url>
   <url>
+    <loc>http://dipterix.org/shidashi/reference/index.html</loc>
+  </url>
+  <url>
     <loc>http://dipterix.org/shidashi/reference/info_box.html</loc>
   </url>
   <url>
@@ -68,6 +86,9 @@
   </url>
   <url>
     <loc>http://dipterix.org/shidashi/reference/progressOutput.html</loc>
+  </url>
+  <url>
+    <loc>http://dipterix.org/shidashi/reference/register_global_reactiveValues.html</loc>
   </url>
   <url>
     <loc>http://dipterix.org/shidashi/reference/render.html</loc>
