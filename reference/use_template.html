@@ -53,7 +53,14 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">use_template</span><span class="op">(</span><span class="va">path</span>, user <span class="op">=</span> <span class="st">"dipterix"</span>, theme <span class="op">=</span> <span class="st">"AdminLTE3"</span>, <span class="va">...</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">use_template</span><span class="op">(</span>
+  <span class="va">path</span>,
+  user <span class="op">=</span> <span class="st">"dipterix"</span>,
+  theme <span class="op">=</span> <span class="st">"AdminLTE3"</span>,
+  repo <span class="op">=</span> <span class="st">"shidashi-templates"</span>,
+  branch <span class="op">=</span> <span class="st">"main"</span>,
+  <span class="va">...</span>
+<span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -64,6 +71,10 @@
 <dd><p>'Github' user name</p></dd>
 <dt>theme</dt>
 <dd><p>the theme to download</p></dd>
+<dt>repo</dt>
+<dd><p>repository if the name is other than <code>'shidashi-templates'</code></p></dd>
+<dt>branch</dt>
+<dd><p>branch name if other than <code>'main'</code> or <code>'master'</code></p></dd>
 <dt>...</dt>
 <dd><p>ignored</p></dd>
 </dl></div>
