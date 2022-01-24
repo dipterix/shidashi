@@ -63,7 +63,11 @@ render <- function(
       test.mode = test_mode,
       appDir = root_path
     ))
-    s <- sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path)
+    s <- c(
+      sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
+      'options("crayon.enabled" = TRUE)',
+      'options("crayon.colors" = 256)'
+    )
     s <- c(s, deparse(call))
     writeLines(
       con = script,
