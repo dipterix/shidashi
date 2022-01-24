@@ -4,7 +4,14 @@
 \alias{use_template}
 \title{Download 'shidashi' templates from 'Github'}
 \usage{
-use_template(path, user = "dipterix", theme = "AdminLTE3", ...)
+use_template(
+  path,
+  user = "dipterix",
+  theme = "AdminLTE3",
+  repo = "shidashi-templates",
+  branch = "main",
+  ...
+)
 }
 \arguments{
 \item{path}{the path to create 'shidashi' project}
@@ -12,6 +19,10 @@ use_template(path, user = "dipterix", theme = "AdminLTE3", ...)
 \item{user}{'Github' user name}
 
 \item{theme}{the theme to download}
+
+\item{repo}{repository if the name is other than \code{'shidashi-templates'}}
+
+\item{branch}{branch name if other than \code{'main'} or \code{'master'}}
 
 \item{...}{ignored}
 }
