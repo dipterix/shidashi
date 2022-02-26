@@ -1,26 +1,4 @@
 
-// Theme configuration
-$('.content-wrapper').IFrame({
-  onTabClick: (item) => {
-    console.log(item);
-    return item;
-  },
-  onTabChanged: (item) => {
-    console.log(item);
-    return item;
-  },
-  onTabCreated: (item) => {
-    console.log(item);
-    return item;
-  },
-  autoIframeMode: false,
-  autoItemActive: true,
-  autoShowNewTab: true,
-  allowDuplicates: false,
-  loadingScreen: false,
-  useNavbarItems: false
-})
-
 // progress output
 $(function() {
 
@@ -78,7 +56,7 @@ $(function() {
       if(!el_.hasClass("clipboard-btn")){
         el_ = $(el).find(".clipboard-btn");
       }
-      $(el_).attr("data-clipboard-text", value)
+      $(el_).attr("data-clipboard-text", value);
     },
     renderError: function(el, err) {
       let el_ = $(el);
@@ -99,7 +77,7 @@ $(function() {
       autohide: true,
       icon: "fa fas fa-copy",
       "class" : "bg-success"
-    })
+    });
     e.clearSelection();
   });
 
@@ -128,9 +106,10 @@ const default_scroll_opt = {
   }
 };
 
-class shidashi {
+class Shidashi {
 
   constructor (Shiny){
+    this._active_module = undefined;
     this._shiny = Shiny;
     this.$window = $(window);
     this.$document = $(document);
@@ -203,7 +182,7 @@ class shidashi {
         last_edit: this._private_id,
         inputs_changed: [],
         _key: key
-      })
+      });
     } else {
       return (defaultIfNotFound);
     }
@@ -227,7 +206,7 @@ class shidashi {
       items.splice(items.length - maxEntries);
       items.forEach((item) => {
         this._localStorage.removeItem(item._key);
-      })
+      });
     }
   }
 
@@ -291,7 +270,7 @@ class shidashi {
         shared_id: this._shared_id,
         private_id: this._private_id
       });
-    })
+    });
   }
   registerListener(type, callback, replace = true) {
     const event_str = "shidashi-event-" + type;
@@ -465,7 +444,7 @@ class shidashi {
 
     this.ensureShiny(() => {
       this._shiny.bindAll($(elbody));
-    })
+    });
 
     if(active){
       return(this.tabsetActivate(inputId, title));
@@ -557,9 +536,15 @@ class shidashi {
   }
 
   // card, card2, cardset...
-  card(inputId, method){
+  card(args){
     // method: expand, minimize, maximize, ...
-    $("#" + inputId).CardWidget(method);
+    if( !args.method ){ return; }
+    if( args.inputId ){
+      $(".card#" + args.inputId).CardWidget(args.method);
+    } else if (args.title){
+      $(`.card[data-title='${args.title}']`).CardWidget(args.method);
+    }
+
   }
 
   toggleCard2(selector){
@@ -575,6 +560,14 @@ class shidashi {
         el.classList.add("active");
       }
     }
+  }
+
+  // html css operations
+  addClass(selector, cls){
+    $(selector).addClass(cls);
+  }
+  removeClass(selector, cls){
+    $(selector).removeClass(cls);
   }
 
   // notification
@@ -667,6 +660,32 @@ class shidashi {
     }
     this._shiny.addCustomMessageHandler("shidashi." + action, callback);
   }
+  shinySetInput(inputId, value, add_timestamp = true, children = false) {
+    this.ensureShiny(() => {
+      if( add_timestamp ){
+        value.timestamp = new Date();
+      }
+      value._active_module = this._active_module;
+      value.parent_frame = this.$body.hasClass("parent-frame");
+      this._shiny.onInputChange(inputId, value);
+
+      if(children){
+
+        if(this.$iframeWrapper.length){
+          const $iframes = this.$iframeWrapper.find("iframe");
+          $iframes.each((_, iframe) => {
+            if(iframe.contentWindow.shidashi){
+              iframe.contentWindow.shidashi.ensureShiny(() => {
+                iframe.contentWindow.shidashi._shiny.onInputChange(inputId, value);
+              });
+            }
+          });
+        }
+
+      }
+
+    });
+  }
 
   // Finalize function when document is ready
   _finalize_initialization(){
@@ -689,7 +708,7 @@ class shidashi {
     const anchors = $(".shidashi-anchor");
 
     // Scroll-top widgets
-    anchors.each((i, item) => {
+    anchors.each((_, item) => {
       const $item = $(item);
       let item_id = $item.attr("id");
       if( typeof(item_id) !== "string" ){
@@ -814,7 +833,7 @@ class shidashi {
       });
 
     $(".theme-switch-wrapper .theme-switch input[type='checkbox']")
-      .change((evt) => {
+      .change((_) => {
         if(this.isDarkMode()){
           this.asLightMode();
         } else {
@@ -841,6 +860,7 @@ class shidashi {
           $($card[0]).find(".card-body .flip-box").toggleClass("active");
         }
       );
+
 
     });
 
@@ -922,10 +942,17 @@ class shidashi {
     });
 
     this.shinyHandler("cardwidget", (params) => {
-      this.card(params.inputId, params.method);
+      this.card(params);
     });
     this.shinyHandler("card2widget", (params) => {
       this.toggleCard2(params.selector);
+    });
+
+    this.shinyHandler("add_class", (params) => {
+      this.addClass(params.selector, params.class);
+    });
+    this.shinyHandler("remove_class", (params) => {
+      this.removeClass(params.selector, params.class);
     });
 
     this.shinyHandler("show_notification", (params) => {
@@ -938,7 +965,7 @@ class shidashi {
     this.shinyHandler("set_progress", (params) => {
       this.setProgress(params.outputId, params.value,
         params.max || 100, params.description);
-    })
+    });
 
     this.shinyHandler("make_scroll_fancy", (params) => {
       if(!params.selector || params.selector === ''){ return; }
@@ -953,18 +980,40 @@ class shidashi {
       this.broadcastSessionData(params.shared_id, params.private_id);
     });
 
-    this.shinyHandler("get_theme", (params) => {
+    this.shinyHandler("get_theme", (_) => {
       this._reportTheme();
     });
 
   }
 }
 
-window.shidashi = new shidashi(window.Shiny);
+const shiny = window.Shiny;
+const shidashi = new Shidashi(shiny);
 
-$(document).ready(() => {
-  window.shidashi._finalize_initialization();
-  window.shidashi._register_shiny(window.Shiny);
+window.shidashi = shidashi;
+
+$(document).on("shiny:connected", () => {
+  shidashi._finalize_initialization();
+  shidashi._register_shiny(window.Shiny);
+});
+
+// Theme configuration
+$('.content-wrapper').IFrame({
+  onTabClick: (item) => {
+    return item;
+  },
+  onTabChanged: (item) => {
+    return item;
+  },
+  onTabCreated: (item) => {
+    return item;
+  },
+  autoIframeMode: false,
+  autoItemActive: true,
+  autoShowNewTab: true,
+  allowDuplicates: false,
+  loadingScreen: false,
+  useNavbarItems: false
 });
 
 })();

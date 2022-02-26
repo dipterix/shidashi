@@ -185,6 +185,10 @@ input:checked + .slider::before {
   @include display(none, true);
   @include visibility(hidden, true);
 }
+.soft-hidden {
+  height: 0!important;
+  overflow: hidden!important;
+}
 
 .display-block-force {
   @include display(block, true);
@@ -215,6 +219,9 @@ input:checked + .slider::before {
     flex: 1;
   }
 }
+.flex-break {
+  flex-basis: 100%;
+}
 
 @each $type in hidden, auto, visible, scroll {
   .overflow-#{$type} {
@@ -225,6 +232,12 @@ input:checked + .slider::before {
       @include overflow($type, $d);
     }
   }
+}
+
+// larger scroll corner so when cards expand, we still have room to resize
+.os-theme-thin-light > .os-scrollbar-corner {
+  height: 28px;
+  width: 28px;
 }
 
 .overflow-visible-on-hover {
@@ -250,7 +263,14 @@ input:checked + .slider::before {
   @include fill-width();
   @include fill-height();
 }
-.fill-width { @include fill-width(); }
+.fill-width {
+  @include fill-width();
+
+  & > .shiny-input-container,
+  & > .shiny-output-container {
+    width: 100%;
+  }
+}
 .fill-height { @include fill-height(); }
 .fill-min {
   min-width: 100%;
@@ -284,6 +304,15 @@ input:checked + .slider::before {
 .no-padding { padding: 0!important; }
 .no-margin { margin: 0!important; }
 
+
+.shiny-output-error-validation {
+  text-align: center;
+}
+
+.no-padding > .shiny-output-error {
+  padding: 0.75rem 1.25rem;
+}
+
 .space-vertical-5 {
   width: 100%;
 
@@ -310,13 +339,13 @@ input:checked + .slider::before {
 /** Colors **/
 
 @for $factor from 0 through 9 {
-  $gray: adjust-color($color: #000000, $lightness: $factor * 10%);
+  $tmp: adjust-color($color: #000000, $lightness: $factor * 10%);
   .bg-gray-#{$factor}0 {
-    background-color: $gray;
+    background-color: $tmp;
   }
   @each $d in bottom, top, lef, right {
     .border-#{$d}-gray#{$factor}0 {
-      border-#{$d}: 1px solid $gray;
+      border-#{$d}: 1px solid $tmp;
     }
   }
   .opacity-0#{$factor} {
@@ -379,29 +408,62 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
 }
 
 .content-wrapper.iframe-mode {
-  max-height: calc(-96px + 100vh);
+  max-height: calc(-40px + 100vh);
 
   &>.tab-content {
-    min-height: calc(-97px + 100vh);
+    min-height: calc(-41px + 100vh);
 
     & .tab-empty,
     & .tab-pane,
     & .tab-pane > iframe {
-      min-height: calc(-97px + 100vh);
+      min-height: calc(-41px + 100vh);
     }
   }
 }
 
+.stretch-inner-height {
+  max-height: calc(-57px + 100vh);
+  height: 100%;
+}
+
+section.module_main_ui .screen-height {
+  max-height: calc(100vh - 16px);
+  overflow-y: hidden;
+
+  @each $type in auto, visible, scroll {
+    &.overflow-#{$type} {
+      @include overflow($type);
+    }
+    @each $d in x, y {
+      &.overflow-#{$d}-#{$type} {
+        @include overflow($type, $d);
+      }
+    }
+  }
+}
+
+.content-header {
+  padding: 0.5rem;
+}
+
+body {
+  background-color: $light;
+
+  &.dark-mode {
+    background-color: $light-dark;
+  }
+}
+
 body.navbar-iframe-hidden .content-wrapper.iframe-mode {
-  max-height: calc(-56px + 100vh);
+  max-height: calc(-40px + 100vh);
 
   &>.tab-content {
-    min-height: calc(-57px + 100vh);
+    min-height: calc(-41px + 100vh);
 
     & .tab-empty,
     & .tab-pane,
     & .tab-pane > iframe {
-      min-height: calc(-57px + 100vh);
+      min-height: calc(-41px + 100vh);
     }
   }
 }
@@ -429,8 +491,14 @@ body.iframe-mode-fullscreen .content-wrapper.iframe-mode {
   }
 }
 
+.navbar-expand .navbar-nav .nav-link {
+  padding-right: 0.8rem;
+  padding-left: 0.8rem;
+}
+
 
 // Sidebar-related
+
 .nav-sidebar .nav-header.nav-divider {
   display: flex;
   color: $light-gray;
@@ -458,6 +526,13 @@ body.dark-mode .nav-sidebar .nav-header.nav-divider {
   &::before,
   &::after {
     border-top: 1px solid $light-dark;
+  }
+}
+
+.sidebar-collapse .nav-sidebar .nav-header.nav-divider {
+  text-align: right;
+  &::before {
+    border-top: transparent!important;
   }
 }
 
@@ -518,6 +593,32 @@ body.dark-mode .nav-sidebar .nav-header.nav-divider {
 
   & .direct-chat-contacts hr {
     @include border-color( rgb(232,232,232), top );
+  }
+}
+
+// group input box
+.group-input-box {
+  border: 1px dashed $light-gray;
+  padding-top: 0.6rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+
+  &::before {
+    content: attr(title);
+    position: absolute;
+    margin-top: -1.5rem;
+    left: 0.4rem;
+    color: $gray; // $light-dark;
+    background-color: $light;
+    padding: 0.1rem 0.4rem;
+  }
+}
+.dark-mode .group-input-box {
+  border: 1px dashed $light-dark;
+  &::before {
+    color: $light-gray;
+    background-color: $light-dark;
   }
 }
 
@@ -650,4 +751,94 @@ body.dark-mode .nav-sidebar .nav-header.nav-divider {
 body.dark-mode #shiny-notification-panel .shiny-notification {
   background-color: rgba(255,255,255);
   color: #1f2d3d;
+}
+
+/* Additional shiny styles */
+.dark-mode {
+  & .selectize-control {
+    & .selectize-input,
+    & .selectize-dropdown {
+      background-color: $dark !important;
+      color: $white !important;
+    }
+
+    & .selectize-input {
+      border-color: $gray !important;
+      &::after {
+        border-color: $gray transparent transparent transparent !important;
+      }
+      &.dropdown-active::after {
+        border-color: transparent transparent $gray transparent !important;
+      }
+    }
+
+    &.multi .selectize-input > div {
+      background-color: $gray;
+      color: $white;
+    }
+  }
+}
+
+
+
+
+/* Shiny input & output fixes */
+.checkbox,
+.radio,
+.shiny-input-radiogroup .shiny-options-group {
+  & label {
+    margin-bottom: 0;
+
+    &, & span {
+      font-weight: 300;
+    }
+  }
+}
+
+fieldset,
+.form-control,
+.form-group,
+.shiny-input-container:not(.shiny-input-container-inline) {
+  width: 100%;
+}
+.form-group {
+  margin-bottom: 0.8rem;
+}
+
+.dipsaus-compound-input {
+  & .bootstrap-select .dropdown-toggle[role="combobox"] {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}
+
+.irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
+  color: inherit;
+  padding: 0 3px;
+  background-color: transparent;
+  border: transparent;
+}
+.dark-mode .irs--shiny .irs-grid-pol {
+  background-color: $white;
+}
+
+.toggle-advance-options {
+  color: $gray;
+
+  &:hover {
+    color: #0056b3;
+  }
+}
+
+.col-xs-12 {
+  -webkit-flex: 0 0 100%;
+  -ms-flex: 0 0 100%;
+  flex: 0 0 100%;
+  max-width: 100%;
+
+  position: relative;
+  width: 100%;
+  padding-right: 7.5px;
+  padding-left: 7.5px;
 }
