@@ -49,7 +49,12 @@ card2_close(inputId, session = shiny::getDefaultReactiveDomain())
 
 card2_toggle(inputId, session = shiny::getDefaultReactiveDomain())
 
-card_operate(inputId, method, session = shiny::getDefaultReactiveDomain())
+card_operate(
+  inputId,
+  title,
+  method,
+  session = shiny::getDefaultReactiveDomain()
+)
 }
 \arguments{
 \item{title}{the title of the card}

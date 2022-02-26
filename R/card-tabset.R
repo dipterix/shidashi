@@ -110,6 +110,12 @@ card_tabset <- function(
     stop("card_tabset: `names` must have the same length as tab elements")
   }
 
+  if(length(title) >= 1){
+    data_title <- trimws(as.character(title[[1]])[[1]])
+  } else {
+    data_title <- ""
+  }
+
   if(length(title) == 1){
     title <- shiny::tags$li(
       class="pt-2 px-3",
@@ -137,6 +143,7 @@ card_tabset <- function(
 
   set_attr_call(shiny::div(
     class = sprintf("card card-tabs %s", class),
+    `data-title` = data_title,
     shiny::div(
       class = sprintf("card-header p-0 pt-1 %s", class_header),
       shiny::tags$ul(

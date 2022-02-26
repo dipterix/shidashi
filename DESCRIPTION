@@ -1,7 +1,7 @@
 Package: shidashi
 Type: Package
 Title: A Shiny Dashboard Template System
-Version: 0.1.0
+Version: 0.1.0.9000
 Language: en-US
 URL: https://dipterix.org/shidashi/ https://github.com/dipterix/shidashi
 BugReports: https://github.com/dipterix/shidashi/issues

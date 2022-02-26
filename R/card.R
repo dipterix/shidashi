@@ -117,6 +117,12 @@ card <- function(
 
   template_path <- file.path(root_path, 'views', 'card.html')
 
+  if(length(title) >= 1){
+    data_title <- trimws(as.character(title[[1]])[[1]])
+  } else {
+    data_title <- ""
+  }
+
   if(length(footer)){
     footer <- shiny::div(
       class = combine_class("card-footer", class_foot),
@@ -193,7 +199,8 @@ card <- function(
     footer = footer,
     tools = tools,
     card_id = card_id,
-    start_collapsed = start_collapsed
+    start_collapsed = start_collapsed,
+    data_title = data_title
   ), call)
 }
 
@@ -209,6 +216,12 @@ card2 <- function(
 
   call <- match.call()
   template_path <- file.path(root_path, 'views', 'card2.html')
+
+  if(length(title) >= 1){
+    data_title <- trimws(as.character(title[[1]])[[1]])
+  } else {
+    data_title <- ""
+  }
 
   if(length(footer)){
     footer <- shiny::div(
@@ -250,7 +263,8 @@ card2 <- function(
     footer = footer,
     tools = tools,
     card_id = card_id,
-    start_collapsed = start_collapsed
+    start_collapsed = start_collapsed,
+    data_title = data_title
   ), call)
 }
 
@@ -296,18 +310,18 @@ card2_toggle <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 #' @rdname card
 #' @export
 card_operate <- function(
-  inputId, method, session = shiny::getDefaultReactiveDomain()
+  inputId, title, method, session = shiny::getDefaultReactiveDomain()
 ){
   method <- match.arg(
     method, choices = c("collapse", "expand", "remove", "toggle",
                         "maximize", "minimize", "toggleMaximize")
   )
-  session$sendCustomMessage(
-    "shidashi.cardwidget",
-    list(
-      inputId = session$ns(inputId),
-      method = method
-    )
-  )
+  params <- list(method = method)
+  if(missing(inputId)){
+    params$title <- title
+  } else {
+    params$inputId <- session$ns(inputId)
+  }
+  session$sendCustomMessage("shidashi.cardwidget", params)
 }
 
