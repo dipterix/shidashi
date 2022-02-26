@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0.9000</span>
       </span>
     </div>
 
@@ -93,7 +93,12 @@
 
 <span class="fu">card2_toggle</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 
-<span class="fu">card_operate</span><span class="op">(</span><span class="va">inputId</span>, <span class="va">method</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<span class="fu">card_operate</span><span class="op">(</span>
+  <span class="va">inputId</span>,
+  <span class="va">title</span>,
+  <span class="va">method</span>,
+  session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span>
+<span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -175,7 +180,7 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span>
 <span class="r-in">  resizable <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span class="r-in"><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  "&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  " data-title="Badges"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Badges&lt;/h3&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;!-- Buttons, labels, and many other things can be placed here! --&gt;</span>
@@ -219,7 +224,7 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span>
 <span class="r-in">  resizable <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span class="r-in"><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  "&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  " data-title="Default Tools"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Default Tools&lt;/h3&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;!-- Buttons, labels, and many other things can be placed here! --&gt;</span>
@@ -274,7 +279,7 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-in">  <span class="op">)</span>,</span>
 <span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span></span>
 <span class="r-in"><span class="op">)</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single direct-chat  "&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single direct-chat  " data-title="Card2 Example"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Card2 Example&lt;/h3&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;!-- Buttons, labels, and many other things can be placed here! --&gt;</span>
