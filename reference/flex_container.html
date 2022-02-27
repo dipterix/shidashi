@@ -66,11 +66,16 @@
 
 <span class="fu">flex_item</span><span class="op">(</span>
   <span class="va">...</span>,
+  size <span class="op">=</span> <span class="fl">1</span>,
   style <span class="op">=</span> <span class="cn">NULL</span>,
   order <span class="op">=</span> <span class="cn">NULL</span>,
-  flex <span class="op">=</span> <span class="st">"1"</span>,
-  align <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"center"</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+  flex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span>,
+  align <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"center"</span><span class="op">)</span>,
+  class <span class="op">=</span> <span class="cn">NULL</span>,
+  .class <span class="op">=</span> <span class="st">"fill-width padding-5"</span>
+<span class="op">)</span>
+
+<span class="fu">flex_break</span><span class="op">(</span><span class="va">...</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -83,8 +88,13 @@ for <code>flex_item</code>, <code>...</code> are shiny 'HTML' tags</p></dd>
 <dt>direction, wrap, justify, align_box, align_content</dt>
 <dd><p>'CSS' styles for
 'flex' containers</p></dd>
+<dt>size</dt>
+<dd><p>numerical relative size of the item; will be ignored if
+<code>flex</code> is provided</p></dd>
 <dt>order, align, flex</dt>
 <dd><p>CSS' styles for 'flex' items</p></dd>
+<dt>class, .class</dt>
+<dd><p>class to add to the elements</p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
