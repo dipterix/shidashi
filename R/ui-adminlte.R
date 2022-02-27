@@ -37,14 +37,17 @@ adminlte_ui <- function(root_path = template_root()){
       call <- as.call(c(list(quote(shiny::htmlTemplate)), `@args`))
       return(eval(call, envir = env))
     }, error = function(e){
-      print(traceback(e))
       module_template <- file.path(root_path, 'views', '500.html')
       error <- shiny::pre(
         style = "word-wrap: break-word; white-space: break-spaces;",
         paste(
           sep = "\n",
           "Error message:",
-          e$message
+          e$message,
+          "Traceback:",
+          paste(utils::capture.output({
+            traceback(e)
+          }), collapse = "\n")
         )
       )
       if(file.exists(module_template)){
