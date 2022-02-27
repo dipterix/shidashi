@@ -90,7 +90,7 @@ combine_class <- function(...){
   s <- s[!s %in% '']
   paste(s, collapse = " ")
 }
-remove_class <- function(target, class){
+remove_html_class <- function(target, class){
   if (!length(target)) { return("") }
   s <- unlist(strsplit(target, " "))
   s <- unique(s)

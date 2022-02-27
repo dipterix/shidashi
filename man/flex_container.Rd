@@ -3,6 +3,7 @@
 \name{flex_container}
 \alias{flex_container}
 \alias{flex_item}
+\alias{flex_break}
 \title{Generate 'HTML' tags with 'flex' layout}
 \usage{
 flex_container(
@@ -18,11 +19,16 @@ flex_container(
 
 flex_item(
   ...,
+  size = 1,
   style = NULL,
   order = NULL,
-  flex = "1",
-  align = c("flex-start", "flex-end", "center")
+  flex = as.character(size),
+  align = c("flex-start", "flex-end", "center"),
+  class = NULL,
+  .class = "fill-width padding-5"
 )
+
+flex_break(..., class = NULL)
 }
 \arguments{
 \item{...}{for \code{flex_container}, it's elements of \code{flex_item};
@@ -33,7 +39,12 @@ for \code{flex_item}, \code{...} are shiny 'HTML' tags}
 \item{direction, wrap, justify, align_box, align_content}{'CSS' styles for
 'flex' containers}
 
+\item{size}{numerical relative size of the item; will be ignored if
+\code{flex} is provided}
+
 \item{order, align, flex}{CSS' styles for 'flex' items}
+
+\item{class, .class}{class to add to the elements}
 }
 \value{
 'HTML' tags

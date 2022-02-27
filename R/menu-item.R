@@ -30,7 +30,7 @@ as_icon <- function(icon = NULL, class = "fas"){
     }
     # remove class fa
     if ( !"fa" %in% class ){
-      icon$attribs$class <- remove_class(icon$attribs$class, "fa")
+      icon$attribs$class <- remove_html_class(icon$attribs$class, "fa")
     }
   }
 

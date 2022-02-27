@@ -1,10 +1,13 @@
 #' @title Generate 'HTML' tags with 'flex' layout
 #' @param ... for \code{flex_container}, it's elements of \code{flex_item};
 #' for \code{flex_item}, \code{...} are shiny 'HTML' tags
+#' @param size numerical relative size of the item; will be ignored if
+#' \code{flex} is provided
 #' @param style the additional 'CSS' style for containers or inner items
 #' @param direction,wrap,justify,align_box,align_content 'CSS' styles for
 #' 'flex' containers
 #' @param order,align,flex CSS' styles for 'flex' items
+#' @param class,.class class to add to the elements
 #' @return 'HTML' tags
 #'
 #' @examples
@@ -68,8 +71,11 @@ flex_container <- function(
 #' @rdname flex_container
 #' @export
 flex_item <- function(
-  ..., style = NULL, order = NULL, flex = "1",
-  align = c("flex-start", "flex-end", "center")
+  ..., size = 1,
+  style = NULL, order = NULL, flex = as.character(size),
+  align = c("flex-start", "flex-end", "center"),
+  class = NULL,
+  .class = "fill-width padding-5"
 ){
   l <- list()
   if(length(align) == 1){
@@ -84,12 +90,21 @@ flex_item <- function(
     style1 <- paste0(style1, "; ", style)
   }
 
+  class <- combine_class(class, .class)
 
   shiny::div(
     ...,
-    style = style1
+    style = style1,
+    class = class
   )
 
+}
+
+#' @rdname flex_container
+#' @export
+flex_break <- function(..., class = NULL){
+  class <- combine_class(class, "flex-break")
+  shiny::div(class = class, ...)
 }
 
 #' 'HTML' code to generate small back-to-top button
@@ -137,5 +152,46 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to"){
       )
     )
   )
+}
+
+
+
+#' @name add-remove-html-class
+#' @title Add or remove 'HTML' class from 'RAVE' application
+#' @description Only works in template framework provided by 'shidashi' package,
+#' see \code{\link[shidashi]{use_template}}
+#' @param selector 'CSS' selector
+#' @param class class to add or to remove from selected elements
+#' @param session shiny session
+#' @return No value is returned
+#'
+#' @examples
+#'
+#' server <- function(input, output, session){
+#'
+#'   # Add class `hidden` to element with ID `elemid`
+#'   add_class("#elemid", "hidden")
+#'
+#'   # Remove class `hidden` from element with class `shiny-input-optional`
+#'   remove_class(".shiny-input-optional", "hidden")
+#' }
+#'
+#' @export
+add_class <- function(selector, class,
+                      session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("shidashi.add_class", list(
+    selector = selector,
+    class = class
+  ))
+}
+
+#' @rdname add-remove-html-class
+#' @export
+remove_class <- function(selector, class,
+                         session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("shidashi.remove_class", list(
+    selector = selector,
+    class = class
+  ))
 }
 
