@@ -294,7 +294,7 @@ class Shidashi {
     if(col.length < 4){ return("#000000"); }
     if(col[0] === "#"){
       if(col.length === 7){ return(col); }
-      col = "#"+col[1]+col[1]+col[2]+col[2]+col[3]+col[3]
+      col = "#"+col[1]+col[1]+col[2]+col[2]+col[3]+col[3];
       return(col);
     }
     let parts = col.match(/rgb[a]{0,1}\((\d+),\s*(\d+),\s*(\d+)[\),]/);
@@ -324,6 +324,20 @@ class Shidashi {
       foreground: this._col2Hex(this.$body.css("color"))
     });
   }
+
+  notifyIframes(method, args){
+    if(this.$iframeWrapper.length){
+      const $iframes = this.$iframeWrapper.find("iframe");
+      $iframes.each((_, iframe) => {
+        try {
+          if(iframe.contentWindow.shidashi){
+            iframe.contentWindow.shidashi[method](...args);
+          }
+        } catch (e) {}
+      });
+    }
+  }
+
   // theme-mode
   asLightMode(){
     this.$body.removeClass("dark-mode");
@@ -687,6 +701,32 @@ class Shidashi {
     });
   }
 
+  shinyResetOutput(outputId, message = ""){
+    const el = document.getElementById(outputId);
+    if(el && el.parentElement){
+      this.ensureShiny(() => {
+        Object.keys(this._shiny.outputBindings.bindingNames).forEach((key) => {
+          const binding = shidashi._shiny.outputBindings.bindingNames[key].binding;
+          $(binding.find(el.parentElement)).each((_, el2) => {
+            if($(el2)[0].id === el.id){
+
+              binding.renderError(el, {
+                message: message,
+                type: "shiny-output-error-shiny.silent.error shiny-output-error-validation"
+              });
+
+            }
+          });
+        });
+        value._active_module = this._active_module;
+        value.parent_frame = this.$body.hasClass("parent-frame");
+        this._shiny.onInputChange(inputId, value);
+
+      });
+    }
+
+  }
+
   // Finalize function when document is ready
   _finalize_initialization(){
     if(this._initialized){ return; }
@@ -982,6 +1022,10 @@ class Shidashi {
 
     this.shinyHandler("get_theme", (_) => {
       this._reportTheme();
+    });
+
+    this.shinyHandler("reset_output", (params) => {
+      this.shinyResetOutput(params.outputId, params.message || "");
     });
 
   }
