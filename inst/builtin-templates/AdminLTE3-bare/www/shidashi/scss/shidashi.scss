@@ -408,26 +408,21 @@ body.iframe-mode-fullscreen .navbar-nav-iframe {
 }
 
 .content-wrapper.iframe-mode {
-  max-height: calc(-40px + 100vh);
+  max-height: calc(-56px + 100vh);
 
   &>.tab-content {
-    min-height: calc(-41px + 100vh);
+    min-height: calc(-57px + 100vh);
 
     & .tab-empty,
     & .tab-pane,
     & .tab-pane > iframe {
-      min-height: calc(-41px + 100vh);
+      min-height: calc(-57px + 100vh);
     }
   }
 }
 
-.stretch-inner-height {
-  max-height: calc(-57px + 100vh);
-  height: 100%;
-}
-
 section.module_main_ui .screen-height {
-  max-height: calc(100vh - 16px);
+  max-height: calc(100vh - 73px);
   overflow-y: hidden;
 
   @each $type in auto, visible, scroll {
@@ -440,6 +435,10 @@ section.module_main_ui .screen-height {
       }
     }
   }
+}
+
+body.iframe-mode section.module_main_ui .screen-height {
+  max-height: calc(100vh - 32px);
 }
 
 .content-header {
@@ -455,15 +454,15 @@ body {
 }
 
 body.navbar-iframe-hidden .content-wrapper.iframe-mode {
-  max-height: calc(-40px + 100vh);
+  max-height: calc(-56px + 100vh);
 
   &>.tab-content {
-    min-height: calc(-41px + 100vh);
+    min-height: calc(-57px + 100vh);
 
     & .tab-empty,
     & .tab-pane,
     & .tab-pane > iframe {
-      min-height: calc(-41px + 100vh);
+      min-height: calc(-57px + 100vh);
     }
   }
 }
