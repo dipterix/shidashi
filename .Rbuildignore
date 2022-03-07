@@ -11,3 +11,5 @@ node_modules$
 ^inst/screenshots$
 ^cran-comments\.md$
 ^CRAN-RELEASE$
+^ui\.R$
+^_rs_job\.R$

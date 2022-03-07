@@ -33,35 +33,25 @@ flex_container <- function(
   style1 <- style
   style <- list()
 
-  if(length(call[['direction']])){
-    direction <- match.arg(direction)
-    style[["flex-direction"]] <- direction
-  }
+  direction <- match.arg(direction)
+  style[["flex-direction"]] <- direction
 
-  if(length(call[['wrap']])){
-    wrap <- match.arg(wrap)
-    style[["flex-wrap"]] <- wrap
-  }
+  wrap <- match.arg(wrap)
+  style[["flex-wrap"]] <- wrap
 
-  if(length(call[['justify']])){
-    justify <- match.arg(justify)
-    style[["justify-content"]] <- justify
-  }
+  justify <- match.arg(justify)
+  style[["justify-content"]] <- justify
 
-  if(length(call[['align_box']])){
-    align_box <- match.arg(align_box)
-    style[["align-content"]] <- align_box
-  }
+  align_box <- match.arg(align_box)
+  style[["align-content"]] <- align_box
 
-  if(length(call[['align_content']])){
-    align_content <- match.arg(align_content)
-    style[["align-items"]] <- align_content
-  }
+  align_content <- match.arg(align_content)
+  style[["align-items"]] <- align_content
 
   style$display <- "flex"
   style <- paste(names(style), as.vector(style), sep = ":", collapse = "; ")
   if(length(style1)){
-    style <- paste0(style, ";", style1)
+    style <- paste0(style, "; ", style1)
   }
 
 
