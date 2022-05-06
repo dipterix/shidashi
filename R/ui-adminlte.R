@@ -127,7 +127,7 @@ adminlte_sidebar <- function(root_path = template_root(),
       label = ifelse(length(x$label) == 1, x$label, "No Label"),
       icon = ifelse(length(x$icon) == 1, x$icon, ""),
       badge = ifelse(length(x$badge) == 1, x$badge, ""),
-      url = gsub("^[^\\?]+", "/", url),
+      url = gsub("^[^\\?]+", "", url),
       stringsAsFactors = FALSE
     )
   }))
