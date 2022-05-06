@@ -81,7 +81,7 @@ module_info <- function(root_path = template_root(),
     x <- modules[[mid]]
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module')]
     y$module <- mid
-    url <- httr::modify_url("/?module=", query = y)
+    url <- httr::modify_url("?module=", query = y)
     if(length(x$group) == 1 && x$group %in% group_level){
       x$group <- group_level[group_level == x$group][[1]]
     } else {

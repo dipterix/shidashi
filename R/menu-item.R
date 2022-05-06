@@ -87,13 +87,13 @@ menu_item <- function(
   module <- ''
   if(startsWith(href, "#")){
     target <- "_self"
-  } else if (startsWith(href, "/?module=")) {
+  } else if (startsWith(href, "?module=")) {
     query_list <- httr::parse_url(href)
     query_list$query
     module <- query_list$query$module
     module <- gsub(pattern = " ", replacement = "", module)
     if( grepl("[^a-zA-Z0-9_]", module) ){
-      stop("Function `menu_item`: for `href` with module link (starts with '/?module=<ID>'), the module `ID` can only contain letters, digits, and/or '_'.")
+      stop("Function `menu_item`: for `href` with module link (starts with '?module=<ID>'), the module `ID` can only contain letters, digits, and/or '_'.")
     }
   }
   template_path <- file.path(root_path, "views", "menu-item.html")

@@ -104,7 +104,7 @@ adminlte_sidebar <- function(root_path = template_root(),
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module')]
     y$module <- mid
     y$shared_id <- shared_id
-    url <- httr::modify_url("/?module=", query = y)
+    url <- httr::modify_url("?module=", query = y)
     order <- x$order
     if(!length(order) || is.na(order)){
       order <- 9999L
