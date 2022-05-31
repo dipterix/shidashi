@@ -168,11 +168,11 @@ adminlte_sidebar <- function(root_path = template_root(),
     if(is.na(x$group)){
       item <- menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
       side_bar[[length(side_bar) + 1]] <- item
-    } else if(!x$group %in% ignore_group){
+    } else if(!as.character(x$group) %in% ignore_group){
 
       # add group
       group <- x$group
-      ignore_group <- c(ignore_group, group)
+      ignore_group <- c(ignore_group, as.character(group))
       sub <- module_tbl[!is.na(module_tbl$group) & module_tbl$group == group, ]
       if(nrow(sub)){
 

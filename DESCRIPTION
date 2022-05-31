@@ -1,13 +1,13 @@
 Package: shidashi
 Type: Package
 Title: A Shiny Dashboard Template System
-Version: 0.1.0.9001
+Version: 0.1.1.9000
 Language: en-US
 URL: https://dipterix.org/shidashi/ https://github.com/dipterix/shidashi
 BugReports: https://github.com/dipterix/shidashi/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Authors@R: c(
     person("Zhengjia", "Wang", email="dipterix.wang@gmail.com", 
             role = c("cph", "aut", "cre"), comment = c(ORCID = "0000-0001-5629-1116")),
