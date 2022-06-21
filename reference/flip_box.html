@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.1.9000</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
       </span>
     </div>
 
@@ -68,24 +68,37 @@
     <h2>Arguments</h2>
     <dl><dt>front</dt>
 <dd><p>'HTML' elements to show in the front</p></dd>
+
+
 <dt>back</dt>
 <dd><p>'HTML' elements to show when the box is flipped</p></dd>
+
+
 <dt>active_on</dt>
 <dd><p>the condition when a box should be flipped; choices are
 <code>'click'</code>: flip when double-click on both sides; <code>'click-front'</code>:
 only flip when the front face is double-clicked; <code>'manual'</code>: manually
 flip in <code>R</code> code (see <code>{flip(inputId)}</code> function)</p></dd>
+
+
 <dt>inputId</dt>
 <dd><p>element 'HTML' id; must be specified if <code>active_on</code> is
 not <code>'click'</code></p></dd>
+
+
 <dt>class</dt>
 <dd><p>'HTML' class</p></dd>
+
+
 <dt>session</dt>
 <dd><p>shiny session; default is current active domain</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p><code>flip_box</code> returns 'HTML' tags; <code>flip</code> should be called
+    
+
+<p><code>flip_box</code> returns 'HTML' tags; <code>flip</code> should be called
 from shiny session, and returns nothing</p>
     </div>
 
@@ -147,7 +160,7 @@ from shiny session, and returns nothing</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
 </div>
 
       </footer></div>

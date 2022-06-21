@@ -1,8 +1,8 @@
 pandoc: 2.7.3
-pkgdown: 2.0.3
+pkgdown: 2.0.4
 pkgdown_sha: ~
 articles: {}
-last_built: 2022-05-31T19:54Z
+last_built: 2022-06-21T16:29Z
 urls:
   reference: http://dipterix.org/shidashi/reference
   article: http://dipterix.org/shidashi/articles
