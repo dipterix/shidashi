@@ -79,7 +79,7 @@ module_info <- function(root_path = template_root(),
 
   module_tbl <- do.call('rbind', lapply(modules_ids, function(mid){
     x <- modules[[mid]]
-    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module')]
+    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
     url <- httr::modify_url("?module=", query = y)
     if(length(x$group) == 1 && x$group %in% group_level){

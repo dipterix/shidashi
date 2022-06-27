@@ -13,3 +13,4 @@ node_modules$
 ^CRAN-RELEASE$
 ^ui\.R$
 ^_rs_job\.R$
+^CRAN-SUBMISSION$

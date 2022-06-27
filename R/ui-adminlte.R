@@ -101,7 +101,10 @@ adminlte_sidebar <- function(root_path = template_root(),
 
   module_tbl <- do.call('rbind', lapply(modules_ids, function(mid){
     x <- modules[[mid]]
-    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module')]
+    if(isTRUE(x$hidden)) {
+      return(NULL)
+    }
+    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
     y$shared_id <- shared_id
     url <- httr::modify_url("?module=", query = y)
