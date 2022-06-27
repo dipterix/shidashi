@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2.9000</span>
       </span>
     </div>
 
@@ -53,29 +53,29 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">flex_container</span><span class="op">(</span>
-  <span class="va">...</span>,
-  style <span class="op">=</span> <span class="cn">NULL</span>,
-  direction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"row"</span>, <span class="st">"column"</span><span class="op">)</span>,
-  wrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wrap"</span>, <span class="st">"nowrap"</span>, <span class="st">"wrap-reverse"</span><span class="op">)</span>,
-  justify <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"center"</span>, <span class="st">"flex-end"</span>, <span class="st">"space-around"</span>, <span class="st">"space-between"</span><span class="op">)</span>,
-  align_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stretch"</span>, <span class="st">"flex-start"</span>, <span class="st">"center"</span>, <span class="st">"flex-end"</span>, <span class="st">"baseline"</span><span class="op">)</span>,
-  align_content <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stretch"</span>, <span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"space-between"</span>,
-    <span class="st">"space-around"</span>, <span class="st">"center"</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">flex_item</span><span class="op">(</span>
-  <span class="va">...</span>,
-  size <span class="op">=</span> <span class="fl">1</span>,
-  style <span class="op">=</span> <span class="cn">NULL</span>,
-  order <span class="op">=</span> <span class="cn">NULL</span>,
-  flex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span>,
-  align <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"center"</span><span class="op">)</span>,
-  class <span class="op">=</span> <span class="cn">NULL</span>,
-  .class <span class="op">=</span> <span class="st">"fill-width padding-5"</span>
-<span class="op">)</span>
-
-<span class="fu">flex_break</span><span class="op">(</span><span class="va">...</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">flex_container</span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  style <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  direction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"row"</span>, <span class="st">"column"</span><span class="op">)</span>,</span>
+<span>  wrap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wrap"</span>, <span class="st">"nowrap"</span>, <span class="st">"wrap-reverse"</span><span class="op">)</span>,</span>
+<span>  justify <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"center"</span>, <span class="st">"flex-end"</span>, <span class="st">"space-around"</span>, <span class="st">"space-between"</span><span class="op">)</span>,</span>
+<span>  align_box <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stretch"</span>, <span class="st">"flex-start"</span>, <span class="st">"center"</span>, <span class="st">"flex-end"</span>, <span class="st">"baseline"</span><span class="op">)</span>,</span>
+<span>  align_content <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"stretch"</span>, <span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"space-between"</span>,</span>
+<span>    <span class="st">"space-around"</span>, <span class="st">"center"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">flex_item</span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  style <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  order <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  flex <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">size</span><span class="op">)</span>,</span>
+<span>  align <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"flex-start"</span>, <span class="st">"flex-end"</span>, <span class="st">"center"</span><span class="op">)</span>,</span>
+<span>  class <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  .class <span class="op">=</span> <span class="st">"fill-width padding-5"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">flex_break</span><span class="op">(</span><span class="va">...</span>, class <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -116,14 +116,14 @@ for <code>flex_item</code>, <code>...</code> are shiny 'HTML' tags</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">flex_container</span><span class="op">(</span></span>
-<span class="r-in">  style <span class="op">=</span> <span class="st">"position:absolute;height:100vh;top:0;left:0;width:100%"</span>,</span>
-<span class="r-in">  <span class="fu">flex_item</span><span class="op">(</span>style <span class="op">=</span> <span class="st">'background-color:black;'</span><span class="op">)</span>,</span>
-<span class="r-in">  <span class="fu">flex_item</span><span class="op">(</span>style <span class="op">=</span> <span class="st">'background-color:red;'</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">)</span></span>
-<span class="r-in"><span class="co"># You can view it via `htmltools::html_print(x)`</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">flex_container</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  style <span class="op">=</span> <span class="st">"position:absolute;height:100vh;top:0;left:0;width:100%"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu">flex_item</span><span class="op">(</span>style <span class="op">=</span> <span class="st">'background-color:black;'</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="fu">flex_item</span><span class="op">(</span>style <span class="op">=</span> <span class="st">'background-color:red;'</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># You can view it via `htmltools::html_print(x)`</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -138,7 +138,7 @@ for <code>flex_item</code>, <code>...</code> are shiny 'HTML' tags</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

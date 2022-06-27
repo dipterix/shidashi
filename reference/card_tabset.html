@@ -18,7 +18,7 @@ card_tabset_operate."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2.9000</span>
       </span>
     </div>
 
@@ -55,19 +55,19 @@ card_tabset_operate."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">card_tabset</span><span class="op">(</span>
-  <span class="va">...</span>,
-  inputId <span class="op">=</span> <span class="fu">rand_string</span><span class="op">(</span><span class="op">)</span>,
-  title <span class="op">=</span> <span class="cn">NULL</span>,
-  names <span class="op">=</span> <span class="cn">NULL</span>,
-  active <span class="op">=</span> <span class="cn">NULL</span>,
-  tools <span class="op">=</span> <span class="cn">NULL</span>,
-  footer <span class="op">=</span> <span class="cn">NULL</span>,
-  class <span class="op">=</span> <span class="st">""</span>,
-  class_header <span class="op">=</span> <span class="st">""</span>,
-  class_body <span class="op">=</span> <span class="st">""</span>,
-  class_foot <span class="op">=</span> <span class="st">""</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">card_tabset</span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  inputId <span class="op">=</span> <span class="fu">rand_string</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  names <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  active <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  footer <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  class <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_header <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_body <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_foot <span class="op">=</span> <span class="st">""</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -123,30 +123,30 @@ class the of card header, body, and footer accordingly</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Fake session to operate on card_tabset without shiny</span></span>
-<span class="r-in"><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://rdrr.io/pkg/shiny/man/MockShinySession.html" class="external-link">MockShinySession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">card_tabset</span><span class="op">(</span></span>
-<span class="r-in">  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Cardset with Tools"</span>,</span>
-<span class="r-in">  `Tab 1` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span><span class="st">"Tab content 1"</span><span class="op">)</span>,</span>
-<span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-500"</span>,</span>
-<span class="r-in">  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="st">"New|badge-success"</span></span>
-<span class="r-in">    <span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span>
-<span class="r-in">      widget <span class="op">=</span> <span class="st">"collapse"</span></span>
-<span class="r-in">    <span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span>
-<span class="r-in">      widget <span class="op">=</span> <span class="st">"maximize"</span></span>
-<span class="r-in">    <span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Fake session to operate on card_tabset without shiny</span></span></span>
+<span class="r-in"><span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://rdrr.io/pkg/shiny/man/MockShinySession.html" class="external-link">MockShinySession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">card_tabset</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Cardset with Tools"</span>,</span></span>
+<span class="r-in"><span>  `Tab 1` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span><span class="st">"Tab content 1"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  class_body <span class="op">=</span> <span class="st">"height-500"</span>,</span></span>
+<span class="r-in"><span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"New|badge-success"</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      widget <span class="op">=</span> <span class="st">"collapse"</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      widget <span class="op">=</span> <span class="st">"maximize"</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-tabs " data-title="Cardset with Tools"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header p-0 pt-1 "&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;ul class="nav nav-tabs" id="card_set" role="tablist"&gt;</span>
@@ -177,28 +177,28 @@ class the of card header, body, and footer accordingly</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu"><a href="card_tabset_operate.html">card_tabset_insert</a></span><span class="op">(</span></span>
-<span class="r-in">  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Tab 2"</span>,</span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span><span class="st">"New content"</span><span class="op">)</span>,</span>
-<span class="r-in">  session <span class="op">=</span> <span class="va">session</span></span>
-<span class="r-in"><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu"><a href="card_tabset_operate.html">card_tabset_activate</a></span><span class="op">(</span></span>
-<span class="r-in">  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Tab 1"</span>,</span>
-<span class="r-in">  session <span class="op">=</span> <span class="va">session</span></span>
-<span class="r-in"><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu"><a href="card_tabset_operate.html">card_tabset_remove</a></span><span class="op">(</span></span>
-<span class="r-in">  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Tab 2"</span>,</span>
-<span class="r-in">  session <span class="op">=</span> <span class="va">session</span></span>
-<span class="r-in"><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="card_tabset_operate.html">card_tabset_insert</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Tab 2"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span><span class="st">"New content"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  session <span class="op">=</span> <span class="va">session</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="card_tabset_operate.html">card_tabset_activate</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Tab 1"</span>,</span></span>
+<span class="r-in"><span>  session <span class="op">=</span> <span class="va">session</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu"><a href="card_tabset_operate.html">card_tabset_remove</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  inputId <span class="op">=</span> <span class="st">"card_set"</span>,</span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Tab 2"</span>,</span></span>
+<span class="r-in"><span>  session <span class="op">=</span> <span class="va">session</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -213,7 +213,7 @@ class the of card header, body, and footer accordingly</p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

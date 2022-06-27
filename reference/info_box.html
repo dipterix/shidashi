@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2.9000</span>
       </span>
     </div>
 
@@ -53,14 +53,14 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">info_box</span><span class="op">(</span>
-  <span class="va">...</span>,
-  icon <span class="op">=</span> <span class="st">"envelope"</span>,
-  class <span class="op">=</span> <span class="st">""</span>,
-  class_icon <span class="op">=</span> <span class="st">"bg-info"</span>,
-  class_content <span class="op">=</span> <span class="st">""</span>,
-  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">info_box</span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  icon <span class="op">=</span> <span class="st">"envelope"</span>,</span>
+<span>  class <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_icon <span class="op">=</span> <span class="st">"bg-info"</span>,</span>
+<span>  class_content <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -99,11 +99,11 @@ specifying <code>NULL</code></p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">info_box</span><span class="op">(</span><span class="st">"Message"</span>, icon <span class="op">=</span> <span class="st">"cogs"</span><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">info_box</span><span class="op">(</span><span class="st">"Message"</span>, icon <span class="op">=</span> <span class="st">"cogs"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="info-box "&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;span class="info-box-icon bg-info"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;i class="fa-cogs fas" role="presentation" aria-label="cogs icon"&gt;&lt;/i&gt;</span>
@@ -116,13 +116,13 @@ specifying <code>NULL</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">info_box</span><span class="op">(</span></span>
-<span class="r-in">  icon <span class="op">=</span> <span class="st">"thumbs-up"</span>,</span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">span</a></span><span class="op">(</span>class <span class="op">=</span> <span class="st">"info-box-text"</span>, <span class="st">"Likes"</span><span class="op">)</span>,</span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">span</a></span><span class="op">(</span>class <span class="op">=</span> <span class="st">"info-box-number"</span>, <span class="st">"12,320"</span><span class="op">)</span>,</span>
-<span class="r-in">  class_icon <span class="op">=</span> <span class="st">"bg-red"</span></span>
-<span class="r-in"><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">info_box</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  icon <span class="op">=</span> <span class="st">"thumbs-up"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">span</a></span><span class="op">(</span>class <span class="op">=</span> <span class="st">"info-box-text"</span>, <span class="st">"Likes"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">span</a></span><span class="op">(</span>class <span class="op">=</span> <span class="st">"info-box-number"</span>, <span class="st">"12,320"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  class_icon <span class="op">=</span> <span class="st">"bg-red"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="info-box "&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;span class="info-box-icon bg-red"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;i class="fa-thumbs-up fas" role="presentation" aria-label="thumbs-up icon"&gt;&lt;/i&gt;</span>
@@ -136,8 +136,8 @@ specifying <code>NULL</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">info_box</span><span class="op">(</span><span class="st">"No icons"</span>, icon <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">info_box</span><span class="op">(</span><span class="st">"No icons"</span>, icon <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="info-box "&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="info-box-content "&gt;</span>
@@ -148,7 +148,7 @@ specifying <code>NULL</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -163,7 +163,7 @@ specifying <code>NULL</code></p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

@@ -19,7 +19,7 @@ some situations. Please use it at your own risk."><!-- mathjax --><script src="h
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2.9000</span>
       </span>
     </div>
 
@@ -57,16 +57,16 @@ some situations. Please use it at your own risk.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">accordion</span><span class="op">(</span>
-  <span class="va">...</span>,
-  id <span class="op">=</span> <span class="fu">rand_string</span><span class="op">(</span><span class="op">)</span>,
-  class <span class="op">=</span> <span class="cn">NULL</span>,
-  style_header <span class="op">=</span> <span class="cn">NULL</span>,
-  style_body <span class="op">=</span> <span class="cn">NULL</span>,
-  env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">parent.frame</a></span><span class="op">(</span><span class="op">)</span>,
-  extras <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,
-  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">accordion</span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  id <span class="op">=</span> <span class="fu">rand_string</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  class <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style_body <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sys.parent.html" class="external-link">parent.frame</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  extras <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -117,46 +117,46 @@ some situations. Please use it at your own risk.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="fu">accordion</span><span class="op">(</span></span>
-<span class="r-in">  id <span class="op">=</span> <span class="st">"input-set"</span>,</span>
-<span class="r-in">  <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span>
-<span class="r-in">    title <span class="op">=</span> <span class="st">"Input Group A"</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_1"</span>, <span class="st">"Input 1"</span><span class="op">)</span>,</span>
-<span class="r-in">    collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span class="r-in">    footer <span class="op">=</span> <span class="st">"Anim pariatur cliche reprehenderit dolor brunch."</span>,</span>
-<span class="r-in">    tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"New|badge-danger"</span><span class="op">)</span></span>
-<span class="r-in">      <span class="co"># card_tool(widget = "collapse")</span></span>
-<span class="r-in">    <span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span>
-<span class="r-in">    title <span class="op">=</span> <span class="st">"Input Group B"</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_2"</span>, <span class="st">"Input 2"</span><span class="op">)</span>,</span>
-<span class="r-in">    footer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/actionButton.html" class="external-link">actionButton</a></span><span class="op">(</span><span class="st">"btn1"</span>, <span class="st">"OK"</span><span class="op">)</span>,</span>
-<span class="r-in">    collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span class="r-in">    tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"link"</span>,</span>
-<span class="r-in">                icon <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/icon.html" class="external-link">icon</a></span><span class="op">(</span><span class="st">"question-circle"</span><span class="op">)</span>,</span>
-<span class="r-in">                href <span class="op">=</span> <span class="st">"#"</span><span class="op">)</span></span>
-<span class="r-in">    <span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">accordion</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  id <span class="op">=</span> <span class="st">"input-set"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    title <span class="op">=</span> <span class="st">"Input Group A"</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_1"</span>, <span class="st">"Input 1"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    footer <span class="op">=</span> <span class="st">"Anim pariatur cliche reprehenderit dolor brunch."</span>,</span></span>
+<span class="r-in"><span>    tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"New|badge-danger"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>      <span class="co"># card_tool(widget = "collapse")</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    title <span class="op">=</span> <span class="st">"Input Group B"</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_2"</span>, <span class="st">"Input 2"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    footer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/actionButton.html" class="external-link">actionButton</a></span><span class="op">(</span><span class="st">"btn1"</span>, <span class="st">"OK"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>    tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"link"</span>,</span></span>
+<span class="r-in"><span>                icon <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/icon.html" class="external-link">icon</a></span><span class="op">(</span><span class="st">"question-circle"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>                href <span class="op">=</span> <span class="st">"#"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div id="input-set"&gt;&lt;div class="card card-accordion "&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header card-accordion" style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;div class="card-tools card-accordion"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;span class="right badge badge-danger"&gt;New&lt;/span&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h4 class="card-title w-100 " data-toggle="collapse" href="#oe6CAsC3BO" aria-expanded="false"&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h4 class="card-title w-100 " data-toggle="collapse" href="#n8m4ZQ6XwY" aria-expanded="false"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;a class="d-block w-100 card-accordion-title"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         Input Group A</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;/a&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;/h4&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div id="oe6CAsC3BO" class="collapse" data-parent="#input-set"&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div id="n8m4ZQ6XwY" class="collapse" data-parent="#input-set"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;div class="card-body", style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;div class="form-group shiny-input-container"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;label class="control-label" id="input_1-label" for="input_1"&gt;Input 1&lt;/label&gt;</span>
@@ -173,13 +173,13 @@ some situations. Please use it at your own risk.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;i class="fa-question-circle fas" role="presentation" aria-label="question-circle icon"&gt;&lt;/i&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;/a&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h4 class="card-title w-100 " data-toggle="collapse" href="#PravckGkHp" aria-expanded="false"&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h4 class="card-title w-100 " data-toggle="collapse" href="#C3Gp87qtgU" aria-expanded="false"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;a class="d-block w-100 card-accordion-title"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>         Input Group B</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;/a&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;/h4&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div id="PravckGkHp" class="collapse" data-parent="#input-set"&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div id="C3Gp87qtgU" class="collapse" data-parent="#input-set"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;div class="card-body", style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       &lt;div class="form-group shiny-input-container"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;label class="control-label" id="input_2-label" for="input_2"&gt;Input 2&lt;/label&gt;</span>
@@ -192,7 +192,7 @@ some situations. Please use it at your own risk.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -207,7 +207,7 @@ some situations. Please use it at your own risk.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>

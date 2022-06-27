@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2.9000</span>
       </span>
     </div>
 
@@ -53,52 +53,52 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">card</span><span class="op">(</span>
-  <span class="va">title</span>,
-  <span class="va">...</span>,
-  footer <span class="op">=</span> <span class="cn">NULL</span>,
-  tools <span class="op">=</span> <span class="cn">NULL</span>,
-  inputId <span class="op">=</span> <span class="cn">NULL</span>,
-  class <span class="op">=</span> <span class="st">""</span>,
-  class_header <span class="op">=</span> <span class="st">""</span>,
-  class_body <span class="op">=</span> <span class="st">""</span>,
-  class_foot <span class="op">=</span> <span class="st">""</span>,
-  style_header <span class="op">=</span> <span class="cn">NULL</span>,
-  style_body <span class="op">=</span> <span class="cn">NULL</span>,
-  start_collapsed <span class="op">=</span> <span class="cn">FALSE</span>,
-  resizable <span class="op">=</span> <span class="cn">FALSE</span>,
-  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">card2</span><span class="op">(</span>
-  <span class="va">title</span>,
-  <span class="va">body_main</span>,
-  body_side <span class="op">=</span> <span class="cn">NULL</span>,
-  footer <span class="op">=</span> <span class="cn">NULL</span>,
-  tools <span class="op">=</span> <span class="cn">NULL</span>,
-  inputId <span class="op">=</span> <span class="cn">NULL</span>,
-  class <span class="op">=</span> <span class="st">""</span>,
-  class_header <span class="op">=</span> <span class="st">""</span>,
-  class_body <span class="op">=</span> <span class="st">"min-height-400"</span>,
-  class_foot <span class="op">=</span> <span class="st">""</span>,
-  style_header <span class="op">=</span> <span class="cn">NULL</span>,
-  style_body <span class="op">=</span> <span class="cn">NULL</span>,
-  start_collapsed <span class="op">=</span> <span class="cn">FALSE</span>,
-  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span>
-
-<span class="fu">card2_open</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">card2_close</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">card2_toggle</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">card_operate</span><span class="op">(</span>
-  <span class="va">inputId</span>,
-  <span class="va">title</span>,
-  <span class="va">method</span>,
-  session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">card</span><span class="op">(</span></span>
+<span>  <span class="va">title</span>,</span>
+<span>  <span class="va">...</span>,</span>
+<span>  footer <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  inputId <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  class <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_header <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_body <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_foot <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  style_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style_body <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  start_collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  resizable <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">card2</span><span class="op">(</span></span>
+<span>  <span class="va">title</span>,</span>
+<span>  <span class="va">body_main</span>,</span>
+<span>  body_side <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  footer <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tools <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  inputId <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  class <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_header <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  class_body <span class="op">=</span> <span class="st">"min-height-400"</span>,</span>
+<span>  class_foot <span class="op">=</span> <span class="st">""</span>,</span>
+<span>  style_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  style_body <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  start_collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">card2_open</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">card2_close</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">card2_toggle</span><span class="op">(</span><span class="va">inputId</span>, session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">card_operate</span><span class="op">(</span></span>
+<span>  <span class="va">inputId</span>,</span>
+<span>  <span class="va">title</span>,</span>
+<span>  <span class="va">method</span>,</span>
+<span>  session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -188,33 +188,33 @@ and <code>"toggleMaximize"</code></p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span>
-<span class="r-in"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># Used for example only</span></span>
-<span class="r-in"><span class="va">ns</span> <span class="op">&lt;-</span> <span class="va">I</span></span>
-<span class="r-in"><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://rdrr.io/pkg/shiny/man/MockShinySession.html" class="external-link">MockShinySession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># -------------- Basic usage -------------</span></span>
-<span class="r-in"><span class="fu">card</span><span class="op">(</span></span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Badges"</span>, <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">div</a></span><span class="op">(</span></span>
-<span class="r-in">    class <span class="op">=</span> <span class="st">"padding-20"</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="st">"Add badges to the top-right corder. "</span>,</span>
-<span class="r-in">      <span class="st">"Use \"|\" to indicate the badge classes; "</span>,</span>
-<span class="r-in">      <span class="st">"for example: \"badge-info\", \"badge-warning\"..."</span></span>
-<span class="r-in">    <span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">hr</a></span><span class="op">(</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="st">"Use `resizable = TRUE` to make card resizable."</span></span>
-<span class="r-in">    <span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"New|badge-info"</span><span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"3|badge-warning"</span><span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span>
-<span class="r-in">  resizable <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span class="r-in"><span class="op">)</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/" class="external-link">shidashi</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Used for example only</span></span></span>
+<span class="r-in"><span><span class="va">ns</span> <span class="op">&lt;-</span> <span class="va">I</span></span></span>
+<span class="r-in"><span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://rdrr.io/pkg/shiny/man/MockShinySession.html" class="external-link">MockShinySession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># -------------- Basic usage -------------</span></span></span>
+<span class="r-in"><span><span class="fu">card</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Badges"</span>, <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">div</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    class <span class="op">=</span> <span class="st">"padding-20"</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"Add badges to the top-right corder. "</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"Use \"|\" to indicate the badge classes; "</span>,</span></span>
+<span class="r-in"><span>      <span class="st">"for example: \"badge-info\", \"badge-warning\"..."</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">hr</a></span><span class="op">(</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/pkg/htmltools/man/builder.html" class="external-link">p</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="st">"Use `resizable = TRUE` to make card resizable."</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"New|badge-info"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="as_badge.html">as_badge</a></span><span class="op">(</span><span class="st">"3|badge-warning"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span></span>
+<span class="r-in"><span>  resizable <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  " data-title="Badges"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Badges&lt;/h3&gt;</span>
@@ -240,25 +240,25 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># ---------------- With tools -----------------</span></span>
-<span class="r-in"><span class="fu">card</span><span class="op">(</span></span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Default Tools"</span>,</span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/plotOutput.html" class="external-link">plotOutput</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu">ns</span><span class="op">(</span><span class="st">"card_defaulttool_plot"</span><span class="op">)</span>,</span>
-<span class="r-in">    height <span class="op">=</span> <span class="st">"100%"</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span>
-<span class="r-in">      widget <span class="op">=</span> <span class="st">"link"</span>,</span>
-<span class="r-in">      href <span class="op">=</span> <span class="st">"https://github.com/dipterix"</span></span>
-<span class="r-in">    <span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"collapse"</span><span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"maximize"</span><span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span>
-<span class="r-in">  resizable <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span class="r-in"><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># ---------------- With tools -----------------</span></span></span>
+<span class="r-in"><span><span class="fu">card</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Default Tools"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/plotOutput.html" class="external-link">plotOutput</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu">ns</span><span class="op">(</span><span class="st">"card_defaulttool_plot"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="st">"100%"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      widget <span class="op">=</span> <span class="st">"link"</span>,</span></span>
+<span class="r-in"><span>      href <span class="op">=</span> <span class="st">"https://github.com/dipterix"</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"collapse"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"maximize"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  class_body <span class="op">=</span> <span class="st">"height-300"</span>,</span></span>
+<span class="r-in"><span>  resizable <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single  " data-title="Default Tools"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Default Tools&lt;/h3&gt;</span>
@@ -283,37 +283,37 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
-<span class="r-in"><span class="co"># -------------- Card2 example --------------</span></span>
-<span class="r-in"><span class="fu">card2</span><span class="op">(</span></span>
-<span class="r-in">  title <span class="op">=</span> <span class="st">"Card2 Example"</span>, body_main <span class="op">=</span></span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/plotOutput.html" class="external-link">plotOutput</a></span><span class="op">(</span></span>
-<span class="r-in">    outputId <span class="op">=</span> <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot"</span><span class="op">)</span>,</span>
-<span class="r-in">    height <span class="op">=</span> <span class="st">"100%"</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  body_side <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/fluidPage.html" class="external-link">fluidRow</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/column.html" class="external-link">column</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="fl">6L</span>, <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span></span>
-<span class="r-in">        <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot_title"</span><span class="op">)</span>,</span>
-<span class="r-in">        <span class="st">"Plot title"</span></span>
-<span class="r-in">      <span class="op">)</span></span>
-<span class="r-in">    <span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/column.html" class="external-link">column</a></span><span class="op">(</span></span>
-<span class="r-in">      <span class="fl">6L</span>, <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/sliderInput.html" class="external-link">sliderInput</a></span><span class="op">(</span></span>
-<span class="r-in">        <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot_npts"</span><span class="op">)</span>,</span>
-<span class="r-in">        <span class="st">"# of points"</span>, min <span class="op">=</span> <span class="fl">1</span>, max <span class="op">=</span> <span class="fl">100</span>,</span>
-<span class="r-in">        value <span class="op">=</span> <span class="fl">10</span>, step <span class="op">=</span> <span class="fl">1</span>, round <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span class="r-in">      <span class="op">)</span></span>
-<span class="r-in">    <span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"link"</span>,</span>
-<span class="r-in">              href <span class="op">=</span> <span class="st">"https://github.com/dipterix"</span><span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"collapse"</span><span class="op">)</span>,</span>
-<span class="r-in">    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"maximize"</span><span class="op">)</span></span>
-<span class="r-in">  <span class="op">)</span>,</span>
-<span class="r-in">  class_body <span class="op">=</span> <span class="st">"height-300"</span></span>
-<span class="r-in"><span class="op">)</span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># -------------- Card2 example --------------</span></span></span>
+<span class="r-in"><span><span class="fu">card2</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  title <span class="op">=</span> <span class="st">"Card2 Example"</span>, body_main <span class="op">=</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/plotOutput.html" class="external-link">plotOutput</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    outputId <span class="op">=</span> <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    height <span class="op">=</span> <span class="st">"100%"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  body_side <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/fluidPage.html" class="external-link">fluidRow</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/column.html" class="external-link">column</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fl">6L</span>, <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>        <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot_title"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"Plot title"</span></span></span>
+<span class="r-in"><span>      <span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/column.html" class="external-link">column</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      <span class="fl">6L</span>, <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/sliderInput.html" class="external-link">sliderInput</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>        <span class="fu">ns</span><span class="op">(</span><span class="st">"card2_plot_npts"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"# of points"</span>, min <span class="op">=</span> <span class="fl">1</span>, max <span class="op">=</span> <span class="fl">100</span>,</span></span>
+<span class="r-in"><span>        value <span class="op">=</span> <span class="fl">10</span>, step <span class="op">=</span> <span class="fl">1</span>, round <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span>      <span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"link"</span>,</span></span>
+<span class="r-in"><span>              href <span class="op">=</span> <span class="st">"https://github.com/dipterix"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"collapse"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    <span class="fu"><a href="card_tool.html">card_tool</a></span><span class="op">(</span>widget <span class="op">=</span> <span class="st">"maximize"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span>,</span></span>
+<span class="r-in"><span>  class_body <span class="op">=</span> <span class="st">"height-300"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;div class="card card-single direct-chat  " data-title="Card2 Example"&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   &lt;div class="card-header " style=""&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;h3 class="card-title"&gt;Card2 Example&lt;/h3&gt;</span>
@@ -357,7 +357,7 @@ and <code>"toggleMaximize"</code></p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;/div&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -372,7 +372,7 @@ and <code>"toggleMaximize"</code></p></dd>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.4.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.5.</p>
 </div>
 
       </footer></div>
