@@ -1,3 +1,7 @@
+# shidashi 0.1.3
+
+* Allow modules to be hidden from the sidebar
+
 # shidashi 0.1.2
 
 * Fixed group name not handled correctly as factors

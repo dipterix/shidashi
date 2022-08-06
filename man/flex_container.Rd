@@ -13,8 +13,8 @@ flex_container(
   wrap = c("wrap", "nowrap", "wrap-reverse"),
   justify = c("flex-start", "center", "flex-end", "space-around", "space-between"),
   align_box = c("stretch", "flex-start", "center", "flex-end", "baseline"),
-  align_content = c("stretch", "flex-start", "flex-end", "space-between",
-    "space-around", "center")
+  align_content = c("stretch", "flex-start", "flex-end", "space-between", "space-around",
+    "center")
 )
 
 flex_item(
