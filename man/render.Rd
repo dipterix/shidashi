@@ -7,6 +7,8 @@
 render(
   root_path = template_root(),
   ...,
+  prelaunch = NULL,
+  prelaunch_quoted = FALSE,
   launch_browser = TRUE,
   as_job = TRUE,
   test_mode = getOption("shiny.testmode", FALSE)
@@ -18,6 +20,11 @@ render(
 
 \item{...}{additional parameters passed to \code{\link[shiny]{runApp}},
 such as \code{host}, \code{port}}
+
+\item{prelaunch}{expression to execute before launching the session; the
+expression will execute in a brand new session}
+
+\item{prelaunch_quoted}{whether the expression is quoted; default is false}
 
 \item{launch_browser}{whether to launch browser; default is \code{TRUE}}
 

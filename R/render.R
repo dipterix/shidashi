@@ -9,6 +9,9 @@
 #' available when 'RStudio' is available
 #' @param test_mode whether to test the project; this options is helpful when
 #' you want to debug the project without relaunching shiny applications
+#' @param prelaunch expression to execute before launching the session; the
+#' expression will execute in a brand new session
+#' @param prelaunch_quoted whether the expression is quoted; default is false
 #' @return This functions runs a 'shiny' application, and returns the job id
 #' if 'RStudio' is available.
 #'
@@ -24,6 +27,8 @@
 render <- function(
   root_path = template_root(),
   ...,
+  prelaunch = NULL,
+  prelaunch_quoted = FALSE,
   launch_browser = TRUE,
   as_job = TRUE,
   test_mode = getOption("shiny.testmode", FALSE)
@@ -31,8 +36,11 @@ render <- function(
   if(!dir.exists(root_path)){
     stop("`root_path` cannot be found: ", root_path)
   }
-  root_path <- normalizePath(root_path, mustWork = TRUE)
+  root_path <- normalizePath(root_path, mustWork = TRUE, winslash = "/")
 
+  if(!prelaunch_quoted) {
+    prelaunch <- substitute(prelaunch)
+  }
 
   writeLines(
     c(
@@ -66,7 +74,9 @@ render <- function(
     s <- c(
       sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
       'options("crayon.enabled" = TRUE)',
-      'options("crayon.colors" = 256)'
+      'options("crayon.colors" = 256)\n',
+      deparse(prelaunch),
+      '\n'
     )
     s <- c(s, deparse(call))
     writeLines(
