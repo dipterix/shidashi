@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">shidashi</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3.9000</span>
       </span>
     </div>
 
@@ -56,6 +56,8 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">render</span><span class="op">(</span></span>
 <span>  root_path <span class="op">=</span> <span class="fu"><a href="template_settings.html">template_root</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span>,</span>
+<span>  prelaunch <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  prelaunch_quoted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  launch_browser <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  as_job <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  test_mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"shiny.testmode"</span>, <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -72,6 +74,15 @@
 <dt>...</dt>
 <dd><p>additional parameters passed to <code><a href="https://rdrr.io/pkg/shiny/man/runApp.html" class="external-link">runApp</a></code>,
 such as <code>host</code>, <code>port</code></p></dd>
+
+
+<dt>prelaunch</dt>
+<dd><p>expression to execute before launching the session; the
+expression will execute in a brand new session</p></dd>
+
+
+<dt>prelaunch_quoted</dt>
+<dd><p>whether the expression is quoted; default is false</p></dd>
 
 
 <dt>launch_browser</dt>
