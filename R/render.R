@@ -55,6 +55,7 @@ render <- function(
                               child_ok = FALSE)){
 
     shidashi::template_settings$set('root_path' = root_path)
+    eval(prelaunch, envir = new.env(parent = globalenv()))
     shiny::runApp(appDir = root_path, launch.browser = launch_browser, test.mode = test_mode, ...)
   } else {
     script <- file.path(root_path, "_rs_job.R")
