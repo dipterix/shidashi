@@ -1,3 +1,9 @@
+# shidashi 0.1.4
+
+* Fixed a bug that makes application fail to launch on `Windows`
+* Added support to evaluated expressions before launching the application, allowing actions such as setting global options and loading data
+
+
 # shidashi 0.1.3
 
 * Allow modules to be hidden from the sidebar
