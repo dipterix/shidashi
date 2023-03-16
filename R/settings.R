@@ -47,12 +47,15 @@ template_root <- function(){
   )
   if(!length(path)) {
     if(template_settings$get("dev.debug", FALSE)){
-      path <- 'inst/buildin-templates/AdminLTE3/'
+      path <- './inst/builtin-templates/AdminLTE3-bare/'
     } else {
-      path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3")
-      if(!dir.exists(path)){
+      path <- file.path(R_user_dir('shidashi', which = "data"), c("AdminLTE3", "AdminLTE3-bare"))
+      path <- path[file.exists(path)]
+      if(!length(path)){
         path <- file.path(R_user_dir('shidashi', which = "data"), "AdminLTE3-bare")
         create_barebone(path)
+      } else {
+        path <- path[[1]]
       }
     }
 
