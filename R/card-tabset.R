@@ -4,12 +4,12 @@ card_tabset_header <- function(id_tabset, index, title, active = FALSE){
     shiny::a(
       class = ifelse(active, "nav-link active", "nav-link"),
       id = sprintf("%s-%s-tab", id_tabset, index),
-      'data-toggle' = "pill",
+      'data-toggle' = "tab",
       href = sprintf("#%s-%s", id_tabset, index),
       role = "tab",
       "aria-controls" = sprintf("%s-%s", id_tabset, index),
       "aria-selected" = ifelse(active, "true", "false"),
-      "tab-index" = index,
+      # "tab-index" = index,
       title
     )
   )
@@ -21,7 +21,7 @@ card_tabset_content <- function(id_tabset, index, active, ...){
     id = sprintf("%s-%s", id_tabset, index),
     role = "tabpanel",
     "aria-labelledby" = sprintf("%s-%s-tab", id_tabset, index),
-    "tab-index" = index,
+    # "tab-index" = index,
     ...
   )
 }
