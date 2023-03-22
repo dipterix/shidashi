@@ -6,7 +6,7 @@
 \usage{
 card_tabset(
   ...,
-  inputId = rand_string(),
+  inputId = sprintf("tabset-\%s", rand_string()),
   title = NULL,
   names = NULL,
   active = NULL,
@@ -21,7 +21,7 @@ card_tabset(
 \arguments{
 \item{...}{'HTML' tags; each tag will be placed into a card}
 
-\item{inputId}{the id of the card-set}
+\item{inputId}{the id of the card-set, must start with letters}
 
 \item{title}{the title of the card-set}
 
