@@ -1,8 +1,8 @@
 # A Shiny Template System
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/dipterix/shidashi/workflows/R-CMD-check/badge.svg)](https://github.com/dipterix/shidashi/actions)
 [![CRAN status](https://www.r-pkg.org/badges/version/shidashi)](https://CRAN.R-project.org/package=shidashi)
+[![R-CMD-check](https://github.com/dipterix/shidashi/workflows/R-CMD-check/badge.svg)](https://github.com/dipterix/shidashi/actions)
 <!-- badges: end -->
 
 The goal of shidashi is to provide framework for R-shiny templates, especially for dashboard applications.
