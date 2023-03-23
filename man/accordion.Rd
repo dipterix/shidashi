@@ -2,17 +2,26 @@
 % Please edit documentation in R/accordion.R
 \name{accordion}
 \alias{accordion}
+\alias{accordion_operate}
 \title{Generates an 'accordion' tab-set}
 \usage{
 accordion(
   ...,
-  id = rand_string(),
+  id = rand_string(prefix = "accordion-"),
   class = NULL,
   style_header = NULL,
   style_body = NULL,
   env = parent.frame(),
   extras = list(),
   root_path = template_root()
+)
+
+accordion_operate(
+  id,
+  itemId,
+  item_title,
+  method = c("expand", "collapse", "toggle"),
+  session = shiny::getDefaultReactiveDomain()
 )
 }
 \arguments{
@@ -32,6 +41,16 @@ accordion(
 \code{\link{accordion_item}}}
 
 \item{root_path}{see \code{\link{template_root}}}
+
+\item{itemId}{\code{\link{accordion_item}} id}
+
+\item{item_title}{\code{\link{accordion_item}} title, if item id is
+specified, this title will be ignored}
+
+\item{method}{operation, choices are \code{'expand'} (default),
+\code{'collapse'}, or \code{'toggle'}}
+
+\item{session}{\code{shiny} session}
 }
 \value{
 \code{'shiny.tag.list'} 'HTML' tags
@@ -52,22 +71,13 @@ accordion(
     title = "Input Group A",
     textInput("input_1", "Input 1"),
     collapsed = FALSE,
-    footer = "Anim pariatur cliche reprehenderit dolor brunch.",
-    tools = list(
-      as_badge("New|badge-danger")
-      # card_tool(widget = "collapse")
-    )
+    footer = "Anim pariatur cliche reprehenderit dolor brunch."
   ),
   accordion_item(
     title = "Input Group B",
     textInput("input_2", "Input 2"),
     footer = actionButton("btn1", "OK"),
-    collapsed = FALSE,
-    tools = list(
-      card_tool(widget = "link",
-                icon = shiny::icon("question-circle"),
-                href = "#")
-    )
+    collapsed = FALSE
   )
 )
 

@@ -1,7 +1,11 @@
 sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
-  shared_id <- session$cache$get("shidashi_shared_id")
-  private_id <- session$cache$get("shidashi_private_id")
+  # shared_id <- session$cache$get("shidashi_shared_id")
+  shared_id <- session$userData$shidashi$shared_id
+
+  # private_id <- session$cache$get("shidashi_private_id")
+  private_id <- session$userData$shidashi$private_id
+
   if(length(shared_id) != 1 || length(private_id) != 1 ||
      !is.character(shared_id) || !is.character(private_id)){
     stop("Invalid session IDs, run `register_session_id()` first to register.")
@@ -9,26 +13,21 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
   root_session <- session$rootScope()
 
-  reactives <- root_session$cache$get("shidashi_sync_inputs", NULL)
+  # reactives <- root_session$cache$get("shidashi_sync_inputs", NULL)
+  reactives <- root_session$userData$shidashi$input_reactives
 
   if(!shiny::is.reactivevalues(reactives)){
     reactives <- shiny::reactiveValues()
-    root_session$cache$set("shidashi_sync_inputs", reactives)
+    root_session$userData$shidashi$input_reactives <- reactives
   }
 
-  observer <- root_session$cache$get("shidashi_sync_handler", NULL)
-
+  observer <- root_session$userData$shidashi$input_sync_handler
   if(is.null(observer)){
     observer <- shiny::observeEvent({
       root_session$input[["@shidashi@"]]
     }, {
       try({
-        # if(system.file('', package = "RcppSimdJson") != ''){
-        #   message <- RcppSimdJson::fparse(root_session$input[["@shidashi@"]])
-        # } else {
-          message <- jsonlite::fromJSON(root_session$input[["@shidashi@"]])
-        # }
-
+        message <- jsonlite::fromJSON(root_session$input[["@shidashi@"]])
 
         if(identical(message$last_edit, private_id)){
           return()
@@ -59,8 +58,12 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
     }, domain = root_session, ignoreNULL = TRUE, ignoreInit = TRUE,
     suspended = TRUE)
 
-    root_session$cache$set("shidashi_sync_handler", observer)
+    root_session$userData$shidashi$input_sync_handler <- observer
   }
+
+  # ----- backward compatible
+  root_session$cache$set("shidashi_sync_inputs", reactives)
+  root_session$cache$set("shidashi_sync_handler", observer)
 
   list(
     reactives = reactives,
@@ -143,10 +146,14 @@ register_global_reactiveValues <- function(name, session = shiny::getDefaultReac
     return(shiny::reactiveValues())
   }
   root_session <- session$rootScope()
-  event_data <- root_session$cache$get(name, NULL)
+  if( is.null(root_session$userData$shidashi$global_reactiveValues) ) {
+    root_session$userData$shidashi$global_reactiveValues <- fastmap::fastmap()
+  }
+  value_list <- root_session$userData$shidashi$global_reactiveValues
+  event_data <- value_list$get( key = name, missing = NULL )
   if(!shiny::is.reactivevalues(event_data)){
     event_data <- shiny::reactiveValues()
-    root_session$cache$set(name, event_data)
+    value_list$set( key = name, value = event_data )
   }
   event_data
 }
@@ -160,13 +167,22 @@ register_session_id <- function(
   shared_id = NULL,
   shared_inputs = NA){
 
+  # DIPSAUS DEBUG START
+  # session <- shiny:::MockShinySession$new()
+  # shared_id <- NULL
+  # shared_inputs <- NA
+
+  # Get stored session information
+  if( !is.environment(session$userData$shidashi) ) {
+    session$userData$shidashi <- new.env(parent = emptyenv())
+  }
+
   if(length(shared_id)){
     if(grepl("[^a-z0-9_]", shared_id)){
       stop("session `shared_id` must only contain letters (lower-case), digits, and/or '_'.")
     }
   } else {
-    # obtain the shared ID
-    shared_id <- session$cache$get("shidashi_shared_id", NULL)
+    shared_id <- session$userData$shidashi$shared_id
     if(length(shared_id) != 1 || !is.character(shared_id)){
       # get from session
       query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
@@ -178,22 +194,19 @@ register_session_id <- function(
       }
     }
   }
-  session$cache$set("shidashi_shared_id", shared_id)
+  session$userData$shidashi$shared_id <- shared_id
 
-  if(!session$cache$exists("shidashi_private_id")){
+  if(is.null(session$userData$shidashi$private_id)) {
     is_registerd <- FALSE
     private_id <- rand_string(length = 8)
-    session$cache$set("shidashi_private_id", private_id)
+    session$userData$shidashi$private_id <- private_id
   } else {
     is_registerd <- TRUE
-    private_id <- session$cache$get("shidashi_private_id")
+    private_id <- session$userData$shidashi$private_id
   }
 
-  # set up shared_id bucket
-  broadcast_observer <- session$cache$get(
-    "shidashi_broadcast_handler", NULL)
-
-  if( is.null(broadcast_observer) ){
+  broadcast_observer <- session$userData$shidashi$broadcast_observer
+  if( is.null(broadcast_observer) ) {
     broadcast_observer <- shiny::observe({
       inputs <- shiny::reactiveValuesToList(session$input)
       nms <- names(inputs)
@@ -217,10 +230,7 @@ register_session_id <- function(
 
       }
     }, domain = session, priority = -100000, suspended = TRUE)
-
-    session$cache$set(
-      "shidashi_broadcast_handler", broadcast_observer)
-
+    session$userData$shidashi$broadcast_observer <- broadcast_observer
   }
 
   res <- sync_inputs(session = session)
@@ -229,6 +239,7 @@ register_session_id <- function(
   res$disable_broadcast <- function(){
     res$broadcast_observer$suspend()
   }
+
   res$enable_broadcast <- function(once = FALSE){
     if(once){
       res$broadcast_observer$run()
@@ -248,6 +259,14 @@ register_session_id <- function(
   }
 
   res
+
+
+  # ----- For backward compatibility -----------------------------------
+  session$cache$set("shidashi_shared_id", shared_id)
+  session$cache$set("shidashi_private_id", private_id)
+  session$cache$set("shidashi_broadcast_handler", broadcast_observer)
+
+  res
 }
 
 #' @rdname javascript-tunnel
@@ -256,13 +275,18 @@ register_session_events <- function(session = shiny::getDefaultReactiveDomain())
   if(is.environment(session)){
     root_session <- session$rootScope()
 
-    event_data <- root_session$cache$get("shidashi_event_data", NULL)
+    # event_data <- root_session$cache$get("shidashi_event_data", NULL)
+    if(!is.environment(root_session$userData$shidashi)) {
+      root_session$userData$shidashi <- new.env(parent = emptyenv())
+    }
+    event_data <- root_session$userData$shidashi$event_data
     if(!shiny::is.reactivevalues(event_data)){
       event_data <- shiny::reactiveValues()
-      root_session$cache$set("shidashi_event_data", event_data)
+      root_session$userData$shidashi$event_data <- event_data
     }
 
-    observer <- root_session$cache$get("shidashi_event_handler", NULL)
+    # observer <- root_session$cache$get("shidashi_event_handler", NULL)
+    observer <- root_session$userData$shidashi$event_handler
 
     if(is.null(observer)){
       observer <- shiny::observeEvent({
@@ -275,8 +299,12 @@ register_session_events <- function(session = shiny::getDefaultReactiveDomain())
       }, domain = root_session)
 
       session$sendCustomMessage("shidashi.get_theme", list())
-
+      root_session$userData$shidashi$event_handler <- observer
     }
+
+    root_session$cache$set("shidashi_event_data", event_data)
+    root_session$cache$set("shidashi_event_handler", observer)
+
   } else {
     event_data <- list()
   }

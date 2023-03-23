@@ -8,6 +8,9 @@ node_modules$
 ^pkgdown$
 ^adhoc$
 ^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$
+^inst/builtin-templates/AdminLTE3-bare/node_modules
+^inst/builtin-templates/AdminLTE3-bare/src
+^inst/builtin-templates/AdminLTE3-bare/www/shidashi/js/shidashi\.js\.map$
 ^inst/screenshots$
 ^cran-comments\.md$
 ^CRAN-RELEASE$

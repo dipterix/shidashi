@@ -6,7 +6,7 @@
 \title{Generates outputs that can be written to clipboards with one click}
 \usage{
 clipboardOutput(
-  outputId = rand_string(),
+  outputId = rand_string(prefix = "clipboard"),
   message = "Copy to clipboard",
   clip_text = "",
   class = NULL,

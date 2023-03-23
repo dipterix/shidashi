@@ -1,20 +1,9 @@
-<!-- jQuery --
-<script src="jquery/jquery.min.js"></script>
-<!-- jQuery UI 1.11.4 --
-<script src="jquery-ui/jquery-ui.min.js"></script>
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip --
+
 <script>
-  $.widget.bridge('uibutton', $.ui.button);
+// Shidashi.initShidashi();
+
+$(document).on("shiny:connected", () => {
+  const shidashi = Shidashi.registerShidashi(window.Shiny);
+  window.shidashi = shidashi;
+});
 </script>
-<!-- Bootstrap 4 -->
-<script src="bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- overlayScrollbars -->
-<script src="overlayScrollbars/js/scrollbars.min.js"></script>
-<!-- clipboard.js -->
-<script src="clipboard/clipboard.min.js"></script>
-<!-- R code highlight -->
-<script src="highlightjs/highlight.js"></script>
-<!-- AdminLTE App -->
-<script src="AdminLTE/js/adminlte.js"></script>
-<!-- shidashi -->
-<script src="shidashi/js/shidashi.js"></script>
