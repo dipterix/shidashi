@@ -6,7 +6,7 @@
 \usage{
 card_tabset(
   ...,
-  inputId = sprintf("tabset-\%s", rand_string()),
+  inputId = rand_string(prefix = "tabset-"),
   title = NULL,
   names = NULL,
   active = NULL,

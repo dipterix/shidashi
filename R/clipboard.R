@@ -16,7 +16,7 @@
 #'
 #' @export
 clipboardOutput <- function(
-  outputId = rand_string(), message = "Copy to clipboard",
+  outputId = rand_string(prefix = "clipboard"), message = "Copy to clipboard",
   clip_text = "", class = NULL, as_card_tool = FALSE){
 
   if(as_card_tool){

@@ -91,7 +91,7 @@ card_tabset_content <- function(id_tabset, index, active, ...){
 #'
 #' @export
 card_tabset <- function(
-  ..., inputId = sprintf("tabset-%s", rand_string()), title = NULL,
+  ..., inputId = rand_string(prefix = "tabset-"), title = NULL,
   names = NULL, active = NULL, tools = NULL, footer = NULL,
   class = "", class_header = "", class_body = "", class_foot = ""){
 
