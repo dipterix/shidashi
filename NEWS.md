@@ -1,3 +1,10 @@
+# shidashi 0.1.5
+
+* Fixed `accordion` and `card_tabset` not working properly when `inputId` starts with digits
+* Updated templates and used `npm` to compile
+* Session information now stores at `userData` instead of risky `cache`
+* Ensured at least template root directory is available
+
 # shidashi 0.1.4
 
 * Fixed a bug that makes application fail to launch on `Windows`
