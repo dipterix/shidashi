@@ -73,24 +73,28 @@ accordion_item <- function(
 #'
 #' @examples
 #'
-#' library(shiny)
-#' library(shidashi)
 #'
-#' accordion(
-#'   id = "input-set",
-#'   accordion_item(
-#'     title = "Input Group A",
-#'     textInput("input_1", "Input 1"),
-#'     collapsed = FALSE,
-#'     footer = "Anim pariatur cliche reprehenderit dolor brunch."
-#'   ),
-#'   accordion_item(
-#'     title = "Input Group B",
-#'     textInput("input_2", "Input 2"),
-#'     footer = actionButton("btn1", "OK"),
-#'     collapsed = FALSE
+#' if(interactive()) {
+#'
+#'   library(shiny)
+#'   library(shidashi)
+#'
+#'   accordion(
+#'     id = "input-set",
+#'     accordion_item(
+#'       title = "Input Group A",
+#'       textInput("input_1", "Input 1"),
+#'       collapsed = FALSE,
+#'       footer = "Anim pariatur cliche reprehenderit dolor brunch."
+#'     ),
+#'     accordion_item(
+#'       title = "Input Group B",
+#'       textInput("input_2", "Input 2"),
+#'       footer = actionButton("btn1", "OK"),
+#'       collapsed = FALSE
+#'     )
 #'   )
-#' )
+#' }
 #'
 #' @export
 accordion <- function(
