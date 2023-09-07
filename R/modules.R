@@ -123,7 +123,11 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
                      recursive = FALSE, include.dirs = FALSE,
                      no.. = TRUE, all.files = TRUE, full.names = TRUE)
     for(f in fs){
-      source(f, local = env)
+      if(startsWith(basename(f), "shared-")) {
+        source(f, local = env, chdir = TRUE)
+      } else {
+        source(f, local = env, chdir = FALSE)
+      }
     }
   }
 
@@ -150,7 +154,11 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
                          recursive = FALSE, include.dirs = FALSE,
                          no.. = TRUE, all.files = TRUE, full.names = TRUE)
         for(f in fs){
-          source(f, local = env)
+          if(startsWith(basename(f), "shared-")) {
+            source(f, local = env, chdir = TRUE)
+          } else {
+            source(f, local = env, chdir = FALSE)
+          }
         }
       }
 
