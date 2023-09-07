@@ -14,7 +14,7 @@ some situations. Please use it at your own risk."><!-- mathjax --><script src="h
     
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,7 +73,7 @@ some situations. Please use it at your own risk.</p>
 <span>  <span class="va">itemId</span>,</span>
 <span>  <span class="va">item_title</span>,</span>
 <span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"expand"</span>, <span class="st">"collapse"</span>, <span class="st">"toggle"</span><span class="op">)</span>,</span>
-<span>  session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  session <span class="op">=</span> <span class="fu">shiny</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/shiny/man/domains.html" class="external-link">getDefaultReactiveDomain</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -147,21 +147,21 @@ specified, this title will be ignored</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.rstudio.com/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.posit.co/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dipterix.org/shidashi/">shidashi</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span>  <span class="fu">accordion</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    id <span class="op">=</span> <span class="st">"input-set"</span>,</span></span>
 <span class="r-in"><span>    <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>      title <span class="op">=</span> <span class="st">"Input Group A"</span>,</span></span>
-<span class="r-in"><span>      <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_1"</span>, <span class="st">"Input 1"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_1"</span>, <span class="st">"Input 1"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      collapsed <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>      footer <span class="op">=</span> <span class="st">"Anim pariatur cliche reprehenderit dolor brunch."</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span>,</span></span>
 <span class="r-in"><span>    <span class="fu"><a href="accordion_item.html">accordion_item</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>      title <span class="op">=</span> <span class="st">"Input Group B"</span>,</span></span>
-<span class="r-in"><span>      <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_2"</span>, <span class="st">"Input 2"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>      footer <span class="op">=</span> <span class="fu"><a href="https://shiny.rstudio.com/reference/shiny/latest/actionButton.html" class="external-link">actionButton</a></span><span class="op">(</span><span class="st">"btn1"</span>, <span class="st">"OK"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/textInput.html" class="external-link">textInput</a></span><span class="op">(</span><span class="st">"input_2"</span>, <span class="st">"Input 2"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>      footer <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/shiny/man/actionButton.html" class="external-link">actionButton</a></span><span class="op">(</span><span class="st">"btn1"</span>, <span class="st">"OK"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>      collapsed <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
