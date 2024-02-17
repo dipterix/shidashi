@@ -1,3 +1,7 @@
+# shidashi 0.1.6
+
+* Load scripts starting with `shared-` when loading modules
+
 # shidashi 0.1.5
 
 * Fixed `accordion` and `card_tabset` not working properly when `inputId` starts with digits
