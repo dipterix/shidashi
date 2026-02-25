@@ -1,0 +1,12 @@
+<li class="nav-item{{ if(active){' menu-open'}else{''} }}">
+  <a href="#" class="nav-link nav-dropdown{{ if(active){' active'}else{''} }}">
+    {{ icon }}
+    <p>
+      {{ text }}
+      <i class="right fas fa-angle-left"></i>
+    </p>
+  </a>
+  <ul class="nav nav-treeview">
+    {{ sub_items }}
+  </ul>
+</li>

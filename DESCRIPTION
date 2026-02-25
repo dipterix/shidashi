@@ -8,7 +8,7 @@ URL: https://dipterix.org/shidashi/,
 BugReports: https://github.com/dipterix/shidashi/issues
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Authors@R: c(
     person("Zhengjia", "Wang", email="dipterix.wang@gmail.com", 
             role = c("cph", "aut", "cre"), comment = c(ORCID = "0000-0001-5629-1116")),
@@ -21,7 +21,8 @@ Authors@R: c(
     )
 Description: A template system based on 'AdminLTE3' 
     (<https://adminlte.io/themes/v3/>)
-    theme. Comes with default theme that can be easily customized. 
+    theme and 'Bootstrap 5' via 'bslib'. Comes with default theme 
+    that can be easily customized. 
     Developers can upload modified templates on 'Github', and users can 
     easily download templates with 'RStudio' project wizard.
     The key features of the default template include light and dark theme 
@@ -30,15 +31,16 @@ Description: A template system based on 'AdminLTE3'
     panels with back sides, as well as various of 'HTML' tool widgets.
 Imports: 
     utils,
+    bslib (>= 0.5.0),
     digest (>= 0.6.27),
     fastmap (>= 1.1.0),
     formatR (>= 1.11),
+    htmltools (>= 0.5.2),
     httr (>= 1.4.2),
     shiny (>= 1.7.0),
     yaml (>= 2.2.1),
     jsonlite (>= 1.7.2)
 Suggests: 
-    htmltools (>= 0.5.2),
     logger (>= 0.2.1),
     rstudioapi (>= 0.13),
     ggplot2,

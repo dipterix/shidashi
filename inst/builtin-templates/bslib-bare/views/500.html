@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>500 Error</title>
+  {{ shidashi::include_view("header.html") }}
+</head>
+<body class="hold-transition">
+<div class="shidashi-wrapper">
+  <div class="shidashi-content" style="margin-left:0;">
+    <section class="container-fluid py-3">
+      <div class="row mb-2">
+        <div class="col-sm-6"><h1>500 Error Page</h1></div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-end">
+            <li class="breadcrumb-item active">Don't panic</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+    <section class="container-fluid">
+      <div class="d-flex align-items-center">
+        <h2 class="text-danger me-3">500</h2>
+        <div>
+          <h3><i class="fas fa-exclamation-triangle text-danger"></i> Oops! Something went wrong.</h3>
+          <p>The module you requested does not work properly.<br/>Here's the error message:</p>
+          <p>{{ error }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ module_title() }}</title>
+
+  {{ shidashi::include_view("header.html") }}
+
+</head>
+<body class="{{ shidashi::guess_body_class(body_class()) }}">
+<div class="container-fluid py-3">
+
+  <!-- Module content -->
+  {{ if(is.function(ui)){ui()}else{ui} }}
+  <!-- / Module content -->
+
+</div>
+
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

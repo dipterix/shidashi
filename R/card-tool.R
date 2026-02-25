@@ -75,7 +75,7 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
     href = href,
     target = target,
     class=class,
-    `data-card-widget` = widget,
+    `data-shidashi-card-action` = widget,
     title = title,
     icon,
     ...

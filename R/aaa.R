@@ -7,6 +7,19 @@
 #' @importFrom jsonlite fromJSON
 NULL
 
+#' Get Bootstrap 5 dependencies via bslib
+#' @description Returns Bootstrap 5 HTML dependencies provided by
+#' \code{bslib}. Intended to be called from HTML templates so that
+#' \code{headContent()} renders Bootstrap 5 CSS and JS.
+#' @param ... additional arguments passed to \code{bslib::bs_theme}
+#' @return An \code{htmltools::tagList} containing Bootstrap 5 dependencies
+#' @export
+bslib_dependency <- function(...) {
+  theme <- bslib::bs_theme(version = 5, ...)
+  deps <- bslib::bs_theme_dependencies(theme)
+  htmltools::tagList(deps)
+}
+
 rand_string <- function (length = 10, prefix = NULL) {
   paste(c(prefix, sample(c(letters, LETTERS, 0:9), length, replace = TRUE)),
         collapse = "")

@@ -1,0 +1,10 @@
+<div class="card card-single {{ class }} {{ ifelse(start_collapsed, 'shidashi-collapsed start-collapsed', '') }}"{{ card_id }} data-title="{{ get0('data_title', ifnotfound = '') }}">
+  <div class="card-header {{ class_header }}" style="{{ ifelse(length(style_header), paste(style_header, collapse=';'), '') }}">
+    <h5 class="card-title">{{ title }}</h5>
+    {{ tools }}
+  </div>
+  <div class="card-body {{ class_body }}" style="{{ ifelse(length(style_body), paste(style_body, collapse=';'), '') }};">
+    {{ body }}
+  </div>
+  {{ footer }}
+</div>

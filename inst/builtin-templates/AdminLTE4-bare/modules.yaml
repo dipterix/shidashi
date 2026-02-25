@@ -1,0 +1,6 @@
+modules:
+  module_id:
+    order: 0.0
+    icon: "circle"
+    label: "Module Label"
+    badge: New|bg-red

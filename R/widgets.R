@@ -128,16 +128,16 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to"){
       shiny::tags$button(
         type="button",
         class="btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
-        "data-toggle"="dropdown",
+        "data-bs-toggle"="dropdown",
         "aria-haspopup"="false",
         "aria-expanded"="false",
         shiny::span(
-          class = "sr-only",
+          class = "visually-hidden",
           "Dropdown-Open"
         )
       ),
       shiny::div(
-        class = "dropdown-menu dropdown-menu-right",
+        class = "dropdown-menu dropdown-menu-end",
         title
       )
     )

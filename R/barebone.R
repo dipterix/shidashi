@@ -184,3 +184,160 @@ create_barebone <- function(path){
   invisible()
 
 }
+
+
+create_barebone_bslib <- function(path){
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
+  src <- system.file("builtin-templates", "bslib-bare", package = "shidashi")
+  if(!nchar(src) || !dir.exists(src)){
+    stop("Cannot find bslib-bare template. Please update the `shidashi` package.")
+  }
+  fs <- list.files(src, full.names = TRUE, recursive = FALSE, all.files = FALSE,
+                   no.. = TRUE, include.dirs = TRUE)
+  # Exclude node_modules and src directories from copy
+  fs <- fs[!basename(fs) %in% c("node_modules", "src", "package-lock.json")]
+  file.copy(
+    from = fs,
+    to = path,
+    overwrite = TRUE,
+    recursive = TRUE,
+    copy.date = TRUE
+  )
+
+  # /server.R
+  {
+    writeLines(
+      c(
+        "{",
+        "    library(shiny)",
+        "    server <- function(input, output, session) {",
+        "        shiny::observeEvent(session$clientData$url_search, {",
+        "            req <- list(QUERY_STRING = session$clientData$url_search)",
+        "            resource <- shidashi::load_module(request = req)",
+        "            if (resource$has_module) {",
+        "                module_table <- shidashi::module_info()",
+        "                module_table <- module_table[module_table$id %in% ",
+        "                  resource$module$id, ]",
+        "                if (nrow(module_table)) {",
+        "                  group_name <- as.character(module_table$group[[1]])",
+        "                  if (is.na(group_name)) {",
+        "                    group_name <- \"<no group>\"",
+        "                  }",
+        "                  if (system.file(package = \"logger\") != \"\") {",
+        "                    logger::log_info(\"Loading - { module_table$label[1] } ({group_name}/{ module_table$id })\")",
+        "                  }",
+        "                  shiny::moduleServer(resource$module$id, resource$module$server, ",
+        "                    session = session)",
+        "                }",
+        "            }",
+        "        })",
+        "    }",
+        "}"
+      ), file.path(path, "server.R"))
+  }
+
+  dir.create(file.path(path, 'R'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, 'modules', 'module_id', 'R'), showWarnings = FALSE, recursive = TRUE)
+
+  # /R/common.R
+  {
+    writeLines(
+      c(
+        "library(shiny)",
+        "page_title <- function(complete = TRUE){",
+        "  if(complete){",
+        "    \"Shiny Dashboard Template - bslib\"",
+        "  } else {",
+        "    \"ShiDashi\"",
+        "  }",
+        "}",
+        "page_logo <- function(size = c(\"normal\", \"small\", \"large\")){",
+        "  \"shidashi/img/icon.png\"",
+        "}",
+        "page_loader <- function(){",
+        "  NULL",
+        "}",
+        "body_class <- function(){",
+        "  c(",
+        "    #--- Start as dark-mode ---",
+        "    \"dark-mode\"",
+        "  )",
+        "}",
+        "nav_class <- function(){",
+        "  c(",
+        "    \"shidashi-header\",",
+        "    \"navbar\",",
+        "    \"navbar-expand\"",
+        "  )",
+        "}",
+        "",
+        "module_breadcrumb <- function(){}"
+      ),
+      con = file.path(path, 'R', 'common.R'))
+  }
+
+  # /modules/module_id/R/chunk-1.R
+  {
+    writeLines(
+      c(
+        "library(shiny)",
+        "library(shidashi)",
+        "ui <- function(){",
+        "",
+        "  fluidPage(",
+        "    fluidRow(",
+        "      column(",
+        "        width = 12L,",
+        "",
+        "        # remember to add ns, which is given as shiny::NS(\"module_id\")",
+        "        plotOutput(ns(\"plot\"))",
+        "      )",
+        "    )",
+        "  )",
+        "",
+        "}",
+        "",
+        "server_chunk_1 <- function(input, output, session, ...){",
+        "",
+        "  event_data <- register_session_events()",
+        "",
+        "  output$plot <- renderPlot({",
+        "    theme <- get_theme(event_data)",
+        "    set.seed(1)",
+        "    par(",
+        "      bg = theme$background, fg = theme$foreground,",
+        "      col.main = theme$foreground,",
+        "      col.axis = theme$foreground,",
+        "      col.lab = theme$foreground",
+        "    )",
+        "    hist(rnorm(1000))",
+        "  })",
+        "",
+        "}"
+      ),
+      con = file.path(path, 'modules', 'module_id', 'R', "chunk-1.R")
+    )
+  }
+
+  # /modules/module_id/server.R
+  {
+    writeLines(
+      c(
+        "library(shiny)",
+        "library(shidashi)",
+        "",
+        "server <- function(input, output, session, ...){",
+        "",
+        "  shared_data <- shidashi::register_session_id(session)",
+        "",
+        "  server_chunk_1(input, output, session, ...)",
+        "",
+        "}"
+      ),
+      con = file.path(path, 'modules', 'module_id', 'server.R')
+    )
+  }
+
+  invisible()
+
+}

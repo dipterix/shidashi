@@ -4,7 +4,7 @@ card_tabset_header <- function(id_tabset, index, title, active = FALSE){
     shiny::a(
       class = ifelse(active, "nav-link active", "nav-link"),
       id = sprintf("%s-%s-tab", id_tabset, index),
-      'data-toggle' = "tab",
+      'data-bs-toggle' = "tab",
       href = sprintf("#%s-%s", id_tabset, index),
       role = "tab",
       "aria-controls" = sprintf("%s-%s", id_tabset, index),
@@ -118,7 +118,7 @@ card_tabset <- function(
 
   if(length(title) == 1){
     title <- shiny::tags$li(
-      class="pt-2 px-3",
+      class="px-3",
       shiny::h4(class="card-title", title)
     )
   }
@@ -129,7 +129,7 @@ card_tabset <- function(
   }
 
   if(length(tools)){
-    tools <- shiny::tags$li(class = "nav-item ml-auto",
+    tools <- shiny::tags$li(class = "nav-item ms-auto",
                             shiny::div(class = "card-tools",
                                        tools))
   }
@@ -145,7 +145,7 @@ card_tabset <- function(
     class = sprintf("card card-tabs %s", class),
     `data-title` = data_title,
     shiny::div(
-      class = sprintf("card-header p-0 pt-1 %s", class_header),
+      class = sprintf("card-header p-0 pt-0 %s", class_header),
       shiny::tags$ul(
         class = "nav nav-tabs",
         id = inputId,

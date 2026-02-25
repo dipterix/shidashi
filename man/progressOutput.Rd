@@ -59,7 +59,7 @@ library(shidashi)
 progressOutput("sales_report_prog1",
                description = "6 days left!",
                "Add Products to Cart",
-               span(class="float-right", "123/150"),
+               span(class="float-end", "123/150"),
                value = 123/150 * 100)
 
 # server function

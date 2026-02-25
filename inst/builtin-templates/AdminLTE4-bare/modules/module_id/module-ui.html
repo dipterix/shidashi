@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ module_title() }}</title>
+
+  {{ shidashi::include_view("header.html") }}
+
+</head>
+<body class="layout-top-nav {{ shidashi::guess_body_class(body_class()) }}">
+<div class="wrapper">
+
+  <!-- Navbar, TODO: copy index navbar -->
+  <nav class="{{ paste(nav_class(), collapse = ' ') }}">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item d-none d-sm-inline-block">
+        <a class="nav-link">{{ module_title() }}</a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+
+
+
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content">
+
+      <!-- Should be customized code -->
+      {{ if(is.function(ui)){ui()}else{ui} }}
+
+      <!-- / Module code -->
+
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+</div>
+<!-- ./wrapper -->
+
+{{ shidashi::back_top_button("rocket") }}
+
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>
