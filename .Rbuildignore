@@ -11,9 +11,12 @@ node_modules$
 ^inst/builtin-templates/AdminLTE3-bare/node_modules
 ^inst/builtin-templates/AdminLTE3-bare/src
 ^inst/builtin-templates/AdminLTE3-bare/www/shidashi/js/shidashi\.js\.map$
+^inst/builtin-templates/bslib-bare/node_modules
+^inst/builtin-templates/bslib-bare/src
 ^inst/screenshots$
 ^cran-comments\.md$
 ^CRAN-RELEASE$
 ^ui\.R$
 ^_rs_job\.R$
 ^CRAN-SUBMISSION$
+^TODO\.md$

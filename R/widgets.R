@@ -120,26 +120,25 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to"){
     class = "back-to-top",
     shiny::div(
       class = "btn-group dropup",
-      role="group",
+      role = "group",
       shiny::a(
-        type="button", class="btn btn-default btn-go-top border-right-1", href="#",
+        type = "button",
+        class = "btn btn-default btn-go-top border-right-1",
+        href = "#",
         as_icon(icon)
       ),
       shiny::tags$button(
-        type="button",
-        class="btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
-        "data-bs-toggle"="dropdown",
-        "aria-haspopup"="false",
-        "aria-expanded"="false",
-        shiny::span(
-          class = "visually-hidden",
-          "Dropdown-Open"
-        )
+        type = "button",
+        class = "btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
+        # AdminLTE3
+        "data-toggle" = "dropdown",
+        # bs5
+        "data-bs-toggle" = "dropdown",
+        "aria-haspopup" = "false",
+        "aria-expanded" = "false",
+        shiny::span(class = "sr-only visually-hidden", "Dropdown-Open")
       ),
-      shiny::div(
-        class = "dropdown-menu dropdown-menu-end",
-        title
-      )
+      shiny::div(class = "dropdown-menu dropdown-menu-end", title)
     )
   )
 }

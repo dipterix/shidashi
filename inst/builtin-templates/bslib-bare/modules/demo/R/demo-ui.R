@@ -231,7 +231,7 @@ server_demo <- function(input, output, session, ...){
   local_data <- reactiveValues()
 
   output$sales_report <- renderPlot({
-    theme <- get_theme(event_data)
+    theme <- shidashi::get_theme(event_data)
     par(bg = theme$background, fg = theme$foreground,
         col.lab = theme$foreground, col.main = theme$foreground,
         col.axis = theme$foreground,
@@ -295,7 +295,7 @@ server_demo <- function(input, output, session, ...){
 
   output$iris_plot <- renderPlot({
     data(iris)
-    theme <- get_theme(event_data)
+    theme <- shidashi::get_theme(event_data)
     ggtheme <- generate_ggtheme(theme)
 
     iris <- iris[iris$Petal.Width > input$iris_threshold, ]
@@ -353,7 +353,7 @@ server_demo <- function(input, output, session, ...){
     validate(
       need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
     )
-    theme <- get_theme(event_data)
+    theme <- shidashi::get_theme(event_data)
 
     data <- local_data$data
 

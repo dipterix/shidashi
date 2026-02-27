@@ -4,6 +4,9 @@ card_tabset_header <- function(id_tabset, index, title, active = FALSE){
     shiny::a(
       class = ifelse(active, "nav-link active", "nav-link"),
       id = sprintf("%s-%s-tab", id_tabset, index),
+      # For AdminLTE3
+      'data-toggle' = "tab",
+      # For bootstrap5
       'data-bs-toggle' = "tab",
       href = sprintf("#%s-%s", id_tabset, index),
       role = "tab",
@@ -97,48 +100,43 @@ card_tabset <- function(
 
   call_ <- match.call()
 
-  if(grepl("^[^a-zA-Z][^a-zA-Z0-9_-]{0,}", inputId)){
-    stop("card_tabset: invalid `inputId`, can only have letters, digits, '-', or '_', and must start with letters.")
+  if (grepl("^[^a-zA-Z][^a-zA-Z0-9_-]{0,}", inputId)) {
+    stop(
+      "card_tabset: invalid `inputId`, can only have letters, digits, '-', or '_', and must start with letters."
+    )
   }
 
   tabs <- list(...)
   ntabs <- length(tabs)
-  if(!length(names)){
+  if (!length(names)) {
     names <- names(tabs)
   }
-  if(length(names) != ntabs){
+  if (length(names) != ntabs) {
     stop("card_tabset: `names` must have the same length as tab elements")
   }
 
-  if(length(title) >= 1){
+  if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
   } else {
     data_title <- ""
   }
 
-  if(length(title) == 1){
-    title <- shiny::tags$li(
-      class="px-3",
-      shiny::h4(class="card-title", title)
-    )
+  if (length(title) == 1) {
+    # Compatible with bs5/4 to center the text vertically
+    title <- shiny::tags$li(class = "px-3 d-flex align-items-center", shiny::h4(class = "card-title", title))
   }
-  if(length(active)){
+  if (length(active)) {
     active <- active[[1]]
-  } else if(length(names)){
+  } else if (length(names)) {
     active <- names[[1]]
   }
 
-  if(length(tools)){
-    tools <- shiny::tags$li(class = "nav-item ms-auto",
-                            shiny::div(class = "card-tools",
-                                       tools))
+  if (length(tools)) {
+    tools <- shiny::tags$li(class = "nav-item ml-auto ms-auto", shiny::div(class = "card-tools", tools))
   }
 
-  if(!is.null(footer)){
-    footer <- shiny::div(
-      class = combine_class("card-footer", class_foot),
-      footer
-    )
+  if (!is.null(footer)) {
+    footer <- shiny::div(class = combine_class("card-footer", class_foot), footer)
   }
 
   set_attr_call(shiny::div(

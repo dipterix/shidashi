@@ -315,6 +315,8 @@ register_session_events <- function(session = shiny::getDefaultReactiveDomain())
 #' @rdname javascript-tunnel
 #' @export
 get_theme <- function(event_data, session = shiny::getDefaultReactiveDomain()){
+  print(111)
+  print(event_data)
   get_jsevent(event_data, "theme.changed", list(
     theme = "light",
     background = "#FFFFFF",
