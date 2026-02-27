@@ -21,7 +21,7 @@ Authors@R: c(
     )
 Description: A template system based on 'AdminLTE3' 
     (<https://adminlte.io/themes/v3/>)
-    theme and 'Bootstrap 5' via 'bslib'. Comes with default theme 
+    theme and 'Bootstrap 5'. Comes with default theme 
     that can be easily customized. 
     Developers can upload modified templates on 'Github', and users can 
     easily download templates with 'RStudio' project wizard.

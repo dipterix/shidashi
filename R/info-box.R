@@ -87,6 +87,9 @@ flip_box <- function(front, back, active_on = c("click", "click-front", "manual"
   }
   set_attr_call(shiny::div(
     class = combine_class("flip-box", class),
+    # AdminLTE3
+    "data-toggle" = active_on,
+    # bs5
     "data-bs-toggle" = active_on,
     id = inputId,
     shiny::div(

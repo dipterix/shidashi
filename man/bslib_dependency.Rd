@@ -2,7 +2,7 @@
 % Please edit documentation in R/aaa.R
 \name{bslib_dependency}
 \alias{bslib_dependency}
-\title{Get Bootstrap 5 dependencies via bslib}
+\title{Get Bootstrap 5 dependencies via \pkg{bslib}}
 \usage{
 bslib_dependency(...)
 }
@@ -14,6 +14,6 @@ An \code{htmltools::tagList} containing Bootstrap 5 dependencies
 }
 \description{
 Returns Bootstrap 5 HTML dependencies provided by
-\code{bslib}. Intended to be called from HTML templates so that
-\code{headContent()} renders Bootstrap 5 CSS and JS.
+\pkg{bslib}. Intended to be called from HTML templates so that
+\code{headContent()} renders Bootstrap 5 CSS and JavaScript.
 }
