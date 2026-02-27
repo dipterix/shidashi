@@ -1,0 +1,12 @@
+<li class="shidashi-nav-item shidashi-nav-group{{ if(active){' menu-open'}else{''} }}">
+  <a href="#" class="shidashi-nav-link shidashi-nav-dropdown{{ if(active){' active'}else{''} }}">
+    {{ icon }}
+    <span>
+      {{ text }}
+      <i class="fas fa-angle-left shidashi-nav-arrow"></i>
+    </span>
+  </a>
+  <ul class="shidashi-nav shidashi-nav-treeview">
+    {{ sub_items }}
+  </ul>
+</li>

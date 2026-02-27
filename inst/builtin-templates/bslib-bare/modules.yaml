@@ -1,0 +1,44 @@
+divider:
+  Components:
+    order: 20
+  Extras:
+    order: 50
+
+groups:
+  Cards:
+    icon: "clone"
+    order: 25
+    open: true
+
+modules:
+  getstarted:
+    order: 1
+    icon: "rocket"
+    label: "Get Started"
+  card:
+    order: 26
+    icon: "square"
+    label: "Cards"
+    group: "Cards"
+  widgets:
+    order: 27
+    icon: "puzzle-piece"
+    label: "Widgets"
+    group: "Cards"
+  demo:
+    order: 51
+    icon: "chart-bar"
+    label: "Demo"
+  filestructure:
+    order: 52
+    icon: "folder-open"
+    label: "File Structure"
+  page500:
+    order: 53
+    icon: "exclamation-triangle"
+    label: "Error 500"
+  module_id:
+    order: 99
+    icon: "circle"
+    label: "Module Label"
+    badge: New|bg-red

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Preview</title>
+  {{ shidashi::include_view("header.html") }}
+</head>
+<body class="{{ class }}">
+<div class="shidashi-wrapper">
+  <div class="shidashi-content" style="margin-left:0;">
+    <section class="container-fluid py-3">
+      <div class="row">
+        <div class="col-12">
+          {{ x }}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

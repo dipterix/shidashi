@@ -1,0 +1,1773 @@
+@use "sass:meta";
+@use "sass:map";
+@use "sass:list";
+@use "sass:string";
+@use "sass:color";
+
+// ==========================================================================
+// Variables — using BS5 palette names where possible
+// ==========================================================================
+
+$primary: #3f6791;
+$secondary: #6c757d;
+$success: #00bc8c;
+$info: #3498db;
+$warning: #f39c12;
+$danger: #e74c3c;
+$light: #f8f9fa;
+$dark: #343a40;
+$light-dark: #454d55;
+
+$white: #fff;
+$gray: #6c757d;
+$gray-dark: #343a40;
+
+$code-background: #e5e5e5;
+$code-color-operator: rgb(104, 118, 135);
+$code-color-parenthesis: rgb(104, 118, 135);
+$code-color-literal: #990073;
+$code-color-number: #099;
+$code-color-comment: #098;
+$code-color-keyword: #900;
+$code-color-identifier: rgb(0, 0, 0);
+$code-color-string: #d14;
+$code-font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+$color-error: #dc3545;
+
+$navbar-height: 54px;
+$sidebar-width: 250px;
+$sidebar-collapsed-width: 0px;
+$sidebar-transition: 0.3s ease;
+
+// Borders
+$border-color: #dee2e6;
+
+// Dark-mode palette
+$dark-mode-bg: #454d55;
+$dark-mode-text: #e9ecef;
+
+// Theme switch
+$slider-bg: #ccc;
+$slider-checked: #66bb6a;
+
+// Notification panel
+$notification-close: #adb5bd;
+$progress-bg: #eee;
+
+// Misc
+$hr-color: #e8e8e8;
+
+$sizes-margin-padding: 0,1,2,3,4,5,6,7,8,9,10,11,12,15,20,25,30,50,60,80,100;
+
+// ==========================================================================
+// Sass helpers (carried over from original)
+// ==========================================================================
+
+@function add_force($force: false) {
+  $important: "";
+  @if $force { $important: "!important"; }
+  @return string.unquote($important);
+}
+
+@function as_pixel_size($sizes...) {
+  $args: meta.keywords($sizes);
+  $size: map.get($args, "size");
+  @if not $size or $size == 0 { @return 0; }
+  $unit: map.get($args, "unit");
+  @if not $unit { $unit: 1px; }
+  @return $size * $unit;
+}
+
+@mixin display($type, $force: false) { display: $type add_force($force); }
+@mixin visibility($type, $force: false) { visibility: $type add_force($force); }
+@mixin position($type, $force: false) { position: $type add_force($force); }
+@mixin set-size($type, $direction: all, $force: false, $sizes...) {
+  $style: as_pixel_size($sizes...) add_force($force);
+  @if $direction == all {
+    #{$type}: $style;
+  } @else {
+    @each $d in $direction {
+      @if $d == vertical { #{$type}-top: $style; #{$type}-bottom: $style; }
+      @else if $d == horizontal { #{$type}-left: $style; #{$type}-right: $style; }
+      @else { #{$type}-#{$d}: $style; }
+    }
+  }
+}
+@mixin margin($direction: all, $force: false, $sizes...) {
+  @include set-size($type: margin, $direction: $direction, $force: $force, $sizes...);
+}
+@mixin padding($direction: all, $force: false, $sizes...) {
+  @include set-size($type: padding, $direction: $direction, $force: $force, $sizes...);
+}
+@mixin min-height($size) { min-height: as_pixel_size($size: $size); }
+@mixin max-height($size) { max-height: as_pixel_size($size: $size); }
+@mixin height($size) { height: as_pixel_size($size: $size); }
+@mixin fill-width { width: 100%; }
+@mixin fill-height { height: 100%; }
+@mixin fill-max-width { max-width: 100%; }
+@mixin fill-max-height { max-height: 100%; }
+@mixin overflow($type, $direction: all, $force: false) {
+  @if $direction == all { overflow: $type add_force($force); }
+  @else { overflow-#{$direction}: $type add_force($force); }
+}
+
+// Thin scrollbar mixins (AdminLTE-style)
+@mixin scrollbar-width-thin() {
+  scrollbar-width: thin;
+  &::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+}
+@mixin scrollbar-width-none() {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+@mixin scrollbar-color-dark() {
+  scrollbar-color: rgba($white, 0.3) transparent;
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba($white, 0.3);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+@mixin scrollbar-color-light() {
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+@mixin code-font-family { font-family: $code-font-family; }
+@mixin border-radius($size, $unit: 1px) {
+  border-radius: as_pixel_size($size: $size, $unit: $unit);
+}
+@mixin border-color($color, $direction: all) {
+  @if $direction == all { border-color: $color; }
+  @else { @each $d in $direction { border-#{$d}-color: $color; } }
+}
+
+// ==========================================================================
+// Layout: sidebar + content
+// ==========================================================================
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: $white;
+  color: $dark;
+  --bs-gutter-x: 0.5rem;
+  --bs-gutter-y: 0.5rem;
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+.shidashi-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.shidashi-sidebar {
+  width: $sidebar-width;
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  background-color: $dark;
+  color: rgba($white, 0.8);
+  transition: width $sidebar-transition, transform $sidebar-transition;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  @include scrollbar-color-dark();
+  @include scrollbar-width-thin();
+
+  .shidashi-brand-link {
+    display: flex;
+    align-items: center;
+    min-height: $navbar-height;
+    padding: 0.8125rem 1rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid color.adjust($dark, $lightness: 10%);
+    flex-shrink: 0;
+
+    .sidebar-light & {
+      border-bottom-color: var(--bs-border-color, #{$border-color});
+    }
+  }
+
+  .shidashi-brand-image {
+    max-height: 33px;
+    margin: -0.25rem 0.5rem -0.25rem 0;
+  }
+
+  &.sidebar-light {
+    background-color: $white;
+    color: $dark;
+    @include scrollbar-color-light();
+  }
+
+  &--light .shidashi-brand-link {
+    color: $dark;
+  }
+}
+
+// Nav items
+.shidashi-sidebar-nav {
+  list-style: none;
+  padding: 0.5rem 0;
+  margin: 0;
+  flex: 1;
+}
+
+.shidashi-nav {
+  padding-left: 0;
+  max-height: calc(100vh - 102px);
+  overflow-y: auto;
+  @include scrollbar-color-dark();
+  @include scrollbar-width-thin();
+
+  .sidebar-light & {
+    @include scrollbar-color-light();
+  }
+}
+
+.shidashi-nav-item,
+.shidashi-nav-group {
+  list-style: none;
+}
+
+.shidashi-nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba($white, 0.1);
+  }
+
+  .sidebar-light & {
+    color: $dark;
+    &:hover { background-color: rgba(0,0,0,0.05); }
+  }
+
+  .nav-icon {
+    margin-right: 0.5rem;
+    width: 1.6rem;
+    text-align: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  // Arrow icon in dropdown groups — anchored to right edge
+  .shidashi-nav-arrow {
+    margin-left: auto;
+    transition: transform 0.3s;
+    font-size: 0.85rem;
+  }
+
+  // Legacy .right class support
+  .right {
+    margin-left: auto;
+    transition: transform 0.3s;
+  }
+}
+
+// Active leaf item — primary background
+.shidashi-nav-item.active > .shidashi-nav-link {
+  background-color: $primary;
+  color: $white;
+
+  .sidebar-light & {
+    background-color: $primary;
+    color: $white;
+  }
+}
+
+// Parent group with active child — subtle highlight
+.shidashi-nav-group.menu-open > .shidashi-nav-link {
+  background-color: rgba($white, 0.08);
+
+  .sidebar-light & {
+    background-color: rgba(0,0,0,0.04);
+  }
+}
+
+// Treeview / dropdown groups
+.shidashi-nav-treeview {
+  list-style: none;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+
+  .shidashi-nav-link {
+    padding-left: 2rem;
+    font-size: 0.9rem;
+  }
+}
+
+.shidashi-nav-group.menu-open > .shidashi-nav-treeview {
+  max-height: 500px; // fallback, JS sets actual scrollHeight
+}
+
+// Arrow rotation: points right by default (fa-angle-left renders as <),
+// rotates -90deg (pointing down) when group is open
+.shidashi-nav-group > .shidashi-nav-link .shidashi-nav-arrow {
+  transition: transform 0.3s;
+}
+.shidashi-nav-group.menu-open > .shidashi-nav-link .shidashi-nav-arrow {
+  transform: rotate(-90deg);
+}
+
+// Legacy .right arrow support
+.shidashi-nav-group > .shidashi-nav-link .right {
+  transition: transform 0.3s;
+}
+.shidashi-nav-group.menu-open > .shidashi-nav-link .right {
+  transform: rotate(-90deg);
+}
+
+// Nav-header / divider separator (rave-pipelines style)
+// Renders centered text with horizontal lines on both sides
+.nav-header.nav-divider {
+  display: flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  align-items: center;
+  color: rgba($white, 0.5);
+  font-size: 0.9rem;
+  padding: 0.75rem 0.75rem 0.25rem;
+  list-style: none;
+  text-transform: uppercase;
+
+  &::before,
+  &::after {
+    content: "";
+    border-top: 1px solid rgba($white, 0.25);
+    flex: 1 1 1em;
+    display: block;
+    transform: translateY(0);
+  }
+
+  & > span {
+    flex: 0 1 auto;
+    padding: 0 12px;
+    text-align: center;
+  }
+
+  .sidebar-light & {
+    color: rgba(0,0,0,0.4);
+
+    &::before,
+    &::after {
+      border-top-color: rgba(0,0,0,0.15);
+    }
+  }
+}
+
+// Sidebar search — dark variant (follows sidebar theme, not body theme)
+.shidashi-sidebar-search {
+  .form-control {
+    background-color: color.adjust($dark, $lightness: 8%);
+    border-color: color.adjust($dark, $lightness: 15%);
+    color: rgba($white, 0.9);
+
+    &::placeholder {
+      color: rgba($white, 0.5);
+    }
+
+    &:focus {
+      background-color: color.adjust($dark, $lightness: 12%);
+      border-color: $primary;
+      color: $white;
+    }
+  }
+
+  .btn-outline-secondary {
+    border-color: color.adjust($dark, $lightness: 15%);
+    color: rgba($white, 0.6);
+
+    &:hover {
+      background-color: color.adjust($dark, $lightness: 12%);
+      color: $white;
+    }
+  }
+
+  .sidebar-light & {
+    .form-control {
+      background-color: $white;
+      border-color: $border-color;
+      color: $dark;
+
+      &::placeholder {
+        color: $gray;
+      }
+
+      &:focus {
+        border-color: $primary;
+        color: $dark;
+      }
+    }
+
+    .btn-outline-secondary {
+      border-color: $border-color;
+      color: $gray;
+    }
+  }
+}
+
+// Sidebar collapsed
+body.sidebar-collapsed .shidashi-sidebar {
+  width: $sidebar-collapsed-width;
+  transform: translateX(-$sidebar-width);
+}
+
+.shidashi-content {
+  margin-left: $sidebar-width;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - #{$navbar-height});
+  transition: margin-left $sidebar-transition;
+  width: calc(100% - #{$sidebar-width});
+}
+
+body.sidebar-collapsed .shidashi-content {
+  margin-left: 0;
+  width: 100%;
+}
+
+// Overlay for mobile
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 1039;
+}
+
+@media (max-width: 991.98px) {
+  .shidashi-sidebar {
+    transform: translateX(-$sidebar-width);
+  }
+
+  body.sidebar-open .shidashi-sidebar {
+    transform: translateX(0);
+  }
+
+  body.sidebar-open .sidebar-overlay {
+    display: block;
+  }
+
+  .shidashi-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+// ==========================================================================
+// Header
+// ==========================================================================
+
+.shidashi-header {
+  display: flex;
+  align-items: center;
+  height: $navbar-height;
+  padding: 0 1rem;
+  background-color: $white;
+  border-bottom: 1px solid var(--bs-border-color, #{$border-color});
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+
+  .dark-mode & {
+    background-color: $dark;
+    border-bottom-color: $light-dark;
+  }
+}
+
+// Margin-left only when the sidebar is present (main index page)
+body.has-sidebar .shidashi-header {
+  margin-left: $sidebar-width;
+  transition: margin-left $sidebar-transition;
+}
+
+body.has-sidebar.sidebar-collapsed .shidashi-header {
+  margin-left: 0;
+}
+
+@media (max-width: 991.98px) {
+  body.has-sidebar .shidashi-header {
+    margin-left: 0;
+  }
+}
+
+// Hide module header when running inside an iframe
+body.in-iframe .shidashi-header {
+  display: none;
+}
+
+.shidashi-header-left,
+.shidashi-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shidashi-header-right {
+  margin-left: auto;
+}
+
+// ==========================================================================
+// Tab bar (iframe tabs)
+// ==========================================================================
+
+.shidashi-tab-bar {
+  display: none;
+  align-items: center;
+  background-color: $light;
+  border-bottom: 1px solid var(--bs-border-color, #{$border-color});
+  height: $navbar-height;
+
+  .dark-mode & {
+    background-color: color.adjust($dark, $lightness: 5%);
+    border-bottom-color: $light-dark;
+  }
+}
+
+.shidashi-tab-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0.5rem;
+  color: $gray;
+  text-decoration: none;
+
+  &:hover { color: $dark; .dark-mode & { color: $white; } }
+}
+
+.shidashi-tab-actions {
+  display: flex;
+  align-items: center;
+  padding: 0 0.25rem;
+
+  .btn {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.8rem;
+  }
+}
+
+.shidashi-tab-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $gray;
+    border-radius: 3px;
+  }
+}
+
+.shidashi-tab-item {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border-right: 1px solid var(--bs-border-color, #{$border-color});
+
+  .dark-mode & {
+    border-right-color: $light-dark;
+  }
+
+  &.active .shidashi-tab-link {
+    background-color: $white;
+    border-bottom: 2px solid $primary;
+    color: $primary;
+
+    .dark-mode & {
+      background-color: $dark;
+      color: $info;
+      border-bottom-color: $info;
+    }
+  }
+}
+
+.shidashi-tab-link {
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  text-decoration: none;
+  color: $gray;
+  font-size: 0.85rem;
+  height: 100%;
+  gap: 0.4rem;
+  transition: background-color 0.15s;
+
+  &:hover {
+    background-color: rgba(0,0,0,0.04);
+    .dark-mode & { background-color: rgba($white, 0.05); }
+  }
+}
+
+.shidashi-tab-close {
+  cursor: pointer;
+  opacity: 0.5;
+  font-size: 0.7rem;
+
+  &:hover { opacity: 1; }
+}
+
+// ==========================================================================
+// Iframe container
+// ==========================================================================
+
+.shidashi-iframe-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.shidashi-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.shidashi-tab-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.2rem;
+  color: $gray;
+  padding: 2rem;
+}
+
+// Fullscreen mode
+body.iframe-mode-fullscreen .shidashi-sidebar,
+body.iframe-mode-fullscreen .shidashi-header {
+  display: none;
+}
+
+body.iframe-mode-fullscreen .shidashi-content {
+  margin-left: 0;
+  width: 100%;
+}
+
+body.iframe-mode-fullscreen .shidashi-tab-bar {
+  display: flex;
+}
+
+body.iframe-mode-fullscreen .card.shidashi-maximized {
+  top: 0;
+  height: 100vh;
+}
+
+// Inside an iframe the header is hidden, so maximized cards fill the full viewport
+body.in-iframe .card.shidashi-maximized {
+  top: 0;
+  height: 100vh;
+}
+
+// ==========================================================================
+// Theme switch
+// ==========================================================================
+
+.theme-switch {
+  display: inline-block;
+  height: 24px;
+  position: relative;
+  width: 50px;
+}
+
+.theme-switch input { display: none; }
+
+.slider {
+  background-color: $slider-bg;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: 400ms;
+}
+
+.slider::before {
+  background-color: $white;
+  bottom: 4px;
+  content: "";
+  height: 16px;
+  left: 4px;
+  position: absolute;
+  transition: 400ms;
+  width: 16px;
+}
+
+input:checked + .slider { background-color: $slider-checked; }
+input:checked + .slider::before { transform: translateX(26px); }
+.slider.round { border-radius: 34px; }
+.slider.round::before { border-radius: 50%; }
+
+// ==========================================================================
+// Display / Visibility helpers
+// ==========================================================================
+
+.hidden {
+  @include display(none, true);
+  @include visibility(hidden, true);
+}
+
+// Soft-hidden: element stays in DOM with defined width so Shiny can still
+// measure outputs. Body/footer are visually collapsed to zero height but
+// remain accessible. height !important beats any .height-X class;
+// min-height !important beats any .min-height-X class.
+.soft-hidden {
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.display-block-force,
+.display-block {
+  @include display(block, true);
+}
+
+.inline-all {
+  @include display(inline, true);
+
+  & * { @include display(inline, true); }
+  & pre, & code { padding: 0.125rem; margin: 0; }
+}
+
+.flex-container {
+  display: flex;
+  @include fill-width;
+  & > * { flex: 1; }
+}
+
+@each $type in hidden, auto, visible, scroll {
+  .overflow-#{$type} { @include overflow($type); }
+  @each $d in x, y {
+    .overflow-#{$d}-#{$type} { @include overflow($type, $d); }
+  }
+}
+
+.overflow-visible-on-hover {
+  @include overflow(hidden);
+
+  &:hover {
+    @include overflow(visible);
+    @include position(absolute);
+    min-height: 100%;
+    min-width: 100%;
+    z-index: 10000;
+  }
+}
+
+// ==========================================================================
+// Dimensions
+// ==========================================================================
+
+@for $factor from 1 through 12 {
+  .row .col-sm-#{$factor} > .shiny-bound-input { @include fill-width(); }
+}
+
+.fill { @include fill-width(); @include fill-height(); }
+.fill-width { @include fill-width(); }
+.fill-height { @include fill-height(); }
+.fill-min { min-width: 100%; min-height: 100%; }
+.fill-min-height { min-height: 100%; }
+.fill-min-width { min-width: 100%; }
+
+@for $factor from 0 through 20 {
+  $size: $factor * 50;
+  .min-height-#{$size} { @include min-height($size: $size); }
+  .max-height-#{$size} { @include max-height($size: $size); }
+  .height-#{$size} { @include height($size: $size); }
+}
+
+// ==========================================================================
+// Margin & Padding helpers
+// ==========================================================================
+
+@each $size in $sizes-margin-padding {
+  @each $type in padding, margin {
+    .#{$type}-#{$size} { #{$type}: as_pixel_size($size: $size); }
+    .#{$type}-top-#{$size} { #{$type}-top: as_pixel_size($size: $size); }
+    .#{$type}-bottom-#{$size} { #{$type}-bottom: as_pixel_size($size: $size); }
+    .#{$type}-vertical-#{$size} { #{$type}-top: as_pixel_size($size: $size); #{$type}-bottom: as_pixel_size($size: $size); }
+    .#{$type}-left-#{$size} { #{$type}-left: as_pixel_size($size: $size); }
+    .#{$type}-right-#{$size} { #{$type}-right: as_pixel_size($size: $size); }
+    .#{$type}-horizontal-#{$size} { #{$type}-right: as_pixel_size($size: $size); #{$type}-left: as_pixel_size($size: $size); }
+  }
+}
+
+.no-padding { padding: 0 !important; }
+.no-margin { margin: 0 !important; }
+
+.space-vertical-5 {
+  width: 100%;
+  &::before { content: " "; display: block; height: 5px; }
+}
+
+.resize-vertical {
+  @include overflow(hidden);
+  resize: vertical;
+  &:hover { @include overflow(auto); }
+}
+
+// ==========================================================================
+// Colors
+// ==========================================================================
+
+@for $factor from 0 through 9 {
+  $g: color.adjust(#000000, $lightness: $factor * 10%);
+  .bg-gray-#{$factor}0 { background-color: $g; }
+  @each $d in bottom, top, left, right {
+    .border-#{$d}-gray#{$factor}0 { border-#{$d}: 1px solid $g; }
+  }
+  .opacity-0#{$factor} { opacity: $factor * 0.1; }
+}
+.opacity-10 { opacity: 1; }
+
+// ==========================================================================
+// Code / Syntax
+// ==========================================================================
+
+pre {
+  font-family: $code-font-family;
+  @include overflow(auto, x);
+  @include fill-max-width;
+  background-color: $code-background;
+
+  & .operator { color: $code-color-operator; }
+  & .paren { color: $code-color-parenthesis; }
+  & .literal { color: $code-color-literal; }
+  & .number { color: $code-color-number; }
+  & .comment { color: $code-color-comment; font-style: italic; }
+  & .keyword { color: $code-color-keyword; font-weight: bold; }
+  & .identifier { color: $code-color-identifier; }
+  & .string { color: $code-color-string; }
+
+  &.overflow-visible-on-hover:hover {
+    max-width: unset;
+    box-shadow: 0 0 50px rgba(0,0,0,0.125), 0 1px 50px rgba(0,0,0,0.2);
+  }
+}
+
+tt, code { font-family: $code-font-family; }
+
+pre code {
+  @include display(block);
+  @include padding($size: 0.5, $unit: 1em);
+  &[class] { font-size: 92% !important; }
+}
+
+// Inline code (not inside <pre>)
+code {
+  display: inline;
+  padding: 0.2em 0.4em;
+  font-size: 87.5%;
+  background-color: $code-background;
+  border-radius: 0.25rem;
+}
+
+pre > code {
+  display: block;
+  padding: 0.5em;
+  font-size: inherit;
+  background-color: transparent;
+  border-radius: 0;
+}
+
+// Action buttons — add vertical gap for wrapping rows
+.btn.action-button,
+.btn.shiny-download-link {
+  margin-bottom: 0.35rem;
+}
+
+// ==========================================================================
+// Shidashi Card
+// ==========================================================================
+
+// Card theme color map (AdminLTE3 compat)
+$_card-themes: (
+  "primary":   ($primary,   $white),
+  "secondary": ($secondary, $white),
+  "success":   ($success,   $white),
+  "info":      ($info,      $white),
+  "warning":   ($warning,   $white),
+  "danger":    ($danger,    $white),
+  "dark":      ($dark,      $white),
+  "light":     ($light,     $dark),
+);
+
+@each $name, $pair in $_card-themes {
+  $bg:   list.nth($pair, 1);
+  $fg:   list.nth($pair, 2);
+
+  // Colored card header
+  .card-#{$name} > .card-header {
+    background-color: $bg;
+    color: $fg;
+    border-color: $bg;
+  }
+
+  // Outline variant: colored 3px top border, transparent header
+  .card-outline.card-#{$name} {
+    border-top: 3px solid $bg;
+    > .card-header {
+      background-color: transparent;
+      border-color: transparent;
+      color: inherit;
+    }
+  }
+
+  // BS4 → BS5 badge color compat: .badge.badge-{name}
+  .badge.badge-#{$name} {
+    background-color: $bg !important;
+    color: $fg !important;
+  }
+}
+
+.card {
+  margin-bottom: 1rem;
+  transition: all 0.15s;
+
+  &.shidashi-collapsed > .card-body {
+    display: none;
+  }
+
+  &.shidashi-maximized {
+    position: fixed !important;
+    top: $navbar-height;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh - #{$navbar-height});
+    z-index: 1050;
+    border-radius: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+
+    > .card-header {
+      flex-shrink: 0;
+    }
+
+    > .card-body {
+      flex: 1;
+      overflow-y: auto;
+      max-height: none;
+    }
+
+    > .card-footer {
+      flex-shrink: 0;
+    }
+  }
+
+  &.start-collapsed > .card-body {
+    display: none;
+  }
+}
+
+// Maximize backdrop
+body.shidashi-card-maximized {
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1049;
+  }
+}
+
+// Collapsed card: soft-hide body & footer so Shiny outputs keep their width
+// and can still receive updates — only height is zeroed, not display.
+.card.shidashi-collapsed {
+  > .card-body {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+// Card header: title + tools on the same line
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+
+  .card-title {
+    flex: 1;
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .card-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    flex-shrink: 0;
+    margin-left: auto;
+
+    .btn.action-button,
+    .btn.shiny-download-link {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Tool buttons — matches AdminLTE3 .btn-tool convention
+.btn-tool {
+  background: transparent;
+  border: none;
+  color: rgba(0,0,0,0.5);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.2rem;
+  transition: color 0.15s;
+  text-decoration: none;
+
+  &:hover, &:focus {
+    color: $dark;
+    text-decoration: none;
+    outline: none;
+  }
+
+  .dark-mode & {
+    color: rgba($white, 0.6);
+    &:hover, &:focus { color: $white; }
+  }
+}
+
+// In colored card headers, tools should be white
+@each $name, $pair in $_card-themes {
+  $bg: list.nth($pair, 1);
+  @if $name != 'light' {
+    .card-#{$name}:not(.card-outline) .card-header .btn-tool {
+      color: rgba($white, 0.8);
+      &:hover, &:focus { color: $white; }
+    }
+    // Colored full card (bg-primary etc.)
+    .bg-#{$name} .btn-tool {
+      color: rgba($white, 0.8);
+      &:hover, &:focus { color: $white; }
+    }
+  }
+}
+
+// Card-tabs: tools li should be vertically centered, no nav-tab border effects
+.card.card-tabs .card-header {
+  border-bottom: none; // nav-tabs provides the border instead
+
+  // The <ul class="nav nav-tabs"> wraps title + tabs + tools
+  .nav-tabs {
+    flex: 1;          // fill full header width so ms-auto pushes tools to right edge
+    min-width: 0;
+    align-items: stretch;
+    flex-wrap: nowrap;
+
+    // Title li
+    > li:first-child {
+      align-self: center;
+    }
+
+    // Tools li (always has ms-auto)
+    > li.ms-auto {
+      align-self: center;
+      border-bottom: none !important;
+
+      > .card-tools {
+        padding: 0 0.5rem;
+        margin-left: 0;
+      }
+    }
+  }
+}
+
+// ==========================================================================
+// Back-to-top
+// ==========================================================================
+
+.back-to-top {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 1039;
+
+  // Break the btn-group into a vertical stack of separate round buttons
+  [role="group"] {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    opacity: 0.6;
+    transition: opacity 200ms;
+
+    &.show, &:hover { opacity: 1; }
+  }
+
+  // Shared round-button base
+  .btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background-color: var(--bs-body-bg, #{$white});
+    color: var(--bs-body-color, #{$dark});
+    font-size: 1rem;
+    line-height: 1;
+
+    &:hover, &:focus {
+      background-color: var(--bs-tertiary-bg, #{$light});
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  // Go-top button (chevron-up)
+  .btn-go-top {
+    order: 1; // appears on top in column-reverse
+  }
+
+  // Dropdown toggle (anchor jump menu)
+  .dropdown-toggle {
+    order: 0; // appears below the go-top button
+    font-size: 0.7rem;
+
+    &::after {
+      margin: 0; // centre the caret
+    }
+  }
+
+  // Hide the split-button visual separator artifacts
+  .border-right-1,
+  .border-left-1 {
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  // Dropdown menu positioning
+  .dropdown-menu {
+    margin-bottom: 0.25rem;
+  }
+}
+
+// ==========================================================================
+// Code display / info-box
+// ==========================================================================
+
+.info-box {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  min-height: 80px;
+  padding: 0.5rem;
+  width: 100%;
+  background-color: var(--bs-card-bg, #{$white});
+  border-radius: var(--bs-card-border-radius, 0.375rem);
+  box-shadow: var(--bs-card-box-shadow, 0 0 1px rgba(0, 0, 0, 0.125), 0 1px 3px rgba(0, 0, 0, 0.2));
+  color: var(--bs-card-color, inherit);
+  position: relative;
+
+  & .code-display {
+    @include padding($size: 0);
+    @include margin($size: -0.5, $unit: 1em);
+  }
+
+  .info-box-icon {
+    border-radius: var(--bs-card-inner-border-radius, 0.325rem);
+    align-items: center;
+    display: flex;
+    font-size: 1.875rem;
+    justify-content: center;
+    text-align: center;
+    width: 70px;
+
+    > img {
+      max-width: 100%;
+    }
+  }
+
+  .info-box-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.8;
+    flex: 1;
+    padding: 0 10px;
+    width: 100%;
+  }
+
+  .info-box-number {
+    display: block;
+    margin-top: 0.25rem;
+    font-weight: 700;
+  }
+
+  .progress-description,
+  .info-box-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .progress {
+    background-color: rgba(0, 0, 0, 0.125);
+    height: 2px;
+    margin: 5px 0;
+  }
+
+  .progress .progress-bar {
+    background-color: $white;
+  }
+}
+
+.code-display pre { @include padding($size: 0); }
+
+.card-footer.code-display .info-box { @include border-radius(0); }
+
+// ==========================================================================
+// Card accordion
+// ==========================================================================
+
+.card-accordion {
+  &.card-tools {
+    @include position(absolute);
+    right: 0;
+    margin: 7px 5px;
+  }
+  &.card-header {
+    @include padding($size: 0);
+    @include position(relative);
+
+    & .card-accordion-title { @include padding($size: 10); }
+    & [data-bs-toggle="collapse"] { cursor: pointer; }
+  }
+}
+
+// Accordion — styled to match bslib::accordion (BS5)
+.card-accordion-item {
+  border: var(--bs-accordion-border-width, 1px) solid var(--bs-accordion-border-color, var(--bs-border-color));
+  border-radius: var(--bs-accordion-border-radius, var(--bs-border-radius));
+  margin-bottom: -1px; // overlap borders like BS5 accordion
+  background-color: var(--bs-accordion-bg, var(--bs-body-bg));
+  overflow: hidden;
+
+  &:first-child {
+    border-top-left-radius: var(--bs-accordion-border-radius, var(--bs-border-radius));
+    border-top-right-radius: var(--bs-accordion-border-radius, var(--bs-border-radius));
+  }
+  &:last-child {
+    border-bottom-left-radius: var(--bs-accordion-border-radius, var(--bs-border-radius));
+    border-bottom-right-radius: var(--bs-accordion-border-radius, var(--bs-border-radius));
+    margin-bottom: 0;
+  }
+
+  .card-accordion-header {
+    padding: 0;
+    border-bottom: none;
+    background-color: var(--bs-accordion-btn-bg, transparent);
+  }
+
+  .card-accordion-title {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: var(--bs-accordion-btn-padding-y, 0.75rem) var(--bs-accordion-btn-padding-x, 1.25rem);
+    font-size: 1.12rem; // 0.8× card-title (1.4rem)
+    font-weight: 500;
+    color: var(--bs-accordion-btn-color, var(--bs-body-color));
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+
+    &::after {
+      content: "";
+      flex-shrink: 0;
+      width: var(--bs-accordion-btn-icon-width, 1.25rem);
+      height: var(--bs-accordion-btn-icon-width, 1.25rem);
+      margin-left: auto;
+      background-image: var(--bs-accordion-btn-icon, url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27%23212529%27%3e%3cpath fill-rule=%27evenodd%27 d=%27M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z%27/%3e%3c/svg%3e'));
+      background-repeat: no-repeat;
+      background-size: var(--bs-accordion-btn-icon-width, 1.25rem);
+      transition: transform 0.2s ease-in-out;
+    }
+
+    &.collapsed::after {
+      transform: rotate(-90deg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+  .card-body {
+    padding: var(--bs-accordion-body-padding-y, 1rem) var(--bs-accordion-body-padding-x, 1.25rem);
+  }
+
+  .card-footer {
+    border-top: 1px solid var(--bs-accordion-border-color, var(--bs-border-color));
+    padding: 0.5rem var(--bs-accordion-body-padding-x, 1.25rem);
+  }
+}
+
+// ==========================================================================
+// Card2 (direct chat / side panel)
+// ==========================================================================
+
+.card2-body {
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+
+  .direct-chat-messages {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+  }
+
+  .direct-chat-contacts {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    border-left: 1px solid var(--bs-border-color, #{$border-color});
+    background-color: rgba($light, 0.95);
+    z-index: 2;
+
+    .dark-mode & {
+      border-left-color: $light-dark;
+      background-color: rgba($dark, 0.95);
+    }
+
+    hr { border-color: var(--bs-border-color, #{$hr-color}); }
+  }
+
+  &.direct-chat-contacts-open {
+    .direct-chat-messages {
+      transform: translateX(-30%);
+      pointer-events: none;
+    }
+    .direct-chat-contacts {
+      transform: translateX(0);
+    }
+  }
+}
+
+// The open class is toggled on the parent .card.direct-chat element
+.card.direct-chat.direct-chat-contacts-open .card2-body {
+  .direct-chat-messages {
+    transform: translateX(-30%);
+    pointer-events: none;
+  }
+  .direct-chat-contacts {
+    transform: translateX(0);
+  }
+}
+
+// ==========================================================================
+// Progress
+// ==========================================================================
+
+.progress-error { @include display(none, true); }
+.progress-message { @include display(block); }
+.shidashi-progress-error {
+  & .progress-error {
+    @include display(block, true);
+    color: $color-error !important;
+  }
+  & .progress-message { @include display(none); }
+  & .progress-bar { background-color: $color-error !important; }
+}
+
+// ==========================================================================
+// Flip box
+// ==========================================================================
+
+.flip-box {
+  background-color: transparent;
+  border: none;
+  perspective: 1000px;
+  padding: 0 !important;
+  position: relative;
+
+  &[data-toggle="click"] .flip-box-front,
+  &[data-toggle="click-front"] .flip-box-front,
+  &[data-bs-toggle="click"] .flip-box-front,
+  &[data-bs-toggle="click-front"] .flip-box-front {
+    cursor: pointer;
+  }
+
+  & .flip-box-inner {
+    position: relative;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: transform 0.5s;
+    transition-timing-function: cubic-bezier(1, 0, 1, 1);
+    transform-style: preserve-3d;
+
+    & .flip-box-front,
+    & .flip-box-back {
+      width: 100%;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+    & .flip-box-front {
+      position: relative;
+    }
+    & .flip-box-back {
+      position: absolute;
+      top: 0;
+      z-index: 9999;
+      transform: rotateY(180deg);
+      pointer-events: none;
+    }
+  }
+
+  &.fill .flip-box-inner,
+  &.fill .flip-box-front {
+    @include fill-height();
+    @include fill-width();
+  }
+
+  &.active { z-index: 1; }
+  &.active .flip-box-inner { transform: rotateY(180deg); }
+  &.active .flip-box-inner .flip-box-back { pointer-events: auto; }
+  &.active .flip-box-inner .flip-box-front { pointer-events: none; }
+}
+
+.card-body .flip-box {
+  & .flip-box-inner .flip-box-back {
+    max-height: 100%;
+    max-width: 100%;
+    &, & * { overflow: hidden; }
+  }
+  &.active .flip-box-inner .flip-box-back { overflow-y: auto; }
+}
+
+// ==========================================================================
+// Shiny notification panel
+// ==========================================================================
+
+#shiny-notification-panel {
+  width: 350px;
+  background-clip: padding-box;
+  bottom: 70px;
+  @include border-radius(0.25, 1rem);
+
+  & .shiny-notification-close {
+    @include visibility(hidden);
+    color: $notification-close;
+    font-size: 24px;
+  }
+
+  & .shiny-notification {
+    background-color: $dark;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    color: $white;
+    opacity: 0.9;
+
+    & .progress {
+      height: 3px;
+      background: var(--bs-secondary-bg, #{$progress-bg});
+      margin-top: 24px;
+      margin-bottom: -30px;
+
+      & .progress-bar { background: $primary; }
+    }
+
+    & .progress-text .progress-message {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+      height: 20px;
+      overflow: clip;
+      text-overflow: clip;
+    }
+  }
+}
+
+body.dark-mode #shiny-notification-panel .shidashi-notification {
+  background-color: $white;
+  color: var(--bs-body-color, #{$dark-mode-bg});
+}
+
+// ==========================================================================
+// Dark-mode tweaks
+// ==========================================================================
+
+body.dark-mode {
+  // Override BS5 custom properties so child components inherit dark values
+  --bs-body-bg: #{$dark-mode-bg};
+  --bs-body-color: #{$dark-mode-text};
+  --bs-border-color: #{$light-dark};
+
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+
+  .card {
+    background-color: $dark;
+    color: var(--bs-body-color);
+  }
+
+  .card-header {
+    border-bottom-color: $light-dark;
+  }
+
+  .card-footer {
+    background-color: color.adjust($dark, $lightness: 3%);
+    border-top-color: $light-dark;
+    color: var(--bs-body-color);
+  }
+
+  .shidashi-header {
+    background-color: $dark;
+    border-bottom-color: $light-dark;
+    color: var(--bs-body-color);
+  }
+
+  // Navbar elements within header
+  .navbar {
+    color: var(--bs-body-color);
+
+    .navbar-brand,
+    .nav-link {
+      color: var(--bs-body-color);
+
+      &:hover, &:focus {
+        color: $white;
+      }
+    }
+
+    .navbar-toggler {
+      border-color: rgba($white, 0.1);
+    }
+
+    .navbar-toggler-icon {
+      filter: invert(1) grayscale(100%) brightness(200%);
+    }
+  }
+
+  pre,
+  code {
+    background-color: color.adjust($dark, $lightness: 8%);
+    color: var(--bs-body-color);
+  }
+
+  pre > code {
+    background-color: transparent;
+  }
+
+  .info-box {
+    background-color: $dark;
+    color: var(--bs-body-color);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  // Accordion dark mode
+  .card-accordion-item {
+    background-color: $dark;
+    border-color: $light-dark;
+    color: var(--bs-body-color);
+
+    .card-accordion-header {
+      background-color: color.adjust($dark, $lightness: 3%);
+    }
+
+    .card-accordion-title {
+      color: var(--bs-body-color);
+
+      &::after {
+        // chevron icon in light color for dark mode
+        background-image: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 fill=%27%23e9ecef%27%3e%3cpath fill-rule=%27evenodd%27 d=%27M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z%27/%3e%3c/svg%3e');
+      }
+    }
+  }
+
+  // Buttons — ensure visibility in dark mode
+  .btn-default,
+  .btn-light {
+    background-color: $light-dark;
+    border-color: $gray;
+    color: var(--bs-body-color);
+
+    &:hover, &:focus {
+      background-color: $gray;
+      border-color: $gray;
+      color: $white;
+    }
+  }
+
+  .btn-outline-secondary {
+    color: var(--bs-body-color);
+    border-color: $gray;
+
+    &:hover, &:focus {
+      background-color: $gray;
+      color: $white;
+    }
+  }
+
+  // Shiny modal dialog
+  .modal-content {
+    background-color: $dark;
+    color: var(--bs-body-color);
+    border-color: $light-dark;
+  }
+
+  .modal-header {
+    border-bottom-color: $light-dark;
+
+    .btn-close {
+      filter: invert(1) grayscale(100%) brightness(200%);
+    }
+  }
+
+  .modal-footer {
+    border-top-color: $light-dark;
+  }
+
+  // Nav tabs / pills in card headers
+  .card.card-tabs .card-header .nav-tabs {
+    border-bottom-color: $light-dark;
+
+    .nav-link {
+      color: var(--bs-body-color);
+
+      &:hover, &:focus {
+        color: $white;
+        background-color: rgba($white, 0.08);
+        border-color: transparent;
+      }
+
+      &.active {
+        background-color: $dark;
+        color: $white;
+        border-color: $light-dark $light-dark $dark;
+      }
+    }
+  }
+
+  // Form controls (text inputs, selects, textareas)
+  .form-control,
+  .form-select,
+  .shiny-input-container input[type="text"],
+  .shiny-input-container input[type="number"],
+  .shiny-input-container input[type="search"],
+  .shiny-input-container textarea,
+  .shiny-input-container select {
+    background-color: color.adjust($dark, $lightness: 5%);
+    color: var(--bs-body-color);
+    border-color: $light-dark;
+
+    &::placeholder {
+      color: $gray;
+      opacity: 0.8;
+    }
+
+    &:focus {
+      background-color: color.adjust($dark, $lightness: 8%);
+      color: var(--bs-body-color);
+      border-color: $info;
+    }
+  }
+
+  // Tables
+  .table,
+  table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: #{$light-dark};
+    --bs-table-striped-bg: #{color.adjust($dark, $lightness: 3%)};
+    --bs-table-hover-bg: #{color.adjust($dark, $lightness: 6%)};
+
+    color: var(--bs-body-color);
+
+    > thead {
+      background-color: color.adjust($dark, $lightness: 5%);
+      border-bottom-color: $light-dark;
+    }
+
+    > tbody > tr {
+      border-bottom-color: $light-dark;
+    }
+
+    th, td {
+      border-color: $light-dark;
+    }
+  }
+
+  // DataTables integration
+  .dataTables_wrapper {
+    color: var(--bs-body-color);
+
+    .dataTables_filter input,
+    .dataTables_length select {
+      background-color: color.adjust($dark, $lightness: 5%);
+      color: var(--bs-body-color);
+      border-color: $light-dark;
+    }
+  }
+}

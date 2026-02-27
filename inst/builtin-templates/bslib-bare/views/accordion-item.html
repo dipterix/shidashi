@@ -1,0 +1,15 @@
+<div id="{{ itemId }}-accordion-header" class="{{ shidashi:::combine_class('card-accordion-item', class) }}">
+  <div class="card-accordion-header" style="{{ ifelse(length(style_header), paste(style_header, collapse=';'), '') }}">
+    <h5 class="{{ shidashi:::combine_class('card-accordion-title', if(collapsed){'collapsed'}else{''} ) }}" data-bs-toggle="collapse" href="#{{ itemId }}" aria-expanded="{{ ifelse(collapsed, 'false', 'true') }}" data-title="{{ data_title }}">
+      <a>
+        {{ title }}
+      </a>
+    </h5>
+  </div>
+  <div id="{{ itemId }}" class="{{ shidashi:::combine_class('collapse', if(collapsed){''}else{'show'} ) }}" data-bs-parent="#{{ parentId }}">
+    <div class="card-body" style="{{ ifelse(length(style_body), paste(style_body, collapse=';'), '') }}">
+      {{ body }}
+    </div>
+    {{ footer }}
+  </div>
+</div>

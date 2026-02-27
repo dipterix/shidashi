@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 Page not found</title>
+  {{ shidashi::include_view("header.html") }}
+</head>
+<body class="hold-transition">
+<div class="shidashi-wrapper">
+  <div class="shidashi-content" style="margin-left:0;">
+    <section class="container-fluid py-3">
+      <div class="row mb-2">
+        <div class="col-sm-6"><h1>404 Error Page</h1></div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-end">
+            <li class="breadcrumb-item active">Hide and seek!</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+    <section class="container-fluid">
+      <div class="d-flex align-items-center">
+        <h2 class="text-warning me-3">404</h2>
+        <div>
+          <h3><i class="fas fa-exclamation-triangle text-warning"></i> Oops! Page not found.</h3>
+          <p>We could not find the page.</p>
+          <pre style="word-break: break-all; white-space: break-spaces;">{{ .request$QUERY_STRING }}</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

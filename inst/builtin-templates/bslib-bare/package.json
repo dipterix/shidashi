@@ -1,0 +1,21 @@
+{
+  "name": "shidashi-bslib-bare",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Shidashi dashboard template with bslib/Bootstrap 5",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "test": "Rscript -e 'shidashi::render(\".\")'",
+    "postinstall": "echo 'Run npm run build to compile assets'"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "clipboard": "^2.0.11"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.2",
+    "esbuild-sass-plugin": "^3.6.0",
+    "sass": "^1.80.0"
+  }
+}

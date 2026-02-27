@@ -75,6 +75,7 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
     href = href,
     target = target,
     class=class,
+    # AdminLTE3
     `data-card-widget` = widget,
     title = title,
     icon,
