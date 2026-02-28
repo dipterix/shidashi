@@ -1,11 +1,31 @@
 # Obtain the module information
 
-Obtain the module information
+`current_module` returns the information of the currently running
+module. It looks up the `.module_id` variable in the calling environment
+(set automatically when a module is loaded), then retrieves the
+corresponding row from the module table.
+
+`active_module` returns a *reactive* value with information about the
+module that is currently visible in the iframe tab (or the standalone
+module if no iframe manager is present). Unlike `current_module` which
+is static and always returns the module whose server code is running,
+`active_module` dynamically tracks which module the user is looking at
+from any context.
 
 ## Usage
 
 ``` r
 module_info(root_path = template_root(), settings_file = "modules.yaml")
+
+current_module(
+  session = shiny::getDefaultReactiveDomain(),
+  root_path = template_root()
+)
+
+active_module(
+  session = shiny::getDefaultReactiveDomain(),
+  root_path = template_root()
+)
 
 load_module(
   root_path = template_root(),
@@ -23,6 +43,11 @@ load_module(
 - settings_file:
 
   the settings file containing the module information
+
+- session:
+
+  shiny reactive domain; used to extract the module id from the URL
+  query string when `.module_id` is not found.
 
 - request:
 
@@ -68,6 +93,14 @@ information:
 
   the relative 'URL' address of the module.
 
+`current_module`: a named list with `id`, `group`, `label`, `icon`,
+`badge`, and `url` of the current module, or `NULL` if no module is
+active.
+
+`active_module`: a named list with `id`, `group`, `label`, `icon`,
+`badge`, and `url` of the currently active (visible) module, or `NULL`
+if no module is active.
+
 ## Details
 
 The module files are stored in `modules/` folder in your project. The
@@ -97,6 +130,15 @@ it is highly recommended that you write each 'UI' component side-by-side
 with their corresponding server functions and call these server
 functions in `"server.R"`.
 
+`active_module` works by reading the `'@shidashi_active_module@'` Shiny
+input that is set by the JavaScript front-end whenever a module tab is
+activated. Because it accesses `session$rootScope()$input`, the return
+value is reactive: when called inside an `observe` or `reactive` context
+it will re-fire whenever the user switches modules.
+
+If the input has not been set yet (e.g. before any module is opened),
+the function falls back to `current_module()`.
+
 ## Examples
 
 ``` r
@@ -122,7 +164,7 @@ module_info()
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x55944c2612c0>
+#> <environment: 0x55e8ab78c7a0>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -141,8 +183,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x55944a2e1be0>
-#> <environment: 0x55944a2dfac8>
+#> <bytecode: 0x55e8abdd6d00>
+#> <environment: 0x55e8abdd8e50>
 #> 
 #> $module$template_path
 #> NULL

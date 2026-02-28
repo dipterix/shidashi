@@ -504,6 +504,61 @@
 <h3 id="id_56-brand-icon-location-fix">5.6 Brand icon location fix<a class="anchor" aria-label="anchor" href="#id_56-brand-icon-location-fix"></a></h3>
 <p>Ensure <code>shidashi-brand-link</code> vertical centering and spacing matches AdminLTE3’s <code>.brand-link</code> padding. Current implementation uses <code>height: $navbar-height</code> + <code>padding: 0 1rem</code> which may not vertically center the logo/text.</p>
 <ul class="task-list"><li><label><input type="checkbox" checked>Fix brand link padding and vertical centering</label></li>
+</ul><hr></div>
+</div>
+<div class="section level2">
+<h2 id="phase-6--merge-generic-improvements-from-rave-pipelines-bslib-migration">Phase 6 — Merge Generic Improvements from rave-pipelines bslib-migration<a class="anchor" aria-label="anchor" href="#phase-6--merge-generic-improvements-from-rave-pipelines-bslib-migration"></a></h2>
+<p>Back-port non-RAVE-specific improvements discovered during rave-pipelines integration. Source: <code>rave-ieeg/rave-pipelines</code> branch <code>bslib-migration</code>.</p>
+<div class="section level3">
+<h3 id="id_61-scss--structural--component-fixes">6.1 SCSS — Structural &amp; Component Fixes<a class="anchor" aria-label="anchor" href="#id_61-scss--structural--component-fixes"></a></h3>
+<ul class="task-list"><li><label><input type="checkbox"><strong>p1.1</strong> Drawer: Add <code>.shidashi-drawer</code> off-canvas panel styles (right-side slide-in, dark-mode variant, 320px width, transitions)</label></li>
+<li><label><input type="checkbox"><strong>p1.2</strong> Resize handles: Add <code>.resize-horizontal</code> and <code>card-body.resize-vertical</code> overflow rules</label></li>
+<li><label><input type="checkbox"><strong>p1.3</strong> Card collapsed footer: <code>.card.shidashi-collapsed &gt; .card-footer</code> should be soft-hidden</label></li>
+<li><label><input type="checkbox"><strong>p1.4</strong> Card maximize transition: Add smooth transition to <code>.shidashi-maximized</code></label></li>
+<li><label><input type="checkbox"><strong>p1.5</strong> Soft-hidden fix: <code>.soft-hidden</code> needs <code>opacity: 0; visibility: hidden; pointer-events: none</code> in addition to <code>height: 0</code></label></li>
+<li><label><input type="checkbox"><strong>p1.6</strong> IRS slider overrides: Range slider styles (<code>.irs--shiny .irs-bar</code>, <code>.irs-from</code>, <code>.irs-to</code>, etc.)</label></li>
+<li><label><input type="checkbox"><strong>p1.7</strong> Navbar-hidden: <code>body.shidashi-navbar-hidden</code> rules (hide header, adjust content top)</label></li>
+<li><label><input type="checkbox"><strong>p1.8</strong> Col-xs-12: BS3 compat shim <code>.col-xs-12 { width: 100% }</code></label></li>
+<li><label><input type="checkbox"><strong>p1.9</strong> Hljs dark-mode: <code>body.dark-mode pre code.hljs</code> background override</label></li>
+<li><label><input type="checkbox"><strong>p1.10</strong> Back-to-top rename: <code>.back-to-top</code> → <code>.shidashi-back-to-top</code> (avoid adblocker rules)</label></li>
+<li><label><input type="checkbox"><strong>p1.11</strong> Group-input-box: <code>.group-input-box</code> padding/margins for grouped inputs</label></li>
+<li><label><input type="checkbox"><strong>p1.12</strong> Form widths: <code>select.form-control</code>, <code>.form-group</code>, <code>form</code> max-width constraints</label></li>
+<li><label><input type="checkbox"><strong>p1.13</strong> Card-header form-group: Zero out bottom margin inside card headers</label></li>
+<li><label><input type="checkbox"><strong>p1.14</strong> Toasts z-index: <code>#shidashi-toast-container</code> z-index 1090</label></li>
+</ul></div>
+<div class="section level3">
+<h3 id="id_62-javascript--new-handlers--methods">6.2 JavaScript — New Handlers &amp; Methods<a class="anchor" aria-label="anchor" href="#id_62-javascript--new-handlers--methods"></a></h3>
+<ul class="task-list"><li><label><input type="checkbox"><strong>p2.1</strong> Drawer methods: <code>drawerOpen()</code>, <code>drawerClose()</code>, <code>drawerToggle()</code> with <code>broadcastEvent('drawer.open'/'drawer.close')</code></label></li>
+<li><label><input type="checkbox"><strong>p2.2</strong> Resize handles: Init <code>mousedown</code>/<code>mousemove</code>/<code>mouseup</code> for horizontal resize</label></li>
+<li><label><input type="checkbox"><strong>p2.3</strong> Card icon helpers: <code>_updateCardIcon2()</code> for card2 collapse icons</label></li>
+<li><label><input type="checkbox"><strong>p2.4</strong> cardwidget data-title lookup: Query <code>.card[data-title]</code> when no inputId provided</label></li>
+<li><label><input type="checkbox"><strong>p2.5</strong> Accordion handler: <code>shidashi.accordion</code> message handler</label></li>
+<li><label><input type="checkbox"><strong>p2.6</strong> hide/show header handlers: <code>shidashi.hide_header</code> / <code>shidashi.show_header</code></label></li>
+<li><label><input type="checkbox"><strong>p2.7</strong> open_url handler: <code>shidashi.open_url</code> → <code>window.open()</code></label></li>
+<li><label><input type="checkbox"><strong>p2.8</strong> shidashi-button handler: <code>[data-shidashi-action="shidashi-button"]</code> click delegation → <code>@shidashi_event@</code> Shiny input</label></li>
+<li><label><input type="checkbox"><strong>p2.9</strong> Back-to-top init: Update <code>_initBackToTop()</code> selector to <code>.shidashi-back-to-top</code></label></li>
+<li><label><input type="checkbox"><strong>p2.10</strong> shown.bs.tab: Report active tab title via <code>broadcastEvent('tabset.activated')</code></label></li>
+</ul></div>
+<div class="section level3">
+<h3 id="id_63-html-templates">6.3 HTML Templates<a class="anchor" aria-label="anchor" href="#id_63-html-templates"></a></h3>
+<ul class="task-list"><li><label><input type="checkbox"><strong>p3.1</strong> Drawer in index.html: Add drawer toggle <code>&lt;li&gt;</code> in right navbar, add <code>{{ drawer_ui() }}</code> placeholder</label></li>
+<li><label><input type="checkbox"><strong>p3.2</strong> Footer cleanup: Remove dead <code>&lt;script&gt;</code> from <code>views/footer.html</code></label></li>
+<li><label><input type="checkbox"><strong>p3.3</strong> Card view hardening: Add <code><a href="https://rdrr.io/r/base/exists.html" class="external-link">get0()</a></code> guards in <code>card.html</code> and <code>card2.html</code></label></li>
+<li><label><input type="checkbox"><strong>p3.4</strong> Accordion view: Verify <code>combine_class()</code> and <code>aria-expanded</code> correctness in <code>accordion-item.html</code></label></li>
+</ul></div>
+<div class="section level3">
+<h3 id="id_64-r-functions">6.4 R Functions<a class="anchor" aria-label="anchor" href="#id_64-r-functions"></a></h3>
+<ul class="task-list"><li><label><input type="checkbox"><strong>p4.1</strong> Drawer R functions: <code><a href="reference/drawer.html">drawer_open()</a></code>, <code><a href="reference/drawer.html">drawer_close()</a></code>, <code><a href="reference/drawer.html">drawer_toggle()</a></code> in new <code>R/drawer.R</code></label></li>
+<li><label><input type="checkbox"><strong>p4.2</strong> Drawer UI placeholder: <code>drawer_ui()</code> function in <code>inst/builtin-templates/bslib-bare/R/common.R</code></label></li>
+<li><label><input type="checkbox"><strong>p4.3</strong> Header visibility: <code>hide_header()</code>, <code>show_header()</code> in <code>R/widgets.R</code></label></li>
+<li><label><input type="checkbox"><strong>p4.4</strong> Open URL: <code><a href="reference/open_url.html">open_url()</a></code> in <code>R/widgets.R</code></label></li>
+<li><label><input type="checkbox"><strong>p4.5</strong> Back-to-top rename: Update <code><a href="reference/back_top_button.html">back_top_button()</a></code> CSS class in <code>R/widgets.R</code></label></li>
+<li><label><input type="checkbox"><strong>p4.6</strong> NAMESPACE: Export new functions via roxygen2</label></li>
+</ul></div>
+<div class="section level3">
+<h3 id="id_65-build--verify">6.5 Build &amp; Verify<a class="anchor" aria-label="anchor" href="#id_65-build--verify"></a></h3>
+<ul class="task-list"><li><label><input type="checkbox"><strong>p5.1</strong> Run <code>npm run build</code> — clean compile</label></li>
+<li><label><input type="checkbox"><strong>p5.2</strong> Smoke-test <code>create_barebone_bslib()</code> → <code><a href="reference/render.html">render()</a></code></label></li>
 </ul></div>
 </div>
 </div>

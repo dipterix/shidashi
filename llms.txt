@@ -138,6 +138,11 @@ repository](https://github.com/dipterix/shidashi-templates/).
   [`renderClipboard()`](https://dipterix.org/shidashi/reference/clipboardOutput.md)
   : Generates outputs that can be written to clipboards with one click
 
+- [`drawer_open()`](https://dipterix.org/shidashi/reference/drawer.md)
+  [`drawer_close()`](https://dipterix.org/shidashi/reference/drawer.md)
+  [`drawer_toggle()`](https://dipterix.org/shidashi/reference/drawer.md)
+  : Open, close, or toggle the drawer panel
+
 - [`flex_container()`](https://dipterix.org/shidashi/reference/flex_container.md)
   [`flex_item()`](https://dipterix.org/shidashi/reference/flex_container.md)
   [`flex_break()`](https://dipterix.org/shidashi/reference/flex_container.md)
@@ -174,12 +179,17 @@ repository](https://github.com/dipterix/shidashi-templates/).
   : The 'JavaScript' tunnel
 
 - [`module_info()`](https://dipterix.org/shidashi/reference/module_info.md)
+  [`current_module()`](https://dipterix.org/shidashi/reference/module_info.md)
+  [`active_module()`](https://dipterix.org/shidashi/reference/module_info.md)
   [`load_module()`](https://dipterix.org/shidashi/reference/module_info.md)
   : Obtain the module information
 
 - [`show_notification()`](https://dipterix.org/shidashi/reference/notification.md)
   [`clear_notifications()`](https://dipterix.org/shidashi/reference/notification.md)
   : The 'Bootstrap' notification
+
+- [`open_url()`](https://dipterix.org/shidashi/reference/open_url.md) :
+  Open a URL in a new browser tab
 
 - [`progressOutput()`](https://dipterix.org/shidashi/reference/progressOutput.md)
   [`renderProgress()`](https://dipterix.org/shidashi/reference/progressOutput.md)

@@ -27,7 +27,7 @@ back_top_button(icon = "chevron-up", title = "Jump to")
 
 ``` r
 back_top_button()
-#> <div class="back-to-top">
+#> <div class="shidashi-back-to-top">
 #>   <div class="btn-group dropup" role="group">
 #>     <a type="button" class="btn btn-default btn-go-top border-right-1" href="#">
 #>       <i class="fas fa-chevron-up" role="presentation" aria-label="chevron-up icon"></i>
@@ -41,7 +41,7 @@ back_top_button()
 #>   </div>
 #> </div>
 back_top_button("rocket")
-#> <div class="back-to-top">
+#> <div class="shidashi-back-to-top">
 #>   <div class="btn-group dropup" role="group">
 #>     <a type="button" class="btn btn-default btn-go-top border-right-1" href="#">
 #>       <i class="fas fa-rocket" role="presentation" aria-label="rocket icon"></i>
