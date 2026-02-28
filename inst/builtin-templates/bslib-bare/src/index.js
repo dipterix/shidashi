@@ -594,11 +594,22 @@ class ShidashiApp {
 
       case 'expand':
         card.classList.remove('shidashi-collapsed');
+        if (card.classList.contains('start-collapsed')) {
+          this.unbindAll(card);
+          card.classList.remove('start-collapsed');
+          this.bindAll(card);
+        }
         this._updateCardIcon(card, false);
         this.triggerResize(50);
         break;
 
       case 'maximize':
+        card.classList.add('shidashi-maximized');
+        document.body.classList.add('shidashi-card-maximized');
+        this._updateMaximizeIcon(card);
+        this.triggerResize(50);
+        break;
+
       case 'toggleMaximize':
         if (method === 'toggleMaximize' && card.classList.contains('shidashi-maximized')) {
           card.classList.remove('shidashi-maximized');
@@ -619,7 +630,7 @@ class ShidashiApp {
         break;
 
       case 'toggle':
-        if (card.classList.contains('shidashi-collapsed')) {
+        if (card.classList.contains('shidashi-collapsed') || card.classList.contains('start-collapsed')) {
           this._cardOperate(card, 'expand');
         } else {
           this._cardOperate(card, 'collapse');
@@ -953,11 +964,10 @@ class ShidashiApp {
       if (!collapseBtn) return;
       const card = collapseBtn.closest('.card.start-collapsed');
       if (!card) return;
-      setTimeout(() => {
-        this.unbindAll(card);
-        card.classList.remove('start-collapsed');
-        this.bindAll(card);
-      }, 200);
+
+      this.unbindAll(card);
+      card.classList.remove('start-collapsed');
+      this.bindAll(card);
     });
 
     // Theme switch checkbox
