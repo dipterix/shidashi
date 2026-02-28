@@ -117,7 +117,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to"){
     title <- shiny::h6(class="dropdown-header", title)
   }
   shiny::div(
-    class = "back-to-top",
+    class = "shidashi-back-to-top",
     shiny::div(
       class = "btn-group dropup",
       role = "group",
@@ -184,3 +184,20 @@ remove_class <- function(selector, class,
   ))
 }
 
+
+#' @title Open a URL in a new browser tab
+#' @description Sends a message to the client to open the specified URL
+#' in a new browser window/tab.
+#' @param url character string, the URL to open
+#' @param target the \code{window.open} target; default is
+#' \code{"_blank"} (new tab)
+#' @param session shiny session
+#' @return No value is returned (called for side effect).
+#' @export
+open_url <- function(url, target = "_blank",
+                     session = shiny::getDefaultReactiveDomain()){
+  session$sendCustomMessage("shidashi.open_url", list(
+    url = url,
+    target = target
+  ))
+}

@@ -101,6 +101,109 @@ module_info <- function(root_path = template_root(),
 }
 
 
+#' @rdname module_info
+#' @description \code{current_module} returns the information of the currently
+#' running module. It looks up the \code{.module_id} variable in the calling
+#' environment (set automatically when a module is loaded), then retrieves
+#' the corresponding row from the module table.
+#' @param session shiny reactive domain; used to extract the module id from
+#' the URL query string when \code{.module_id} is not found.
+#' @returns \code{current_module}: a named list with \code{id}, \code{group},
+#' \code{label}, \code{icon}, \code{badge}, and \code{url} of the current
+#' module, or \code{NULL} if no module is active.
+#' @export
+current_module <- function(
+    session = shiny::getDefaultReactiveDomain(),
+    root_path = template_root()) {
+
+  module_id <- NULL
+
+  # 1. Try the calling environment's .module_id (set by load_module)
+  env <- parent.frame()
+  if (exists(".module_id", envir = env, inherits = TRUE)) {
+    module_id <- get(".module_id", envir = env, inherits = TRUE)
+  }
+
+  # 2. Fallback: parse the session's URL query string
+  if (!length(module_id) && is.environment(session)) {
+    query_str <- shiny::isolate(session$clientData$url_search)
+    if (length(query_str) == 1L) {
+      query_list <- httr::parse_url(query_str)
+      module_id <- query_list$query$module
+    }
+  }
+
+  if (!length(module_id) || !nzchar(module_id)) {
+    return(NULL)
+  }
+
+  modules <- module_info(root_path = root_path)
+  idx <- which(modules$id == module_id)
+  if (!length(idx)) {
+    return(NULL)
+  }
+  as.list(modules[idx[1L], ])
+}
+
+
+#' @rdname module_info
+#' @description \code{active_module} returns a \emph{reactive} value with
+#' information about the module that is currently visible in the iframe tab
+#' (or the standalone module if no iframe manager is present). Unlike
+#' \code{current_module} which is static and always returns the module
+#' whose server code is running, \code{active_module} dynamically tracks
+#' which module the user is looking at from any context.
+#' @details
+#' \code{active_module} works by reading the
+#' \code{'@shidashi_active_module@'} Shiny input that is set by the
+#' JavaScript front-end whenever a module tab is activated.
+#' Because it accesses \code{session$rootScope()$input}, the return value
+#' is reactive: when called inside an \code{observe} or \code{reactive}
+#' context it will re-fire whenever the user switches modules.
+#'
+#' If the input has not been set yet (e.g. before any module is opened),
+#' the function falls back to \code{current_module()}.
+#' @returns \code{active_module}: a named list with \code{id}, \code{group},
+#' \code{label}, \code{icon}, \code{badge}, and \code{url} of the
+#' currently active (visible) module, or \code{NULL} if no module is active.
+#' @export
+active_module <- function(
+    session = shiny::getDefaultReactiveDomain(),
+    root_path = template_root()) {
+
+  # Resolve root scope session
+  root_session <- session
+  if (is.function(session$rootScope)) {
+    root_session <- session$rootScope()
+  }
+  if (is.null(root_session)) {
+    root_session <- session
+  }
+
+  # Read the @shidashi_active_module@ input (reactive)
+  active_input <- root_session$input[["@shidashi_active_module@"]]
+
+  module_id <- NULL
+  if (is.list(active_input) && length(active_input$module_id)) {
+    module_id <- active_input$module_id
+  } else if (is.character(active_input) && length(active_input) == 1L) {
+    module_id <- active_input
+  }
+
+  if (!length(module_id) || !nzchar(module_id)) {
+    # Fallback to current_module when no active module has been reported yet
+    return(current_module(session = session, root_path = root_path))
+  }
+
+  modules <- module_info(root_path = root_path)
+  idx <- which(modules$id == module_id)
+  if (!length(idx)) {
+    return(NULL)
+  }
+  as.list(modules[idx[1L], ])
+}
+
+
 load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()){
   root_path <- normalizePath(root_path, mustWork = TRUE)
 

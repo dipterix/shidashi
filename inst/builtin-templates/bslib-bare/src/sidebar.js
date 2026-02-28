@@ -65,10 +65,20 @@ export class Sidebar {
   }
 
   toggle() {
-    if (this._isOpen) {
-      this.close();
+    if (this._isNarrow()) {
+      // On narrow screens, sidebar is hidden by CSS media-query;
+      // use the 'sidebar-open' class instead of internal _isOpen state.
+      if (document.body.classList.contains('sidebar-open')) {
+        this.close();
+      } else {
+        this.open();
+      }
     } else {
-      this.open();
+      if (this._isOpen) {
+        this.close();
+      } else {
+        this.open();
+      }
     }
   }
 
@@ -81,9 +91,18 @@ export class Sidebar {
 
   close() {
     this._isOpen = false;
-    document.body.classList.add('sidebar-collapsed');
     document.body.classList.remove('sidebar-open');
     this._el.classList.remove('open');
+    if (!this._isNarrow()) {
+      document.body.classList.add('sidebar-collapsed');
+    }
+  }
+
+  /**
+   * Whether the viewport is narrow (< 992px).
+   */
+  _isNarrow() {
+    return window.innerWidth < 992;
   }
 
   /**

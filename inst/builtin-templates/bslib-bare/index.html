@@ -26,12 +26,14 @@
 
       <!-- Theme switcher -->
       <li class="nav-item">
-        <div class="theme-switch-wrapper nav-link">
-          <label class="theme-switch" for="__checkbox__">
-            <input type="checkbox" id="__checkbox__">
-            <span class="slider round"></span>
-          </label>
-        </div>
+        <a class="nav-link" href="#" data-shidashi-action="theme-toggle" role="button" title="Toggle theme">
+          <i class="fas fa-moon"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#" data-shidashi-action="drawer-toggle">
+          <i class="fas fa-cog"></i>
+        </a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="#" data-shidashi-action="iframe-fullscreen">
@@ -102,6 +104,13 @@
     </div>
   </div>
   <!-- /.content-wrapper -->
+
+  <!-- Drawer -->
+  <div class="shidashi-drawer">
+    <div class="shidashi-drawer-close-tab"><i class="fas fa-xmark"></i></div>
+    {{ drawer_ui() }}
+  </div>
+  <div class="shidashi-drawer-overlay"></div>
 
 </div>
 <!-- ./wrapper -->

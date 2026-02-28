@@ -2,10 +2,22 @@
 % Please edit documentation in R/modules.R
 \name{module_info}
 \alias{module_info}
+\alias{current_module}
+\alias{active_module}
 \alias{load_module}
 \title{Obtain the module information}
 \usage{
 module_info(root_path = template_root(), settings_file = "modules.yaml")
+
+current_module(
+  session = shiny::getDefaultReactiveDomain(),
+  root_path = template_root()
+)
+
+active_module(
+  session = shiny::getDefaultReactiveDomain(),
+  root_path = template_root()
+)
 
 load_module(
   root_path = template_root(),
@@ -17,6 +29,9 @@ load_module(
 \item{root_path}{the root path of the website project}
 
 \item{settings_file}{the settings file containing the module information}
+
+\item{session}{shiny reactive domain; used to extract the module id from
+the URL query string when \code{.module_id} is not found.}
 
 \item{request}{'HTTP' request string}
 
@@ -36,9 +51,27 @@ passed to \code{\link{as_icon}}}
 following the module label, will be passed to \code{\link{as_badge}}}
 \item{\code{url}}{the relative 'URL' address of the module.}
 }
+
+\code{current_module}: a named list with \code{id}, \code{group},
+\code{label}, \code{icon}, \code{badge}, and \code{url} of the current
+module, or \code{NULL} if no module is active.
+
+\code{active_module}: a named list with \code{id}, \code{group},
+\code{label}, \code{icon}, \code{badge}, and \code{url} of the
+currently active (visible) module, or \code{NULL} if no module is active.
 }
 \description{
-Obtain the module information
+\code{current_module} returns the information of the currently
+running module. It looks up the \code{.module_id} variable in the calling
+environment (set automatically when a module is loaded), then retrieves
+the corresponding row from the module table.
+
+\code{active_module} returns a \emph{reactive} value with
+information about the module that is currently visible in the iframe tab
+(or the standalone module if no iframe manager is present). Unlike
+\code{current_module} which is static and always returns the module
+whose server code is running, \code{active_module} dynamically tracks
+which module the user is looking at from any context.
 }
 \details{
 The module files are stored in \code{modules/} folder in your
@@ -61,6 +94,16 @@ The \code{"server.R"} has access to all the code in \code{R/} as well.
 Therefore it is highly recommended that you write each 'UI' component
 side-by-side with their corresponding server functions and call
 these server functions in \code{"server.R"}.
+
+\code{active_module} works by reading the
+\code{'@shidashi_active_module@'} Shiny input that is set by the
+JavaScript front-end whenever a module tab is activated.
+Because it accesses \code{session$rootScope()$input}, the return value
+is reactive: when called inside an \code{observe} or \code{reactive}
+context it will re-fire whenever the user switches modules.
+
+If the input has not been set yet (e.g. before any module is opened),
+the function falls back to \code{current_module()}.
 }
 \examples{
 

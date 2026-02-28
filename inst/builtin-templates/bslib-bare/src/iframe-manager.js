@@ -60,6 +60,20 @@ export class IFrameManager {
   }
 
   /**
+   * Extract the module id from a URL query string (?module=xxx).
+   * @param {string} url
+   * @returns {string|null}
+   */
+  _extractModuleId(url) {
+    try {
+      const u = new URL(url, window.location.origin);
+      return u.searchParams.get('module') || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
    * Get a URL identifier for deduplication.
    * Strips shared_id from query to match by module only.
    */
@@ -158,6 +172,12 @@ export class IFrameManager {
     const entry = this._tabs.get(tabId);
     if (entry?.tab) {
       entry.tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+
+    // Report active module to Shiny
+    const moduleId = this._extractModuleId(entry.url);
+    if (moduleId && window.shidashi) {
+      window.shidashi._reportActiveModule(moduleId);
     }
 
     // Trigger resize for Shiny outputs inside the iframe

@@ -426,3 +426,61 @@ AdminLTE3 uses webkit scrollbar pseudo-elements for 0.5rem thin scrollbars on ho
 Ensure `shidashi-brand-link` vertical centering and spacing matches AdminLTE3's `.brand-link` padding. Current implementation uses `height: $navbar-height` + `padding: 0 1rem` which may not vertically center the logo/text.
 
 - [x] Fix brand link padding and vertical centering
+
+---
+
+## Phase 6 — Merge Generic Improvements from rave-pipelines bslib-migration
+
+Back-port non-RAVE-specific improvements discovered during rave-pipelines integration.
+Source: `rave-ieeg/rave-pipelines` branch `bslib-migration`.
+
+### 6.1 SCSS — Structural & Component Fixes
+
+- [ ] **p1.1** Drawer: Add `.shidashi-drawer` off-canvas panel styles (right-side slide-in, dark-mode variant, 320px width, transitions)
+- [ ] **p1.2** Resize handles: Add `.resize-horizontal` and `card-body.resize-vertical` overflow rules
+- [ ] **p1.3** Card collapsed footer: `.card.shidashi-collapsed > .card-footer` should be soft-hidden
+- [ ] **p1.4** Card maximize transition: Add smooth transition to `.shidashi-maximized`
+- [ ] **p1.5** Soft-hidden fix: `.soft-hidden` needs `opacity: 0; visibility: hidden; pointer-events: none` in addition to `height: 0`
+- [ ] **p1.6** IRS slider overrides: Range slider styles (`.irs--shiny .irs-bar`, `.irs-from`, `.irs-to`, etc.)
+- [ ] **p1.7** Navbar-hidden: `body.shidashi-navbar-hidden` rules (hide header, adjust content top)
+- [ ] **p1.8** Col-xs-12: BS3 compat shim `.col-xs-12 { width: 100% }`
+- [ ] **p1.9** Hljs dark-mode: `body.dark-mode pre code.hljs` background override
+- [ ] **p1.10** Back-to-top rename: `.back-to-top` → `.shidashi-back-to-top` (avoid adblocker rules)
+- [ ] **p1.11** Group-input-box: `.group-input-box` padding/margins for grouped inputs
+- [ ] **p1.12** Form widths: `select.form-control`, `.form-group`, `form` max-width constraints
+- [ ] **p1.13** Card-header form-group: Zero out bottom margin inside card headers
+- [ ] **p1.14** Toasts z-index: `#shidashi-toast-container` z-index 1090
+
+### 6.2 JavaScript — New Handlers & Methods
+
+- [ ] **p2.1** Drawer methods: `drawerOpen()`, `drawerClose()`, `drawerToggle()` with `broadcastEvent('drawer.open'/'drawer.close')`
+- [ ] **p2.2** Resize handles: Init `mousedown`/`mousemove`/`mouseup` for horizontal resize
+- [ ] **p2.3** Card icon helpers: `_updateCardIcon2()` for card2 collapse icons
+- [ ] **p2.4** cardwidget data-title lookup: Query `.card[data-title]` when no inputId provided
+- [ ] **p2.5** Accordion handler: `shidashi.accordion` message handler
+- [ ] **p2.6** hide/show header handlers: `shidashi.hide_header` / `shidashi.show_header`
+- [ ] **p2.7** open_url handler: `shidashi.open_url` → `window.open()`
+- [ ] **p2.8** shidashi-button handler: `[data-shidashi-action="shidashi-button"]` click delegation → `@shidashi_event@` Shiny input
+- [ ] **p2.9** Back-to-top init: Update `_initBackToTop()` selector to `.shidashi-back-to-top`
+- [ ] **p2.10** shown.bs.tab: Report active tab title via `broadcastEvent('tabset.activated')`
+
+### 6.3 HTML Templates
+
+- [ ] **p3.1** Drawer in index.html: Add drawer toggle `<li>` in right navbar, add `{{ drawer_ui() }}` placeholder
+- [ ] **p3.2** Footer cleanup: Remove dead `<script>` from `views/footer.html`
+- [ ] **p3.3** Card view hardening: Add `get0()` guards in `card.html` and `card2.html`
+- [ ] **p3.4** Accordion view: Verify `combine_class()` and `aria-expanded` correctness in `accordion-item.html`
+
+### 6.4 R Functions
+
+- [ ] **p4.1** Drawer R functions: `drawer_open()`, `drawer_close()`, `drawer_toggle()` in new `R/drawer.R`
+- [ ] **p4.2** Drawer UI placeholder: `drawer_ui()` function in `inst/builtin-templates/bslib-bare/R/common.R`
+- [ ] **p4.3** Header visibility: `hide_header()`, `show_header()` in `R/widgets.R`
+- [ ] **p4.4** Open URL: `open_url()` in `R/widgets.R`
+- [ ] **p4.5** Back-to-top rename: Update `back_top_button()` CSS class in `R/widgets.R`
+- [ ] **p4.6** NAMESPACE: Export new functions via roxygen2
+
+### 6.5 Build & Verify
+
+- [ ] **p5.1** Run `npm run build` — clean compile
+- [ ] **p5.2** Smoke-test `create_barebone_bslib()` → `render()`

@@ -266,6 +266,25 @@ class ShidashiApp {
     }));
   }
 
+  // ---------- Active module reporting ----------
+
+  /**
+   * Report the currently active module to Shiny via @shidashi_active_module@ input.
+   * Called from IFrameManager.activateTab(), set_current_module handler, and
+   * standalone module initialization.
+   * @param {string} moduleId - The module identifier
+   */
+  _reportActiveModule(moduleId) {
+    if (!moduleId) return;
+    this.ensureShiny(() => {
+      if (typeof this._shiny.onInputChange !== 'function') return;
+      this._shiny.onInputChange('@shidashi_active_module@', {
+        module_id: moduleId,
+        timestamp: Date.now()
+      });
+    });
+  }
+
   // ---------- Event system ----------
 
   broadcastEvent(type, message = {}) {
@@ -360,6 +379,18 @@ class ShidashiApp {
     return document.body.classList.contains('dark-mode');
   }
 
+  _updateThemeIcon(mode) {
+    const icon = document.querySelector('[data-shidashi-action="theme-toggle"] i');
+    if (!icon) return;
+    if (mode === 'dark') {
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+    } else {
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+    }
+  }
+
   asLightMode() {
     document.body.classList.remove('dark-mode');
     // Sidebar stays dark by default in light mode (rave-pipelines convention)
@@ -374,6 +405,8 @@ class ShidashiApp {
     if (header) {
       header.setAttribute('data-bs-theme', 'light');
     }
+    // Update theme toggle icon: show moon (click to go dark)
+    this._updateThemeIcon('light');
     this._sessionStorage.setItem(this._keyTheme, 'light');
     // Propagate to iframes
     if (this.iframeManager) {
@@ -394,6 +427,8 @@ class ShidashiApp {
     if (header) {
       header.setAttribute('data-bs-theme', 'dark');
     }
+    // Update theme toggle icon: show sun (click to go light)
+    this._updateThemeIcon('dark');
     this._sessionStorage.setItem(this._keyTheme, 'dark');
     if (this.iframeManager) {
       this.iframeManager.propagateThemeToAll();
@@ -803,6 +838,54 @@ class ShidashiApp {
     window.scrollTo({ top: 0, behavior: duration > 0 ? 'smooth' : 'instant' });
   }
 
+  // ---------- Drawer ----------
+
+  drawerOpen() {
+    // Relay to parent frame if running inside an iframe
+    if (window.self !== window.top) {
+      try { window.top.shidashi.drawerOpen(); } catch(e) {}
+      return;
+    }
+    const drawer = document.querySelector('.shidashi-drawer');
+    const overlay = document.querySelector('.shidashi-drawer-overlay');
+    if (drawer) drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+    this.broadcastEvent('drawer.open', {});
+  }
+
+  drawerClose() {
+    if (window.self !== window.top) {
+      try { window.top.shidashi.drawerClose(); } catch(e) {}
+      return;
+    }
+    const drawer = document.querySelector('.shidashi-drawer');
+    const overlay = document.querySelector('.shidashi-drawer-overlay');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    this.broadcastEvent('drawer.close', {});
+  }
+
+  drawerToggle() {
+    if (window.self !== window.top) {
+      try { window.top.shidashi.drawerToggle(); } catch(e) {}
+      return;
+    }
+    const drawer = document.querySelector('.shidashi-drawer');
+    if (drawer && drawer.classList.contains('open')) {
+      this.drawerClose();
+    } else {
+      this.drawerOpen();
+    }
+  }
+
+  // ---------- Open URL ----------
+
+  openUrl(url, target = '_blank') {
+    if (url) {
+      window.open(url, target);
+    }
+  }
+
   // ---------- Utils ----------
 
   async matchSelector(el, selector, next, strict = false) {
@@ -950,6 +1033,7 @@ class ShidashiApp {
       // Body starts with dark-mode class from R but no stored preference
       const header = document.querySelector('.shidashi-header');
       if (header) { header.setAttribute('data-bs-theme', 'dark'); }
+      this._updateThemeIcon('dark');
     }
 
     // Back-to-top widget
@@ -970,10 +1054,11 @@ class ShidashiApp {
       this.bindAll(card);
     });
 
-    // Theme switch checkbox
-    const themeCheckbox = document.querySelector('.theme-switch-wrapper .theme-switch input[type="checkbox"]');
-    if (themeCheckbox) {
-      themeCheckbox.addEventListener('change', () => {
+    // Theme toggle icon (sun/moon)
+    const themeToggle = document.querySelector('[data-shidashi-action="theme-toggle"]');
+    if (themeToggle) {
+      themeToggle.addEventListener('click', (e) => {
+        e.preventDefault();
         if (this.isDarkMode()) {
           this.asLightMode();
         } else {
@@ -1030,6 +1115,10 @@ class ShidashiApp {
       this.ensureShiny((shiny) => {
         shiny.setInputValue(tablist.id, tabname);
       });
+      this.broadcastEvent('tabset.activated', {
+        tablistId: tablist.id,
+        title: tabname
+      });
     });
 
     // Report initial active tabs when Shiny becomes available
@@ -1048,10 +1137,158 @@ class ShidashiApp {
         }
       });
     });
+
+    // Drawer overlay click → close drawer
+    const drawerOverlay = document.querySelector('.shidashi-drawer-overlay');
+    if (drawerOverlay) {
+      drawerOverlay.addEventListener('click', () => this.drawerClose());
+    }
+
+    // Drawer close-tab click → close drawer (no-overlay mode)
+    const drawerCloseTab = document.querySelector('.shidashi-drawer-close-tab');
+    if (drawerCloseTab) {
+      drawerCloseTab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.drawerClose();
+      });
+    }
+
+    // Drawer toggle button
+    document.addEventListener('click', (evt) => {
+      const toggleBtn = evt.target.closest('[data-shidashi-action="drawer-toggle"]');
+      if (toggleBtn) {
+        evt.preventDefault();
+        this.drawerToggle();
+        return;
+      }
+
+      // Generic shidashi-button click → broadcast event to Shiny
+      const shidashiBtn = evt.target.closest('[data-shidashi-action="shidashi-button"]');
+      if (shidashiBtn) {
+        evt.preventDefault();
+        const eventData = {};
+        // Collect data-shidashi-* attributes as event payload
+        for (const attr of shidashiBtn.attributes) {
+          if (attr.name.startsWith('data-shidashi-') && attr.name !== 'data-shidashi-action') {
+            const key = attr.name.replace('data-shidashi-', '');
+            eventData[key] = attr.value;
+          }
+        }
+        eventData.id = shidashiBtn.id || '';
+        this.broadcastEvent('button.click', eventData);
+        return;
+      }
+    });
+
+    // Resize handle init
+    this._initResizeHandles();
+
+    // Standalone module: when there is no iframe manager and the page
+    // is not itself inside an iframe, report the current module from URL
+    if (!this.iframeManager && window.self === window.top) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const moduleId = urlParams.get('module');
+      if (moduleId) {
+        this._reportActiveModule(moduleId);
+      }
+    }
+  }
+
+  _initResizeHandles() {
+    // Vertical resize handles: inject a drag handle into .resize-vertical containers
+    const verticals = document.querySelectorAll('.resize-vertical');
+    verticals.forEach((container) => {
+      // Skip if already initialised
+      if (container.querySelector('.shidashi-resize-handle')) return;
+
+      const handle = document.createElement('div');
+      handle.className = 'shidashi-resize-handle';
+      container.appendChild(handle);
+
+      let startY = 0;
+      let startHeight = 0;
+
+      const onMouseMove = (e) => {
+        const delta = e.clientY - startY;
+        const newHeight = Math.max(60, startHeight + delta);
+        container.style.height = newHeight + 'px';
+      };
+
+      const onMouseUp = () => {
+        handle.classList.remove('active');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        this.triggerResize(50);
+      };
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startY = e.clientY;
+        startHeight = container.offsetHeight;
+        handle.classList.add('active');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'ns-resize';
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    });
+
+    // Horizontal resize handles: inject a drag handle into .resize-horizontal dividers
+    document.querySelectorAll('.resize-horizontal').forEach((divider) => {
+      // Skip if already initialised
+      if (divider.querySelector('.shidashi-resize-handle-h')) return;
+
+      const handle = document.createElement('div');
+      handle.className = 'shidashi-resize-handle-h';
+      divider.appendChild(handle);
+
+      let startX = 0;
+      let startWidthLeft = 0;
+      let startWidthRight = 0;
+      let leftEl = null;
+      let rightEl = null;
+
+      const onMouseMove = (e) => {
+        const dx = e.clientX - startX;
+        const totalWidth = startWidthLeft + startWidthRight;
+        const newLeftWidth = Math.max(50, Math.min(totalWidth - 50, startWidthLeft + dx));
+        const newRightWidth = totalWidth - newLeftWidth;
+        leftEl.style.width = newLeftWidth + 'px';
+        leftEl.style.flex = 'none';
+        rightEl.style.width = newRightWidth + 'px';
+        rightEl.style.flex = 'none';
+      };
+
+      const onMouseUp = () => {
+        handle.classList.remove('active');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        this.triggerResize(50);
+      };
+
+      divider.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        leftEl = divider.previousElementSibling;
+        rightEl = divider.nextElementSibling;
+        if (!leftEl || !rightEl) return;
+        startX = e.clientX;
+        startWidthLeft = leftEl.getBoundingClientRect().width;
+        startWidthRight = rightEl.getBoundingClientRect().width;
+        handle.classList.add('active');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'col-resize';
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    });
   }
 
   _initBackToTop() {
-    const gotopEl = document.querySelector('.back-to-top');
+    const gotopEl = document.querySelector('.shidashi-back-to-top');
     if (!gotopEl) return;
 
     const gotopBtn = gotopEl.querySelector('.btn-go-top');
@@ -1222,6 +1459,10 @@ class ShidashiApp {
       if (this.iframeManager && params.module_id) {
         this.iframeManager.openTabByModule(params.module_id, params.title);
       }
+      // Report active module even when there is no iframe manager
+      if (params.module_id) {
+        this._reportActiveModule(params.module_id);
+      }
     });
 
     this.shinyHandler('shutdown_session', (params) => {
@@ -1284,6 +1525,26 @@ class ShidashiApp {
           el.classList.remove(...params.class.split(/\s+/).filter(Boolean));
         });
       }
+    });
+
+    // --- Drawer handlers ---
+
+    this.shinyHandler('drawer_open', (params) => {
+      this.drawerOpen();
+    });
+
+    this.shinyHandler('drawer_close', (params) => {
+      this.drawerClose();
+    });
+
+    this.shinyHandler('drawer_toggle', (params) => {
+      this.drawerToggle();
+    });
+
+    // --- Open URL handler ---
+
+    this.shinyHandler('open_url', (params) => {
+      this.openUrl(params.url, params.target || '_blank');
     });
   }
 }

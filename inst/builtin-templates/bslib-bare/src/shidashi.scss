@@ -46,10 +46,6 @@ $border-color: #dee2e6;
 $dark-mode-bg: #454d55;
 $dark-mode-text: #e9ecef;
 
-// Theme switch
-$slider-bg: #ccc;
-$slider-checked: #66bb6a;
-
 // Notification panel
 $notification-close: #adb5bd;
 $progress-bg: #eee;
@@ -451,7 +447,7 @@ body.sidebar-collapsed .shidashi-sidebar {
   display: flex;
   flex-direction: column;
   height: calc(100vh - #{$navbar-height});
-  transition: margin-left $sidebar-transition;
+  // transition: margin-left $sidebar-transition;
   width: calc(100% - #{$sidebar-width});
 }
 
@@ -483,6 +479,12 @@ body.sidebar-collapsed .shidashi-content {
 
   body.sidebar-open .sidebar-overlay {
     display: block;
+  }
+
+  // Shift the header right so the hamburger icon is not hidden
+  // behind the open sidebar
+  body.sidebar-open.has-sidebar .shidashi-header {
+    margin-left: $sidebar-width;
   }
 
   .shidashi-content {
@@ -540,6 +542,20 @@ body.in-iframe .shidashi-header {
   gap: 0.5rem;
 }
 
+// Ensure all navbar nav-links are vertically centered within the header
+.shidashi-header .navbar-nav {
+  align-items: center;
+  height: 100%;
+}
+
+.shidashi-header .nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0.5rem;
+}
+
 .shidashi-header-right {
   margin-left: auto;
 }
@@ -554,6 +570,7 @@ body.in-iframe .shidashi-header {
   background-color: $light;
   border-bottom: 1px solid var(--bs-border-color, #{$border-color});
   height: $navbar-height;
+  padding: 0 1rem;
 
   .dark-mode & {
     background-color: color.adjust($dark, $lightness: 5%);
@@ -706,44 +723,8 @@ body.in-iframe .card.shidashi-maximized {
 }
 
 // ==========================================================================
-// Theme switch
+// Theme switch (sun/moon icon)
 // ==========================================================================
-
-.theme-switch {
-  display: inline-block;
-  height: 24px;
-  position: relative;
-  width: 50px;
-}
-
-.theme-switch input { display: none; }
-
-.slider {
-  background-color: $slider-bg;
-  bottom: 0;
-  cursor: pointer;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transition: 400ms;
-}
-
-.slider::before {
-  background-color: $white;
-  bottom: 4px;
-  content: "";
-  height: 16px;
-  left: 4px;
-  position: absolute;
-  transition: 400ms;
-  width: 16px;
-}
-
-input:checked + .slider { background-color: $slider-checked; }
-input:checked + .slider::before { transform: translateX(26px); }
-.slider.round { border-radius: 34px; }
-.slider.round::before { border-radius: 50%; }
 
 // ==========================================================================
 // Display / Visibility helpers
@@ -763,6 +744,9 @@ input:checked + .slider::before { transform: translateX(26px); }
   min-height: 0 !important;
   max-height: 0 !important;
   overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 .display-block-force,
@@ -849,9 +833,116 @@ input:checked + .slider::before { transform: translateX(26px); }
 }
 
 .resize-vertical {
+  position: relative;
   @include overflow(hidden);
-  resize: vertical;
   &:hover { @include overflow(auto); }
+}
+
+// JS-injected drag handle for .resize-vertical containers
+.shidashi-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  cursor: ns-resize;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  &::before {
+    content: "";
+    width: 48px;
+    height: 4px;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 2px;
+    transition: background-color 0.15s ease;
+  }
+
+  &:hover::before,
+  &.active::before {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .dark-mode &::before {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+  .dark-mode &:hover::before,
+  .dark-mode &.active::before {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.resize-vertical:hover > .shidashi-resize-handle,
+.shidashi-resize-handle.active {
+  opacity: 1;
+}
+
+// Horizontal resize divider — place between two flex siblings
+.resize-horizontal {
+  width: 6px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+// JS-injected drag handle for .resize-horizontal dividers
+.shidashi-resize-handle-h {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  &::before {
+    content: "";
+    width: 4px;
+    height: 48px;
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 2px;
+    transition: background-color 0.15s ease;
+  }
+
+  &:hover::before,
+  &.active::before {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .dark-mode &::before {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+  .dark-mode &:hover::before,
+  .dark-mode &.active::before {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.resize-horizontal:hover > .shidashi-resize-handle-h,
+.shidashi-resize-handle-h.active {
+  opacity: 1;
+}
+
+// Card-body specific resize-vertical: keep overflow-y hidden
+.card-body.resize-vertical {
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+.shidashi-maximized .card-body.resize-vertical {
+  overflow-y: auto !important;
 }
 
 // ==========================================================================
@@ -987,6 +1078,7 @@ $_card-themes: (
     margin: 0;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease-in-out;
 
     > .card-header {
       flex-shrink: 0;
@@ -1027,6 +1119,14 @@ body.shidashi-card-maximized {
     height: 0 !important;
     min-height: 0 !important;
     overflow: hidden !important;
+  }
+  > .card-footer {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    border: none !important;
   }
 }
 
@@ -1134,7 +1234,7 @@ body.shidashi-card-maximized {
 // Back-to-top
 // ==========================================================================
 
-.back-to-top {
+.shidashi-back-to-top {
   position: fixed;
   bottom: 1.25rem;
   right: 1.25rem;
@@ -1555,6 +1655,216 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
 }
 
 // ==========================================================================
+// Drawer (off-canvas right panel)
+// ==========================================================================
+
+.shidashi-drawer {
+  position: fixed;
+  top: $navbar-height;
+  right: 0;
+  width: 320px;
+  max-width: 90vw;
+  height: calc(100vh - #{$navbar-height});
+  z-index: 1045;
+  background-color: var(--bs-body-bg, #{$white});
+  color: var(--bs-body-color, #{$dark});
+  box-shadow: -4px 0 12px rgba(0,0,0,0.15);
+  transform: translateX(calc(100% + 20px));
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  padding: 1rem;
+
+  &.open {
+    transform: translateX(0);
+  }
+
+  // Close tab — sits on the drawer's left edge, hidden by default.
+  // Shown only when body has .shidashi-drawer-no-overlay.
+  .shidashi-drawer-close-tab {
+    display: none;
+  }
+
+  .dark-mode & {
+    background-color: $dark;
+    color: var(--bs-body-color, #{$dark-mode-text});
+    box-shadow: -4px 12px 12px rgba(0,0,0,0.4);
+  }
+}
+
+// No-overlay mode — class on <body>
+body.shidashi-drawer-no-overlay {
+  // Hide the overlay entirely
+  .shidashi-drawer-overlay {
+    display: none !important;
+  }
+
+  // Show the close button at top-right of the drawer
+  .shidashi-drawer .shidashi-drawer-close-tab {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 1;
+    color: var(--bs-body-color, #{$dark});
+    font-size: 1rem;
+    opacity: 0.5;
+    transition: opacity 0.2s, background-color 0.2s;
+
+    &:hover {
+      opacity: 1;
+      background-color: rgba(0,0,0,0.08);
+    }
+  }
+
+  // Hide close tab when drawer is closed
+  .shidashi-drawer:not(.open) .shidashi-drawer-close-tab {
+    display: none;
+  }
+
+  // Dark-mode adjustments for the close tab
+  &.dark-mode .shidashi-drawer .shidashi-drawer-close-tab {
+    color: var(--bs-body-color, #{$dark-mode-text});
+
+    &:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+  }
+}
+
+.shidashi-drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1044;
+  top: $navbar-height;
+
+  &.open {
+    display: block;
+  }
+}
+
+// ==========================================================================
+// IRS (ionRangeSlider) overrides
+// ==========================================================================
+
+.irs--shiny {
+  .irs-bar {
+    background: $primary;
+    border-top: 1px solid $primary;
+    border-bottom: 1px solid $primary;
+  }
+  .irs-from,
+  .irs-to,
+  .irs-single {
+    background-color: $primary;
+
+    &::before {
+      border-top-color: $primary;
+    }
+  }
+  .irs-handle > i:first-child {
+    background-color: $primary;
+  }
+  .irs-min,
+  .irs-max {
+    color: var(--bs-body-color, #{$dark});
+    background-color: var(--bs-tertiary-bg, #{$light});
+  }
+
+  .dark-mode & {
+    .irs-grid-text {
+      color: var(--bs-body-color, #{$dark-mode-text});
+    }
+    .irs-min,
+    .irs-max {
+      color: var(--bs-body-color, #{$dark-mode-text});
+      background-color: color.adjust($dark, $lightness: 8%);
+    }
+  }
+}
+
+// ==========================================================================
+// Navbar-hidden mode
+// ==========================================================================
+
+body.shidashi-navbar-hidden {
+  .shidashi-header {
+    display: none !important;
+  }
+  .shidashi-content {
+    height: 100vh;
+  }
+  .card.shidashi-maximized {
+    top: 0;
+    height: 100vh;
+  }
+}
+
+// ==========================================================================
+// BS3 compat shim
+// ==========================================================================
+
+.col-xs-12 {
+  width: 100%;
+}
+
+// ==========================================================================
+// Grouped input box
+// ==========================================================================
+
+.group-input-box {
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--bs-border-color, #{$border-color});
+  border-radius: var(--bs-border-radius, 0.375rem);
+  background-color: var(--bs-body-bg, #{$white});
+
+  .dark-mode & {
+    background-color: $dark;
+    border-color: $light-dark;
+  }
+}
+
+// ==========================================================================
+// Form width constraints
+// ==========================================================================
+
+select.form-control {
+  max-width: 100%;
+}
+
+.form-group {
+  margin-bottom: 0.75rem;
+  max-width: 100%;
+}
+
+form {
+  max-width: 100%;
+}
+
+// Card-header form-group: remove bottom margin so aligned inputs sit flush
+.card-header .form-group {
+  margin-bottom: 0;
+}
+
+// ==========================================================================
+// Toast z-index
+// ==========================================================================
+
+#shidashi-toast-container {
+  z-index: 1090 !important;
+}
+
+// ==========================================================================
 // Dark-mode tweaks
 // ==========================================================================
 
@@ -1618,6 +1928,11 @@ body.dark-mode {
 
   pre > code {
     background-color: transparent;
+  }
+
+  // Highlight.js dark-mode override
+  pre code.hljs {
+    background-color: color.adjust($dark, $lightness: 8%);
   }
 
   .info-box {
