@@ -172,6 +172,8 @@ register_session_id <- function(
   # shared_id <- NULL
   # shared_inputs <- NA
 
+  register_session_mcp(session = session)
+
   # Get stored session information
   if( !is.environment(session$userData$shidashi) ) {
     session$userData$shidashi <- new.env(parent = emptyenv())
@@ -257,9 +259,6 @@ register_session_id <- function(
       res$sync_observer$resume()
     }
   }
-
-  res
-
 
   # ----- For backward compatibility -----------------------------------
   session$cache$set("shidashi_shared_id", shared_id)

@@ -271,7 +271,13 @@ create_barebone_bslib <- function(path){
         "  )",
         "}",
         "",
-        "module_breadcrumb <- function(){}"
+        "module_breadcrumb <- function(){}",
+        "sidebar_class <- function() {",
+        "  c(",
+        "    #--- Start as dark-mode ---",
+        "    \"dark-mode\"",
+        "  )",
+        "}"
       ),
       con = file.path(path, 'R', 'common.R'))
   }

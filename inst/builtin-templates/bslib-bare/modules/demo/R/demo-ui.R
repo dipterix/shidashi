@@ -227,6 +227,7 @@ ui_demo_details <- function(){
 server_demo <- function(input, output, session, ...){
 
   shared_data <- shidashi::register_session_id(session)
+  shidashi::register_session_mcp(session = session)
   event_data <- register_session_events(session)
   local_data <- reactiveValues()
 

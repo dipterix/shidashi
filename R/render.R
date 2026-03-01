@@ -42,6 +42,8 @@ render <- function(
     prelaunch <- substitute(prelaunch)
   }
 
+  # Write template_settings$set into ui.R so shinyAppDir picks up the correct
+  # root_path regardless of working directory or how the app is launched.
   writeLines(
     c(
       sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
@@ -56,30 +58,36 @@ render <- function(
 
     shidashi::template_settings$set('root_path' = root_path)
     eval(prelaunch, envir = new.env(parent = globalenv()))
-    shiny::runApp(appDir = root_path, launch.browser = launch_browser, test.mode = test_mode, ...)
+
+    # Use shinyAppDir so that ui.R / server.R are loaded normally, then
+    # chain the MCP handler in front of Shiny's built-in httpHandler.
+    app <- shiny::shinyAppDir(root_path)
+    app$httpHandler <- mcp_app_handler(app)
+    # Exclude /mcp from httpuv static-path handling so POST/DELETE
+    # requests reach the R handler instead of being rejected with 400.
+    app$staticPaths <- c(app$staticPaths, list(mcp = httpuv::excludeStaticPath()))
+    shiny::runApp(appDir = app, launch.browser = launch_browser, test.mode = test_mode, ...)
   } else {
     script <- file.path(root_path, "_rs_job.R")
-    args <- list(
-      ...,
-      launch.browser = launch_browser,
-      test.mode = test_mode,
-      appDir = root_path
-    )
-    call <- as.call(list(
+
+    # Build app object in the job script so httpHandler is attached
+    run_call <- as.call(list(
       quote(shiny::runApp),
       ...,
       launch.browser = launch_browser,
       test.mode = test_mode,
-      appDir = root_path
+      appDir = quote(app)
     ))
     s <- c(
-      sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
       'options("crayon.enabled" = TRUE)',
       'options("crayon.colors" = 256)\n',
       deparse(prelaunch),
-      '\n'
+      "\n",
+      sprintf("app <- shiny::shinyAppDir('%s')", root_path),
+      "app$httpHandler <- shidashi:::mcp_app_handler(app)",
+      "app$staticPaths <- c(app$staticPaths, list(mcp = httpuv::excludeStaticPath()))\n",
+      deparse(run_call)
     )
-    s <- c(s, deparse(call))
     writeLines(
       con = script,
       s
