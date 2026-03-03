@@ -227,7 +227,6 @@ ui_demo_details <- function(){
 server_demo <- function(input, output, session, ...){
 
   shared_data <- shidashi::register_session_id(session)
-  shidashi::register_session_mcp(session = session)
   event_data <- register_session_events(session)
   local_data <- reactiveValues()
 
@@ -397,3 +396,31 @@ server_demo <- function(input, output, session, ...){
     sample_size
   })
 }
+
+
+# Module-level MCP tool: Triggers the "refresh" button in the demo module.
+# This fires the same reactive chain as clicking the sync icon on the
+# Analysis card (inputId = ns("refresh")).
+#
+# Module-level tools are auto-enabled — no agent.yaml entry needed.
+
+trigger_refresh <- shidashi::mcp_wrapper(
+  function(session) {
+
+    # Capture the session's namespace function
+    ns <- session$ns
+
+    shared_data <- shidashi::register_session_id(session)
+
+
+    ellmer::tool(
+      fun = function() {
+        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        "Refresh triggered successfully. The analysis is being regenerated."
+      },
+      name = "trigger_refresh",
+      description = "Trigger the refresh/regenerate analysis action in the demo module. This generates random data and updates the histogram and summary table.",
+      arguments = list()
+    )
+  }
+)

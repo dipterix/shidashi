@@ -10,7 +10,7 @@ bslib_dependency(...)
 \item{...}{additional arguments passed to \code{bslib::bs_theme}}
 }
 \value{
-An \code{htmltools::tagList} containing Bootstrap 5 dependencies
+An \code{\link[shiny]{tagList}} containing Bootstrap 5 dependencies
 }
 \description{
 Returns Bootstrap 5 HTML dependencies provided by

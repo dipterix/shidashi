@@ -1756,11 +1756,13 @@ body.shidashi-drawer-no-overlay {
 // IRS (ionRangeSlider) overrides
 // ==========================================================================
 
-.irs--shiny {
+.irs.irs--shiny {
   .irs-bar {
     background: $primary;
     border-top: 1px solid $primary;
     border-bottom: 1px solid $primary;
+    top: 25px;
+    height: 8px;
   }
   .irs-from,
   .irs-to,
@@ -1771,8 +1773,14 @@ body.shidashi-drawer-no-overlay {
       border-top-color: $primary;
     }
   }
-  .irs-handle > i:first-child {
-    background-color: $primary;
+  .irs-handle {
+    top: 17px;
+
+    &,
+    &:focus-visible,
+    &:active {
+      background-color: #FFF;
+    }
   }
   .irs-min,
   .irs-max {

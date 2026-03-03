@@ -172,8 +172,6 @@ register_session_id <- function(
   # shared_id <- NULL
   # shared_inputs <- NA
 
-  register_session_mcp(session = session)
-
   # Get stored session information
   if( !is.environment(session$userData$shidashi) ) {
     session$userData$shidashi <- new.env(parent = emptyenv())
@@ -187,8 +185,8 @@ register_session_id <- function(
     shared_id <- session$userData$shidashi$shared_id
     if(length(shared_id) != 1 || !is.character(shared_id)){
       # get from session
-      query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
-      shared_id <- query_list$query$shared_id
+      query_list <- shiny::parseQueryString(shiny::isolate(session$clientData$url_search))
+      shared_id <- query_list$shared_id
       shared_id <- tolower(shared_id)
       if(!length(shared_id) || grepl("[^a-z0-9_]", shared_id)){
         shared_id <- rand_string(length = 26)
