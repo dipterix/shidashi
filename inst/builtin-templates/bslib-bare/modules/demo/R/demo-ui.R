@@ -195,9 +195,14 @@ ui_demo_details <- function(){
         ),
         body_side = div(
           class = "padding-top-50",
-          sliderInput(ns("iris_threshold"),
-                      label = "Threshold by Petal.Width",
-                      min = 0, max = 3, value = 0, step = 0.1)
+          shidashi::register_input(
+            inputId = "iris_threshold",
+            description = "Threshold Petal.Width and visualize the iris data with only selected data",
+            update = "shiny::updateSliderInput",
+            expr = sliderInput(inputId = ns("iris_threshold"),
+                               label = "Threshold by Petal.Width",
+                               min = 0, max = 3, value = 0, step = 0.1)
+          )
         )
       )
     ),

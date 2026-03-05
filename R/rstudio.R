@@ -7,8 +7,9 @@
 #' @param ... ignored
 #' @return the target project path
 #' @details To publish a 'shidashi' template, create a 'Github' repository
-#' called \code{'shidashi-templates'}, or fork the \href{https://github.com/dipterix/shidashi-templates}{built-in templates}. The \code{theme} is the sub-folder
-#' of the template repository.
+#' called \code{'shidashi-templates'}, or fork the
+#' \href{https://github.com/dipterix/shidashi-templates}{built-in templates}.
+#' The \code{theme} is the sub-folder of the template repository.
 #'
 #' An easy way to use a template in your project is through the 'RStudio'
 #' project widget. In the 'RStudio' navigation bar, go to "File" menu,
@@ -18,9 +19,9 @@
 #'
 #' @export
 use_template <- function(
-  path, user = "dipterix", theme = "AdminLTE3",
+  path, user = "dipterix", theme = "bslib",
   repo = "shidashi-templates", branch = "main", ...
-){
+) {
 
   # ensure path exists
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
@@ -28,10 +29,10 @@ use_template <- function(
   # Download template
   temppath <- tempfile()
   tempzip <- paste0(temppath, ".zip")
-  if(file.exists(tempzip)){
+  if (file.exists(tempzip)) {
     unlink(tempzip)
   }
-  if(dir.exists(temppath)){
+  if (dir.exists(temppath)) {
     unlink(temppath, recursive = TRUE, force = TRUE)
   }
   old <- options()
@@ -44,14 +45,14 @@ use_template <- function(
   options(timeout = 10000)
 
   url <- sprintf("https://github.com/%s/%s/archive/%s.zip", user, repo, branch)
-  if(branch %in% c("main", "master")){
+  if (branch %in% c("main", "master")) {
     tryCatch({
       suppressWarnings({
         utils::download.file(url, destfile = tempzip, cacheOK = FALSE)
       })
-    }, error = function(e){
+    }, error = function(e) {
       old_branch <- branch
-      if(branch == "main"){
+      if (branch == "main") {
         branch <<- "master"
       } else {
         branch <<- "main"
@@ -72,49 +73,49 @@ use_template <- function(
 
   folder_name <- sprintf("%s-%s", repo, branch)
   root <- file.path(temppath, folder_name)
-  if(!dir.exists(root)){
+  if (!dir.exists(root)) {
     stop("Cannot find branch folder `", folder_name, "`. Please report this issue to \n\thttps://github.com/dipterix/shidashi/issues")
   }
   project_dir <- normalizePath(file.path(root, theme), mustWork = TRUE)
 
   fs <- list.files(project_dir, all.files = FALSE, recursive = FALSE, full.names = TRUE, include.dirs = TRUE, no.. = TRUE)
 
-  if(!length(fs)){
-    if(theme == ""){
+  if (!length(fs)) {
+    if (theme == "") {
       stop("Empty sub-module repository. Your theme contains no file. Abort.")
     }
     # This could be a sub-module, parse .gitmodules
     submodule_spath <- file.path(root, ".gitmodules")
-    if(!file.exists(submodule_spath)){
+    if (!file.exists(submodule_spath)) {
       stop("Theme `", theme, "` exists but it's empty. Abort.")
     }
     settings <- readLines(submodule_spath)
     # Find submodule
     sel <- startsWith(settings, sprintf("[submodule \"%s\"]", theme))
-    if(!any(sel)){
+    if (!any(sel)) {
       stop("Theme `", theme, "` is empty. I guess it's a git submodule. However, I cannot locate it in the `.gitmodules` file.")
     }
     settings <- settings[seq(which(sel), length(settings))]
     sel <- which(grepl("\\[submodule", settings))
-    if(length(sel) > 1){
+    if (length(sel) > 1) {
       settings <- settings[seq(sel[[1]], sel[[2]] - 1)]
     }
     sel <- grepl("^[^a-zA-Z0-9]url[ =]", settings)
-    if(!any(sel)){
+    if (!any(sel)) {
       stop("Theme `", theme, "` is a git submodule. However, I cannot locate the URL.")
     }
     url <- settings[sel][[1]]
-    if(grepl("url[ =]+http", url)){
+    if (grepl("url[ =]+http", url)) {
       url <- strsplit(url, split = "/")[[1]]
       uname <- url[[length(url) - 1]]
       repo <- url[[length(url)]]
-      if(grepl("@", repo)){
+      if (grepl("@", repo)) {
         tmp <- strsplit(repo, "@")[[1]]
         repo <- tmp[[1]]
         branch <- tmp[[2]]
       } else {
         sel <- grepl("^[^a-zA-Z0-9]branch[ =]", settings)
-        if(any(sel)){
+        if (any(sel)) {
           branch <- settings[sel][[1]]
           branch <- strsplit(branch, "=")[[1]][[2]]
           branch <- sub("[ \t]+", "", branch)
@@ -122,18 +123,18 @@ use_template <- function(
           branch <- "main"
         }
       }
-    } else if (grepl("url[ =]+git@", url)){
+    } else if (grepl("url[ =]+git@", url)) {
       url <- strsplit(url, split = ":")[[1]]
       url <- unlist(strsplit(url, split = "/"))
       uname <- url[[length(url) - 1]]
       repo <- url[[length(url)]]
-      if(grepl("@", repo)){
+      if (grepl("@", repo)) {
         tmp <- strsplit(repo, "@")[[1]]
         repo <- tmp[[1]]
         branch <- tmp[[2]]
       } else {
         sel <- grepl("^[^a-zA-Z0-9]branch[ =]", settings)
-        if(any(sel)){
+        if (any(sel)) {
           branch <- settings[sel][[1]]
           branch <- strsplit(branch, "=")[[1]][[2]]
           branch <- sub("[ \t]+", "", branch)
@@ -141,7 +142,7 @@ use_template <- function(
           branch <- "main"
         }
       }
-      if(endsWith(repo, ".git")){
+      if (endsWith(repo, ".git")) {
         repo <- sub("\\.git$", "", repo)
       }
     } else {
@@ -154,11 +155,11 @@ use_template <- function(
     # https://github.com/dipterix/rave-pipelines/archive/578c8644b2b67623b7efd138a1e5340fc068e725.zip
     # url <- sprintf("https://github.com/%s/%s/archive/%s.zip", uname, repo, branch)
     # unlink(tempzip)
-    # if(branch %in% c("main", "master")){
+    # if (branch %in% c("main", "master")) {
     #   tryCatch({
     #     utils::download.file(url, destfile = tempzip, cacheOK = FALSE)
-    #   }, error = function(e){
-    #     if(branch == "main"){
+    #   }, error = function(e) {
+    #     if (branch == "main") {
     #       branch <- "master"
     #     } else {
     #       branch <- "main"

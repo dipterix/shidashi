@@ -3,9 +3,14 @@ tools:
   category:
   - exploratory
   enabled: yes
-- name: get_shiny_input_values
+- name: shiny_input_info
   category:
   - exploratory
+  enabled: yes
+- name: shiny_input_update
+  category:
+  - executing
+  - destructive
   enabled: yes
 - name: trigger_refresh
   category:

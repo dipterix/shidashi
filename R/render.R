@@ -53,6 +53,13 @@ render <- function(
   # Write port record and keep proxy up-to-date in user cache.
   setup_mcp_proxy(port = mcp_port, overwrite = TRUE, verbose = FALSE)
 
+  # Copy global.R from inst/ so that shinyAppDir sources it at startup.
+  # global.R calls shidashi::init_app() to create per-application state.
+  global_src <- system.file("global.R", package = "shidashi")
+  if (nzchar(global_src)) {
+    file.copy(global_src, file.path(root_path, "global.R"), overwrite = TRUE)
+  }
+
   # Write template_settings$set into ui.R so shinyAppDir picks up the correct
   # root_path regardless of working directory or how the app is launched.
   writeLines(

@@ -37,8 +37,3 @@ modules:
     order: 53
     icon: "exclamation-triangle"
     label: "Error 500"
-  module_id:
-    order: 99
-    icon: "circle"
-    label: "Module Label"
-    badge: New|bg-red

@@ -132,3 +132,481 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 
   invisible(dest)
 }
+
+#' Create \verb{MCP} Tools for Shiny Input Management
+#'
+#' @description
+#' Builds a \code{\link{mcp_wrapper}} that exposes two \verb{MCP} tools:
+#' \code{shiny_input_info} (query registered inputs) and
+#' \code{shiny_input_update} (set input values). Inputs must first be
+#' registered via the returned helper functions before they become visible
+#' to the \verb{MCP} tools.
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{\code{input_helpers}}{A list of helper functions for managing
+#'     input specifications:
+#'     \describe{
+#'       \item{\code{register_input_specification(expr, inputId, description, update, writable, quoted, env)}}{Registers
+#'         a shiny input for \verb{MCP} access and returns the evaluated
+#'         UI element. The \code{expr} argument is a call expression that
+#'         creates a shiny input widget, e.g.
+#'         \code{shiny::textInput(inputId = "x", label = "X")}.
+#'         All metadata (\code{inputId}, \code{description}, \code{update})
+#'         must be provided explicitly by the module writer.
+#'         Returns the evaluated UI element (e.g. an HTML tag object),
+#'         so the call can be used inline in UI definitions.}
+#'       \item{\code{update_input_specification(inputId, description, type, update, writable)}}{Modifies
+#'         the spec of an already-registered input. All arguments except
+#'         \code{inputId} are optional; only supplied values are changed.
+#'         Returns a list with \code{item} (the updated \code{data.frame} row)
+#'         and \code{changed} (logical).}
+#'       \item{\code{get_input_specification()}}{Returns a \code{data.frame}
+#'         of all registered input specs (columns: \code{inputId},
+#'         \code{description}, \code{type}, \code{update}, \code{writable}).
+#'         Returns an empty \code{data.frame} with the same columns when
+#'         no inputs are registered.}
+#'     }
+#'   }
+#'   \item{\code{tool_generator}}{A \code{shidashi_mcp_wrapper} that, given a
+#'     \code{session}, returns a named list of \code{ellmer::ToolDef} objects:
+#'     \code{shiny_input_info} and \code{shiny_input_update}.}
+#' }
+#'
+#' @details
+#' The \code{update} specification string follows the pattern
+#' \code{"pkg::fun"} or \code{"pkg::fun(key=formal, ...)"}.
+#' The key-value pairs override the
+#' default argument names passed to the update function:
+#' \itemize{
+#'   \item \code{id} — the formal argument name for the input ID
+#'     (default \code{"inputId"})
+#'   \item \code{value} — the formal argument name for the new value
+#'     (default \code{"value"})
+#'   \item \code{session} — the formal argument name for the session
+#'     (default \code{"session"})
+#' }
+#'
+#' For example, \code{"shiny::updateSelectInput(id=inputId,value=select)"}
+#' means the update call will use \code{inputId} for the ID argument and
+#' \code{select} (not \code{value}) for the value argument.
+#'
+#' Values received from \verb{MCP} are JSON-encoded strings. The update tool
+#' attempts to decode them with \code{jsonlite::fromJSON()} before passing
+#' them to the update function, falling back to the raw string on failure.
+#'
+#' @examples
+#' wrapper <- input_update_mcp_wrapper()
+#'
+#' # Register inputs inline — returns the UI element for use in UI code
+#' text_ui <- wrapper$input_helpers$register_input_specification(
+#'   expr = shiny::textInput(inputId = "my_text", label = "User name"),
+#'   inputId = "my_text",
+#'   description = "User name",
+#'   update = "shiny::updateTextInput"
+#' )
+#'
+#' select_ui <- wrapper$input_helpers$register_input_specification(
+#'   expr = shiny::selectInput("my_select", "Choose a dataset",
+#'                             choices = c("iris", "mtcars")),
+#'   inputId = "my_select",
+#'   description = "Choose a dataset to visualise",
+#'   update = "shiny::updateSelectInput(value=selected)"
+#' )
+#'
+#' # Inspect all registered specs
+#' wrapper$input_helpers$get_input_specification()
+#'
+#' # The MCP tool generator (pass to your MCP server registration)
+#' shiny_input_wrapper <- wrapper$tool_generator
+#'
+#' # Initialization with a mock session
+#' tools <- shiny_input_wrapper(shiny::MockShinySession$new())
+#'
+#' @param input_specs An optional \code{fastmap::fastmap()} object to use as
+#'   the backing store for input specifications.  When \code{NULL} (the
+#'   default) a fresh \code{fastmap} is created.  Passing an existing
+#'   \code{fastmap} allows multiple wrapper instances (e.g. one created
+#'   during UI rendering and another during server initialization) to share
+#'   the same input registry.
+#'
+#' @export
+input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
+
+  # stores the input ID, description, type, update function, writable for a
+  # session inputId should be relative to session, meaning
+  # "btn" not session$ns("btn")
+
+  normalize_update_fun <- function(update) {
+    # update <- "updateSelectInput(id=inputId,value=select)"
+    if (!grepl(":", update)) {
+      update <- sprintf("shiny::%s", update)
+    }
+    # record the original spec string before stripping the call signature
+    spec  <- update
+    parts <- strsplit(update, "[:]+", perl = TRUE)[[1]]
+    fun_part <- parts[[2]]
+    pkg      <- parts[[1]]
+    # fun_part might be updateTextInput, or
+    # updateSelectInput(id=inputId,value=select)
+    fun_name    <- fun_part
+    fields <- list(
+      id      = "inputId",
+      value   = "value",
+      session = "session"
+    )
+    if (endsWith(fun_part, ")")) {
+      fun_name   <- sub("^([^(]+)\\(.*\\)$", "\\1", fun_part, perl = TRUE)
+      args_inner <- sub("^[^(]+\\((.*)\\)$", "\\1", fun_part, perl = TRUE)
+      # parse key=value pairs; skip quoted-string values like session="session"
+      for (pair in strsplit(args_inner, ",")[[1]]) {
+        kv <- strsplit(trimws(pair), "\\s*=\\s*", perl = TRUE)[[1]]
+        if (length(kv) != 2L) next
+        key <- trimws(kv[[1]])
+        val <- trimws(kv[[2]])
+        fields[[key]] <- val
+      }
+    }
+    fun_impl <- asNamespace(pkg)[[fun_name]]
+    if (!is.function(fun_impl)) {
+      stop("Unable to find update function `", pkg, "::", fun_name, "`")
+    }
+
+    list(
+      update       = spec,
+      fun_impl    = fun_impl,
+      pkg         = pkg,
+      fun         = fun_name,
+      fields      = fields
+    )
+  }
+
+  register_input_spec <- function(
+    expr,
+    inputId,
+    description,
+    update,
+    writable = TRUE,
+    quoted = FALSE,
+    env = parent.frame()
+  ) {
+    "
+    Register a shiny input for MCP tool access and return the UI element.
+
+    The `expr` argument should be a call expression that creates a shiny
+    input widget, e.g. `shiny::textInput(inputId = 'x', label = 'X')`.
+    The expression is evaluated and its result (the UI element) is
+    returned, so this function can be used inline in place of the
+    original input constructor.
+
+    Usage:
+      register_input_spec(
+        expr = shiny::textInput(inputId = ns('my_text'), label = 'Name'),
+        inputId = 'my_text',
+        description = 'Name',
+        update = 'shiny::updateTextInput',
+        writable = TRUE
+      )
+
+    @param expr        A call expression that creates a shiny input widget,
+      e.g. `shiny::textInput(inputId = 'x', label = 'X')` or
+      `selectInput('sel', 'Choose', choices = c('a','b'))`.
+    @param inputId     Character scalar. The shiny input ID.
+    @param description Character scalar. A human-readable description
+      of the input's purpose, shown to LLM agents via the MCP info tool.
+    @param update      Character scalar. The update function spec,
+      e.g. 'shiny::updateTextInput' or
+      'shiny::updateSelectInput(value=selected)'.
+      Field mappings (e.g. value=selected) override the default
+      argument names passed to the update function.
+    @param writable    Logical scalar (default TRUE). Whether the MCP
+      update tool is allowed to change this input.
+
+    @return The evaluated UI element produced by the `expr` expression.
+      The input specification is registered as a side effect.
+    "
+    if (!quoted) {
+      expr <- substitute(expr)
+    }
+
+    # Normalise and validate the update spec
+    update_info <- normalize_update_fun(update)
+
+    item <- data.frame(
+      inputId     = inputId,
+      description = paste(description, collapse = " "),
+      type        = deparse1(expr),
+      update      = update_info$update,
+      writable    = as.logical(writable)[[1]]
+    )
+
+    input_specs$set(inputId, item)
+
+    # Evaluate the expression and return the UI element
+    eval(expr, envir = env)
+  }
+
+  class(register_input_spec) <- c("register_input_impl", "function")
+
+  update_input_spec <- function(
+    inputId,
+    description = NULL,
+    type = NULL,
+    update = NULL,
+    writable = NULL
+  ) {
+    "
+    Update the specification of an already-registered shiny input.
+
+    Usage:
+      update_input_spec(inputId, description, type, update, writable)
+
+    @param inputId     Character scalar. Must match a previously registered
+      input ID; an error is raised otherwise.
+    @param description Character or NULL. New description (replaces old).
+    @param type        Character or NULL. New widget type.
+    @param update      Character or NULL. New update function spec string.
+    @param writable    Logical or NULL. New writable flag.
+
+    @return A list (invisible) with:
+      - item:    the updated 1-row data.frame.
+      - changed: logical, TRUE if any field was modified.
+    "
+    if (!input_specs$has(inputId)) {
+      stop("Input `", inputId, "` has not been registered.")
+    }
+    item <- input_specs$get(inputId)
+    changed <- FALSE
+    if (!is.null(description)) {
+      item$description <- paste(description, collapse = " ")
+      changed <- TRUE
+    }
+    if (!is.null(type)) {
+      item$type <- type
+      changed <- TRUE
+    }
+    if (!is.null(update)) {
+      update_info <- normalize_update_fun(update)
+      item$update <- update_info$update
+      changed <- TRUE
+    }
+    if (!is.null(writable)) {
+      item$writable <- as.logical(writable)[[1]]
+      changed <- TRUE
+    }
+    if (changed) {
+      input_specs$set(inputId, item)
+    }
+
+    invisible(list(
+      item = item,
+      changed = changed
+    ))
+  }
+
+  get_input_spec <- function() {
+    "
+    Retrieve all registered input specifications as a data.frame.
+
+    Usage:
+      get_input_spec()
+
+    @return A data.frame with columns: inputId, description, type,
+      update, writable. Returns an empty data.frame with the same
+      columns when no inputs have been registered.
+    "
+    if (input_specs$size() == 0) {
+      return(data.frame(
+        inputId     = character(),
+        description = character(),
+        type        = character(),
+        update      = character(),
+        writable    = logical()
+      ))
+    }
+    items <- input_specs$as_list()
+    re <- do.call("rbind", items)
+    row.names(re) <- NULL
+    re
+  }
+
+  wrapper <- mcp_wrapper(function(
+    session = shiny::getDefaultReactiveDomain()
+  ) {
+
+    shiny_input_info <- ellmer::tool(
+      name = "shiny_input_info",
+      description = paste(
+        "Query registered shiny input specifications.",
+        "Returns input IDs, descriptions, types, update functions,",
+        "whether each is writable, and (when a session is active)",
+        "whether each currently exists and its current value."
+      ),
+      arguments = list(
+        inputIds = ellmer::type_array(
+          ellmer::type_string(
+            description = "Shiny input ID"
+          ),
+          description = "Optional: specific input IDs to query. Omit to list all registered inputs.",
+          required = FALSE
+        )
+      ),
+      fun = function(inputIds = character()) {
+        inputIds <- unlist(inputIds)
+        inputIds <- inputIds[!is.na(inputIds)]
+        if (length(inputIds) > 0) {
+          items <- input_specs$mget(inputIds)
+        } else {
+          items <- input_specs$as_list()
+        }
+        # split each row into list
+
+        if (!is.null(session)) {
+          input <- shiny::isolate(shiny::reactiveValuesToList(session$input))
+          items <- lapply(items, function(item) {
+            if (is.null(item)) { return(NULL) }
+            item <- as.list(item)
+            item$exists <- item$inputId %in% names(input)
+            item$current_value <- input[[item$inputId]]
+            item
+          })
+        } else {
+          items <- lapply(items, function(item) {
+            as.list(item)
+          })
+        }
+
+        items
+      }
+    )
+
+    shiny_input_update <- ellmer::tool(
+      name = "shiny_input_update",
+      description = paste(
+        "Update a shiny input value by its ID.",
+        "The value will be sent to the corresponding shiny update function",
+        "(e.g. updateTextInput, updateSelectInput, updateNumericInput).",
+        "Call `shiny_input_info()` first to discover available input IDs,",
+        "their types, current values, and whether they are writable."
+      ),
+      arguments = list(
+        inputId = ellmer::type_string(
+          description = "Shiny input ID of which the value is to be changed",
+          required = TRUE
+        ),
+        value = ellmer::type_string(
+          description = "The new value for the input. Use JSON encoding for non-string values (e.g. 123, [1,2,3], {\"a\":1})."
+        )
+      ),
+      fun = function(inputId, value) {
+        # TODO: add a mode for tentative updating the input (highlight the
+        # inputs and mark the values instead of changing them)
+        if (!input_specs$has(inputId)) {
+          stop(
+            "There is no input ID: `",
+            inputId,
+            "`. Available IDs are: ",
+            paste(input_specs$keys(), collapse = ", "),
+            ". Call `shiny_input_info()` to get their information."
+          )
+        }
+
+        item <- input_specs$get(inputId)
+        if (!item$writable) {
+          stop("Input ID: `", inputId, "` is read-only.")
+        }
+
+        active_inputIds <- shiny::isolate(names(session$input))
+        if (!item$inputId %in% active_inputIds) {
+          stop(
+            "Input ID: `", inputId,
+            "` is inactive or missing from this session."
+          )
+        }
+
+        # Decode JSON-encoded value
+        value <- tryCatch(
+          jsonlite::fromJSON(value),
+          error = function(e) value
+        )
+
+        update_info <- normalize_update_fun(item$update)
+
+        expr <- as.call(structure(
+          list(
+            quote(update_info$fun_impl),
+            session,
+            inputId,
+            value
+          ),
+          names = c(
+            "",
+            update_info$fields$session %||% "session",
+            update_info$fields$id %||% "inputId",
+            update_info$fields$value %||% "value"
+          )
+        ))
+
+        eval(expr)
+
+        return(invisible(list(
+          updated = TRUE,
+          shiny_namespace = session$ns(NULL),
+          inputId = inputId,
+          value = value
+        )))
+      }
+    )
+
+    list(
+      shiny_input_info = shiny_input_info,
+      shiny_input_update = shiny_input_update
+    )
+  })
+
+
+  list(
+    input_helpers = list(
+      register_input_specification = register_input_spec,
+      update_input_specification = update_input_spec,
+      get_input_specification = get_input_spec
+    ),
+    tool_generator = wrapper
+  )
+
+}
+
+#' @export
+register_input <- function(expr,
+                           inputId,
+                           description,
+                           update,
+                           writable = TRUE,
+                           quoted = FALSE,
+                           env = parent.frame()) {
+  if (!quoted) {
+    expr <- substitute(expr)
+  }
+
+  register_input_impl <- get0(
+    x = ".register_input",
+    envir = env,
+    mode = "function",
+    inherits = TRUE
+  )
+
+  if (isTRUE(inherits(register_input_impl, "register_input_impl"))) {
+    register_input_impl(
+      expr = expr,
+      inputId = inputId,
+      description = description,
+      update = update,
+      writable = writable,
+      quoted = TRUE,
+      env = env
+    )
+  } else {
+    eval(expr, envir = env)
+  }
+
+}

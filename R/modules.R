@@ -262,6 +262,14 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         modules <- module_info()
         modules$label[modules$id == module_id]
       }
+      shidashi_globals <- get_shidashi_globals(env)
+      shared_input_specs <- shidashi_globals$get_module_input_specs(module_id)
+      wrapper_input_registry <- input_update_mcp_wrapper(
+        input_specs = shared_input_specs
+      )
+      env$.register_input <- wrapper_input_registry$input_helpers$register_input_specification
+      env$.mcp_wrapper_inputs <- wrapper_input_registry$tool_generator
+      current_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
 
       r_folder <- file.path(module_root, 'R')
       if (dir.exists(r_folder)) {
@@ -276,6 +284,13 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
           }
         }
       }
+
+      new_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
+      if (nrow(new_input_table) > nrow(current_input_table)) {
+        message("Registered inputs to MCP server:", appendLF = TRUE)
+        print(new_input_table[, c("inputId", "update", "writable")])
+      }
+
 
       # ---- Register MCP tools ----
       # read agent.yaml
@@ -323,7 +338,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         names(agent_conf$skills) <- skill_names
       }
 
-      vnames <- ls(env)
+      vnames <- ls(env, all.names = TRUE)
       tools <- lapply(vnames, function(vname) {
         value <- env[[vname]]
         if (!is.function(value)) { return() }

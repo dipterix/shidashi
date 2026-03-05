@@ -20,17 +20,12 @@
 #     tools              = <named list of ToolDef objects or NULL>
 #   )
 
-# Package-level Shiny session registry (persists across HTTP requests)
-mcp_session_registry <- local({
-  registry <- NULL
-
-  function() {
-    if (is.null(registry)) {
-      registry <<- fastmap::fastmap()
-    }
-    registry
-  }
-})
+# Shiny session registry accessor.
+# The backing fastmap lives inside .__shidashi_globals__. which is
+# created by init_app() (called from global.R at app startup).
+mcp_session_registry <- function(env = parent.frame()) {
+  get_shidashi_globals(env = env)$mcp_session_registry
+}
 
 # ---------- Shiny session registry helpers --------------------------------
 
