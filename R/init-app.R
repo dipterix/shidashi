@@ -23,8 +23,14 @@
 #'     module ID.
 #'     Each value is itself a \code{fastmap} storing input specifications
 #'     registered via \code{\link{register_input}()}.}
+#'   \item{\code{module_output_registry}}{A \code{fastmap::fastmap()} keyed by
+#'     module ID.
+#'     Each value is itself a \code{fastmap} storing output specifications.}
 #'   \item{\code{get_module_input_specs(module_id)}}{A convenience function
 #'     that returns the per-module input \code{fastmap}, creating it on first
+#'     access.}
+#'   \item{\code{get_module_output_specs(module_id)}}{A convenience function
+#'     that returns the per-module output \code{fastmap}, creating it on first
 #'     access.}
 #' }
 #'
@@ -49,12 +55,20 @@ init_app <- function(env = parent.frame()) {
   global_env$mcp_session_registry <- fastmap::fastmap()
 
   global_env$module_input_registry <- fastmap::fastmap()
+  global_env$module_output_registry <- fastmap::fastmap()
 
   global_env$get_module_input_specs <- function(module_id) {
     if (!global_env$module_input_registry$has(module_id)) {
       global_env$module_input_registry$set(module_id, fastmap::fastmap())
     }
     global_env$module_input_registry$get(module_id)
+  }
+
+  global_env$get_module_output_specs <- function(module_id) {
+    if (!global_env$module_output_registry$has(module_id)) {
+      global_env$module_output_registry$set(module_id, fastmap::fastmap())
+    }
+    global_env$module_output_registry$get(module_id)
   }
 
   env$.__shidashi_globals__. <- global_env

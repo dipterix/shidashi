@@ -31,8 +31,14 @@ The assigned variable \code{.__shidashi_globals__.} is an environment
     module ID.
     Each value is itself a \code{fastmap} storing input specifications
     registered via \code{\link{register_input}()}.}
+  \item{\code{module_output_registry}}{A \code{fastmap::fastmap()} keyed by
+    module ID.
+    Each value is itself a \code{fastmap} storing output specifications.}
   \item{\code{get_module_input_specs(module_id)}}{A convenience function
     that returns the per-module input \code{fastmap}, creating it on first
+    access.}
+  \item{\code{get_module_output_specs(module_id)}}{A convenience function
+    that returns the per-module output \code{fastmap}, creating it on first
     access.}
 }
 

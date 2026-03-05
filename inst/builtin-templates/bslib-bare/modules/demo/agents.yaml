@@ -7,6 +7,14 @@ tools:
   category:
   - exploratory
   enabled: yes
+- name: shiny_output_info
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_query_ui
+  category:
+  - exploratory
+  enabled: yes
 - name: shiny_input_update
   category:
   - executing

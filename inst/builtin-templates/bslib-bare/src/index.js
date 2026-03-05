@@ -1546,6 +1546,88 @@ class ShidashiApp {
     this.shinyHandler('open_url', (params) => {
       this.openUrl(params.url, params.target || '_blank');
     });
+
+    // --- Query UI handler (MCP) ---
+
+    this.shinyHandler('query_ui', (params) => {
+      // params: { selector, request_id, input_id }
+      const selector = params.selector;
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!selector || !requestId || !inputId) return;
+
+      const el = document.querySelector(selector);
+      if (!el) {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: '',
+          image_type: ''
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Check if element is a <canvas>
+      if (el.tagName === 'CANVAS') {
+        try {
+          const dataUrl = el.toDataURL('image/png');
+          // dataUrl is "data:image/png;base64,..."
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        } catch (e) {
+          // Tainted canvas — fall through to innerHTML
+        }
+      }
+
+      // Check if element contains a single <img> with a data URI or a <canvas> child
+      const canvas = el.querySelector('canvas');
+      if (canvas) {
+        try {
+          const dataUrl = canvas.toDataURL('image/png');
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        } catch (e) {
+          // fall through
+        }
+      }
+
+      const img = el.querySelector('img[src^="data:"]');
+      if (img && el.querySelectorAll('img').length === 1) {
+        const src = img.getAttribute('src') || '';
+        // src is "data:image/png;base64,..."
+        const parts = src.split(',');
+        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: parts[1] || '',
+          image_type: mime
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Default: return innerHTML
+      Shiny.setInputValue(inputId, {
+        request_id: requestId,
+        html: el.innerHTML,
+        image_data: '',
+        image_type: ''
+      }, { priority: 'event' });
+    });
   }
 }
 

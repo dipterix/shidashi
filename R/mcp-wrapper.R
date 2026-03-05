@@ -196,7 +196,7 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 #' them to the update function, falling back to the raw string on failure.
 #'
 #' @examples
-#' wrapper <- input_update_mcp_wrapper()
+#' wrapper <- mcp_wrapper_input_output()
 #'
 #' # Register inputs inline — returns the UI element for use in UI code
 #' text_ui <- wrapper$input_helpers$register_input_specification(
@@ -230,8 +230,8 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 #'   during UI rendering and another during server initialization) to share
 #'   the same input registry.
 #'
-#' @export
-input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
+#' @noRd
+mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_specs = fastmap::fastmap()) {
 
   # stores the input ID, description, type, update function, writable for a
   # session inputId should be relative to session, meaning
@@ -284,8 +284,8 @@ input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
   register_input_spec <- function(
     expr,
     inputId,
-    description,
     update,
+    description = "",
     writable = TRUE,
     quoted = FALSE,
     env = parent.frame()
@@ -347,6 +347,28 @@ input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
   }
 
   class(register_input_spec) <- c("register_input_impl", "function")
+
+  register_output_spec <- function(expr, outputId, description = "", quoted = FALSE, env = parent.frame()) {
+    if (!quoted) {
+      expr <- substitute(expr)
+    }
+
+    description <- trimws(paste(description, collapse = ""))
+    if (!nzchar(description)) {
+      description <- deparse1(expr)
+    }
+
+    item <- data.frame(
+      outputId    = outputId,
+      description = paste(description, collapse = " ")
+    )
+
+    output_specs$set(outputId, item)
+
+    # Evaluate the expression and return the UI element
+    eval(expr, envir = env)
+  }
+  class(register_output_spec) <- c("register_output_impl", "function")
 
   update_input_spec <- function(
     inputId,
@@ -558,16 +580,151 @@ input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
       }
     )
 
+
+    shiny_query_ui <- ellmer::tool(
+      name = "shiny_query_ui",
+      description = paste(
+        "Query the HTML content of a UI element by CSS selector.",
+        "Returns the innerHTML of the first matching element.",
+        "If the element is a canvas or contains only an <img> tag,",
+        "its visual content is returned as an inline image.",
+        "This requires a round-trip to the browser and may take up to 5 seconds."
+      ),
+      arguments = list(
+        css_selector = ellmer::type_string(
+          description = "A CSS selector to query (e.g. '#my_output', '.card-body', 'div[data-id=\"plot\"]').",
+          required = TRUE
+        )
+      ),
+      fun = function(css_selector) {
+        request_id <- rand_string()
+
+        session$sendCustomMessage("shidashi.query_ui", list(
+          selector = css_selector,
+          request_id = request_id,
+          input_id = session$ns("@shiny_query_ui_result@")
+        ))
+
+        promises::promise(function(resolve, reject) {
+          remaining <- 10L  # 10 x 500ms = 5 seconds
+          check_fn <- function() {
+            res <- shiny::isolate(session$input[["@shiny_query_ui_result@"]])
+            if (!is.null(res) && identical(res$request_id, request_id)) {
+              html <- res$html %||% ""
+              # If the JS side captured a data-URI image (canvas / <img>)
+              if (length(res$image_data) && nzchar(res$image_data)) {
+                # image_data is base64 without the data:... prefix
+                mime <- res$image_type %||% "image/png"
+                resolve(ellmer::ContentImageInline(
+                  type = mime,
+                  data = res$image_data
+                ))
+              } else {
+                resolve(html)
+              }
+            } else if (remaining <= 0L) {
+              reject(simpleError(paste0(
+                "Timeout: no response from browser for selector '",
+                css_selector, "' within 5 seconds."
+              )))
+            } else {
+              remaining <<- remaining - 1L
+              later::later(check_fn, 0.5)
+            }
+          }
+          check_fn()
+        })
+      }
+    )
+
+    shiny_output_info <- ellmer::tool(
+      name = "shiny_output_info",
+      description = paste(
+        "List registered Shiny output elements and optionally retrieve",
+        "their rendered HTML content. When outputIds is omitted, returns",
+        "all registered outputs with their descriptions. You can get the",
+        "HTML content of output via `shiny_query_ui(selector)`"
+      ),
+      arguments = list(
+        outputIds = ellmer::type_array(
+          ellmer::type_string(description = "Shiny output ID"),
+          description = "Optional: specific output IDs to query. Omit to list all registered outputs.",
+          required = FALSE
+        ),
+        include_html = ellmer::type_boolean(
+          description = "If TRUE, also fetch the current rendered HTML for each output (requires browser round-trip). Default FALSE.",
+          required = FALSE
+        )
+      ),
+      fun = function(outputIds = character(), include_html = FALSE) {
+        outputIds <- unlist(outputIds)
+        outputIds <- outputIds[!is.na(outputIds)]
+        if (length(outputIds) > 0) {
+          items <- output_specs$mget(outputIds)
+        } else {
+          items <- output_specs$as_list()
+        }
+
+        results <- lapply(items, function(item) {
+          if (is.null(item)) return(NULL)
+          as.list(item)
+        })
+
+        if (!isTRUE(include_html) || is.null(session)) {
+          return(results)
+        }
+
+        # Fetch HTML for each output via shiny_query_ui
+        promises::promise_all(
+          .list = lapply(results, function(item) {
+            if (is.null(item)) return(promises::promise_resolve(NULL))
+            selector <- paste0("#", session$ns(item$outputId))
+            # Call the query_ui tool's inner logic
+            request_id <- rand_string()
+            session$sendCustomMessage("shidashi.query_ui", list(
+              selector = selector,
+              request_id = request_id,
+              input_id = session$ns("@shiny_query_ui_result@")
+            ))
+            promises::promise(function(resolve, reject) {
+              remaining <- 10L
+              check_fn <- function() {
+                res <- shiny::isolate(session$input[["@shiny_query_ui_result@"]])
+                if (!is.null(res) && identical(res$request_id, request_id)) {
+                  item$html <- res$html %||% ""
+                  if (length(res$image_data) && nzchar(res$image_data)) {
+                    item$has_image <- TRUE
+                  }
+                  resolve(item)
+                } else if (remaining <= 0L) {
+                  item$html <- "(timeout)"
+                  resolve(item)
+                } else {
+                  remaining <<- remaining - 1L
+                  later::later(check_fn, 0.5)
+                }
+              }
+              check_fn()
+            })
+          })
+        )
+      }
+    )
+
     list(
       shiny_input_info = shiny_input_info,
-      shiny_input_update = shiny_input_update
+      shiny_input_update = shiny_input_update,
+      shiny_query_ui = shiny_query_ui,
+      shiny_output_info = shiny_output_info
     )
   })
+
 
 
   list(
     input_helpers = list(
       register_input_specification = register_input_spec,
+      register_output_specification = register_output_spec,
       update_input_specification = update_input_spec,
       get_input_specification = get_input_spec
     ),
@@ -579,8 +736,8 @@ input_update_mcp_wrapper <- function(input_specs = fastmap::fastmap()) {
 #' @export
 register_input <- function(expr,
                            inputId,
-                           description,
                            update,
+                           description = "",
                            writable = TRUE,
                            quoted = FALSE,
                            env = parent.frame()) {
@@ -609,4 +766,30 @@ register_input <- function(expr,
     eval(expr, envir = env)
   }
 
+}
+
+#' @export
+register_output <- function(expr, outputId, description = "", quoted = FALSE, env = parent.frame()) {
+  if (!quoted) {
+    expr <- substitute(expr)
+  }
+
+  register_output_impl <- get0(
+    x = ".register_output",
+    envir = env,
+    mode = "function",
+    inherits = TRUE
+  )
+
+  if (isTRUE(inherits(register_output_impl, "register_output_impl"))) {
+    register_output_impl(
+      expr = expr,
+      outputId = outputId,
+      description = description,
+      quoted = TRUE,
+      env = env
+    )
+  } else {
+    eval(expr, envir = env)
+  }
 }

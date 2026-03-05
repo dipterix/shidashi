@@ -264,10 +264,13 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       }
       shidashi_globals <- get_shidashi_globals(env)
       shared_input_specs <- shidashi_globals$get_module_input_specs(module_id)
-      wrapper_input_registry <- input_update_mcp_wrapper(
-        input_specs = shared_input_specs
+      shared_output_specs <- shidashi_globals$get_module_output_specs(module_id)
+      wrapper_input_registry <- mcp_wrapper_input_output(
+        input_specs = shared_input_specs,
+        output_specs = shared_output_specs
       )
       env$.register_input <- wrapper_input_registry$input_helpers$register_input_specification
+      env$.register_output <- wrapper_input_registry$input_helpers$register_output_specification
       env$.mcp_wrapper_inputs <- wrapper_input_registry$tool_generator
       current_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
 

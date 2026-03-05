@@ -189,7 +189,11 @@ ui_demo_details <- function(){
         body_main = flip_box(
           front = div(
             class = "fill-width height-450 min-height-450 resize-vertical",
-            plotOutput(ns("iris_plot"), height = "100%")
+            shidashi::register_output(
+              plotOutput(ns("iris_plot"), height = "100%"),
+              outputId = "iris_plot",
+              description = "Scatter plot of iris, thresholded by input `iris_threshold`"
+            )
           ),
           back = tableOutput(ns("iris_plot_data"))
         ),
@@ -312,7 +316,7 @@ server_demo <- function(input, output, session, ...){
     ggplot(data=iris) +
       aes(x=Sepal.Length, y=Petal.Length, color=Species) +
       geom_point() +
-      geom_rug(col="steelblue",alpha=0.1, size=1.5) + ggtheme
+      geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
   })
 
   run_analysis <- function(){

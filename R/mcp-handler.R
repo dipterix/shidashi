@@ -532,7 +532,15 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
   }
 
   # Call the ToolDef with the provided arguments
-  result <- ellmer_tool_call(tool_obj, arguments)
+  provider <- get_mcp_provider()
+  result <- ellmer_tool_call(tool_obj, arguments, provider = provider)
+
+  # Handle async tool results (promises)
+  if (promises::is.promise(result)) {
+    return(promises::then(result, function(res) {
+      mcp_json_result(id, res, mcp_session_id)
+    }))
+  }
 
   mcp_json_result(id, result, mcp_session_id)
 }
@@ -787,30 +795,13 @@ ellmer_tool_schema <- function(tool_obj) {
 #' Returns MCP result format.
 #' @keywords internal
 #' @noRd
-ellmer_tool_call <- function(tool_obj, arguments) {
+ellmer_tool_call <- function(tool_obj, arguments, provider = NULL) {
   if (is.null(arguments)) arguments <- list()
-
-  # if (is.character(arguments) && startsWith()) {
-  #   jsonlite::fromJSON('[{"name":1}]', simplifyVector = TRUE, simplifyDataFrame = TRUE)
-  # }
 
   # ToolDef inherits from class_function — it's directly callable
   # Call with the arguments from JSON
 
-  tryCatch({
-    ret <- do.call(tool_obj, arguments)
-    if (is.null(ret)) {
-      ret <- "<empty results>"
-    } else if (is.character(ret)) {
-      ret <- paste(ret, collapse = "\n")
-    } else {
-      ret <- jsonlite::toJSON(ret, auto_unbox = TRUE, null = "null", force = TRUE)
-    }
-    list(
-      content = list(list(type = "text", text = ret)),
-      isError = FALSE
-    )
-  }, error = function(e) {
+  tool_error <- function(e) {
     list(
       content = list(list(
         type = "text",
@@ -819,7 +810,24 @@ ellmer_tool_call <- function(tool_obj, arguments) {
       )),
       isError = TRUE
     )
-  })
+  }
+
+  tryCatch({
+    ret <- do.call(tool_obj, arguments)
+
+    # Handle promises (async tools like shiny_query_ui)
+    if (promises::is.promise(ret)) {
+      return(promises::then(
+        ret,
+        onFulfilled = function(value) {
+          content_to_mcp(value, provider)
+        },
+        onRejected = tool_error
+      ))
+    }
+
+    content_to_mcp(ret, provider)
+  }, error = tool_error)
 
 }
 
