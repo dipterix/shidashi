@@ -1,7 +1,7 @@
 Package: shidashi
 Type: Package
 Title: A Shiny Dashboard Template System
-Version: 0.1.7
+Version: 0.1.8
 Language: en-US
 URL: https://dipterix.org/shidashi/,
     https://github.com/dipterix/shidashi
@@ -31,6 +31,7 @@ Description: A template system based on 'AdminLTE3'
     panels with back sides, as well as various of 'HTML' tool widgets.
 Imports: 
     utils,
+    tools,
     bslib,
     digest (>= 0.6.27),
     ellmer (>= 0.4.0),

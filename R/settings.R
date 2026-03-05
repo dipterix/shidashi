@@ -47,7 +47,7 @@ template_root <- function(){
   )
   if(!length(path)) {
     if(template_settings$get("dev.debug", FALSE)){
-      path <- './inst/builtin-templates/AdminLTE3-bare/'
+      path <- './inst/builtin-templates/bslib-bare/'
     } else {
       path <- file.path(R_user_dir('shidashi', which = "data"),
                         c("bslib-bare", "AdminLTE3", "AdminLTE3-bare"))

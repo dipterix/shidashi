@@ -11,7 +11,9 @@
 #'   \item Template-level \code{config.yaml -> interpreters} (when a Shiny
 #'     session is active; see \code{template_root()}).
 #'   \item Built-in defaults: \code{.R} -> \code{Rscript} (portable),
-#'     \code{.sh} -> \code{/bin/sh} (non-Windows only).
+#'     \code{.sh} -> \code{/bin/sh} (non-Windows only),
+#'     \code{.sh.bat} -> \code{cmd.exe /c} on Windows or \code{/bin/sh}
+#'     elsewhere (dual-mode scripts that work on both platforms).
 #' }
 #' All other extensions require explicit \code{config.yaml} configuration.
 #'
@@ -41,7 +43,9 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
   script_path <- normalizePath(script_path, mustWork = TRUE)
 
   # ---- Resolve interpreter ----
-  ext <- tolower(tools::file_ext(file_name))
+  # Detect compound extension .sh.bat before simple extension
+  is_sh_bat <- grepl("\\.sh\\.bat$", tolower(file_name))
+  ext <- if (is_sh_bat) "sh.bat" else tolower(tools::file_ext(file_name))
   interpreter <- NULL
 
   # 1. Template config.yaml -> interpreters (when Shiny is running)
@@ -78,9 +82,17 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
       "sh" = {
         if (.Platform$OS.type == "windows") {
           stop("Shell scripts (.sh) are not supported on Windows. ",
-               "Configure an interpreter in config.yaml -> interpreters -> sh")
+               "Configure an interpreter in config.yaml -> interpreters -> sh, ",
+               "or use a .sh.bat dual-mode script instead.")
         }
         "/bin/sh"
+      },
+      "sh.bat" = {
+        if (.Platform$OS.type == "windows") {
+          c("cmd.exe", "/c")
+        } else {
+          "/bin/sh"
+        }
       },
       stop("No interpreter configured for extension '.", ext, "'.\n",
            "Add it to config.yaml under `interpreters:\n  ",

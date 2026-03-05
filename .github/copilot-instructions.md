@@ -71,3 +71,7 @@ render(root_path = tmp)
 - Bootstrap 5 utilities (e.g. `ms-auto`, `visually-hidden`, `float-end`, `dropdown-menu-end`)
 - Custom prefix: `shidashi-` for all custom components (sidebar, header, tab-bar, iframe-container, brand-link, etc.)
 - Data attributes: `data-shidashi-*` for custom actions, `data-bs-*` for Bootstrap 5
+
+## Editing Rules
+
+- **Never remove comments** from R source files or template files. Comments (especially commented-out code and `#---` section headers) are intentional documentation for users. When editing `writeLines()` blocks in `barebone.R`, preserve all comment lines exactly as they appear in the corresponding template files (e.g. `inst/builtin-templates/*/R/common.R`).
