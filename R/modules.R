@@ -318,6 +318,11 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       tool_names <- unlist(lapply(agent_conf$tools, "[[", "name"))
       names(agent_conf$tools) <- tool_names
 
+      skill_names <- unlist(lapply(agent_conf$skills, "[[", "name"))
+      if (length(agent_conf$skills)) {
+        names(agent_conf$skills) <- skill_names
+      }
+
       vnames <- ls(env)
       tools <- lapply(vnames, function(vname) {
         value <- env[[vname]]
@@ -328,6 +333,20 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       })
 
       tools <- drop_null(tools)
+
+      # ---- Discover skill directories (Phase 4) ----
+      # Per Anthropic spec, skill name == folder name. Direct lookup,
+      # no iteration needed. Missing folders are silently dropped.
+      skill_wrappers <- list()
+      if (length(skill_names)) {
+        root_skills_dir <- file.path(root_path, "agents", "skills")
+        for (sname in skill_names) {
+          skill_dir <- file.path(root_skills_dir, sname)
+          if (file.exists(file.path(skill_dir, "SKILL.md"))) {
+            skill_wrappers[[sname]] <- skill_wrapper(skill_dir)
+          }
+        }
+      }
 
       # create a tool-generating function
       tool_gen_fun <- function(session) {
@@ -364,6 +383,30 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             })
           }
 
+        })
+
+        # ---- Process skill wrappers (Phase 4) ----
+        lapply(names(skill_wrappers), function(sname) {
+          wrapper <- skill_wrappers[[sname]]
+          skill_tool <- tryCatch(
+            wrapper(),
+            error = function(e) {
+              warning("Failed to create skill tool '", sname, "': ",
+                      conditionMessage(e))
+              NULL
+            }
+          )
+          if (inherits(skill_tool, "ellmer::ToolDef")) {
+            skill_conf <- agent_conf$skills[[sname]]
+            skill_tool@annotations$shidashi_enabled <-
+              isTRUE(skill_conf$enabled)
+            skill_tool@annotations$shidashi_category <-
+              c("skill", as.character(skill_conf$category))
+            skill_tool@annotations$shidashi_namespace <- session$ns(NULL)
+            skill_tool@name <- sprintf("skill__%s__%s",
+                                       session$ns(NULL), sname)
+            tool_map$set(skill_tool@name, skill_tool)
+          }
         })
 
         tool_map

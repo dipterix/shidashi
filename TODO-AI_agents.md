@@ -42,11 +42,9 @@ Tool functions (closures reading live session$input)
 
 **Key routing detail**: Shiny's `uiHttpHandler` only forwards GET
 requests to the UI function (`function(req)`). POST/DELETE never reach
-`adminlte_ui()`. The MCP endpoint therefore uses
-`shinyApp()$httpHandler` — an app-level HTTP handler that runs before
-Shiny's internal routing. `render()` builds the `shinyApp()` object
-directly (not via `shinyAppDir()`), attaches `mcp_app_handler()` to
-`app$httpHandler`, then calls `runApp(appDir = app)`.
+`adminlte_ui()`. The MCP endpoint is attached via `register_mcp_route()`,
+which wraps the existing `shinyApp$httpHandler` produced by
+`shiny::shinyAppDir()` and injects the MCP handler in front of it.
 
 ---
 
@@ -56,7 +54,7 @@ directly (not via `shinyAppDir()`), attaches `mcp_app_handler()` to
 
 ### What was built
 
-#### `R/mcp-handler.R` (new, ~450 lines)
+#### `R/mcp-handler.R` (new, ~914 lines)
 
 **Session registry** — singleton fastmap via closure:
 
@@ -70,38 +68,44 @@ mcp_session_registry <- local({
 })
 ```
 
-Single fastmap keyed by `session$token`. Each value is a flat named list:
+Single fastmap keyed by `session$token`. Each value is a named list:
 
 ```r
 list(
   shiny_session      = <ShinySession>,   # live session object
-  shidashi_module_id = NULL,             # reserved for Phase 3
-  namespace          = "",               # session namespace string
+  shidashi_module_id = NULL,             # set during Phase 3 module load
+  mcp_session_ids    = character(),      # MCP session IDs bound to this entry
+  namespace          = "",               # session$ns(NULL)
   url                = "",               # client URL at connect time
-  registered_at      = <POSIXct>         # registration timestamp
+  registered_at      = <POSIXct>,        # registration timestamp
+  tools              = list()            # named list of ellmer::ToolDef (Phase 3)
 )
 ```
 
-No secondary map exists. Tools that need a Shiny session take `token`
-directly as a parameter.
-
 **Registry helpers**:
 
-- `mcp_register_session(session, meta)` — stores flat entry, registers
-  `onSessionEnded` callback for automatic cleanup
+- `register_session_mcp(session)` — stores entry, registers
+  `onSessionEnded` callback for automatic cleanup; called from `modules.R`
 - `mcp_unregister_session(session)` — removes by token
 - `mcp_sweep_closed_sessions()` — defensive `isClosed()` sweep on
   every MCP request (belt + suspenders)
 - `mcp_get_shiny_entry(token)` — O(1) registry lookup, returns entry
   or NULL if not found / closed
+- `mcp_tool_bound_shinysessions(mcp_session_id)` — returns Shiny tokens
+  bound to a given MCP session ID
+- `mcp_tool_unregister_shinysession(mcp_session_id)` — unbinds MCP
+  session from all Shiny tokens
 
-**App-level HTTP handler** — `mcp_app_handler()`:
+**App-level HTTP handler** — `register_mcp_route(app)`:
 
-Returns a function for `shinyApp()$httpHandler`. Routes:
+Wraps an existing `shinyApp` object's `httpHandler`. Routes:
 - `POST /mcp` → `mcp_http_handler(req)` (JSON-RPC dispatch)
-- `DELETE /mcp` → 200 `{}`
+- `DELETE /mcp` → 200 `{}` + unregisters MCP session binding
 - `GET /mcp` → 200 info JSON
-- other methods → 405
+- other methods / paths → delegated to original handler
+
+Also excludes `/mcp` from httpuv static-path handling so POST/DELETE
+reach the R handler instead of being rejected with 400.
 
 **JSON-RPC dispatcher** — `mcp_http_handler(req)`:
 
@@ -109,65 +113,63 @@ Returns a function for `shinyApp()$httpHandler`. Routes:
 2. Reads body via `req$rook.input$read()`
 3. Parses JSON, validates JSON-RPC 2.0 envelope
 4. Notifications (no `id`) → 202 Accepted
-5. Dispatches: `initialize`, `tools/list`, `tools/call`
+5. Dispatches: `initialize`, `tools/list`, `tools/call`, `ping`
 
 **Protocol handlers**:
 
 - `mcp_handle_initialize()` — generates `Mcp-Session-Id` via
-  `digest::digest(sha256)`, returns `protocolVersion`, `capabilities`,
-  `serverInfo`
-- `mcp_handle_tools_list()` — returns tool definitions
+  `digest::digest(sha256)`, returns `protocolVersion = "2025-03-26"`,
+  `capabilities`, `serverInfo`
+- `mcp_handle_ping()` — returns empty result
+- `mcp_handle_tools_list()` — returns built-in + per-session tools
 - `mcp_handle_tools_call()` — dispatches to tool implementations
 
-**Tools (Phase 1)**:
+**Tools (Phase 1 built-ins, always available)**:
 
 | Tool | Description |
 |------|-------------|
-| `hello_world` | Static greeting to verify tunnel works |
-| `list_shinysessions` | Lists active Shiny sessions (token, namespace, url, registered_at) |
+| `list_shinysessions` | Lists active Shiny sessions (token, module_id, tool_names, registered_at) |
+| `register_shinysession` | Bind MCP session to a Shiny session by token |
+| `get_session_info` | Show current binding status and available tools |
 
-**JSON helpers**: `mcp_json_error()`, `mcp_json_response()`
+**JSON helpers**: `mcp_json_error()`, `mcp_json_result()`
+  (`mcp_json_result` supports both `application/json` and
+  `text/event-stream` for SSE notifications)
+
+#### `R/mcp-wrapper.R` (new)
+
+Contains `mcp_wrapper()` constructor and `setup_mcp_proxy()`. The
+`setup_mcp_proxy()` function writes port records and copies
+`inst/mcp-proxy/shidashi-proxy.mjs` to the user cache; called from
+`render()` on every launch.
 
 #### `R/render.R` (modified)
 
-`render()` now builds `shinyApp()` directly instead of using
-`runApp(appDir = path)`:
+`render()` resolves or picks a random port, calls `setup_mcp_proxy()`,
+then uses `register_mcp_route(shiny::shinyAppDir(root_path))` to
+attach the MCP handler before running the app:
 
 ```r
-env <- new.env(parent = globalenv())
-source(file.path(root_path, "server.R"), local = env)
-app <- shiny::shinyApp(ui = shidashi::adminlte_ui(), server = env$server)
-app$httpHandler <- mcp_app_handler()
-shiny::runApp(appDir = app, ...)
+app <- register_mcp_route(shiny::shinyAppDir(root_path))
+do.call(shiny::runApp, c(list(appDir = app, ...), dots))
 ```
 
-This is necessary because `shinyAppDir()` prefers `server.R` over
-`app.R`, so we cannot set `httpHandler` via an `app.R` file. Both the
-interactive path and the RStudio job path use this pattern.
+Both the interactive path and the RStudio job path use this pattern.
+The `ui.R` inside `root_path` is rewritten at launch time to inject
+`template_settings$set('root_path' = ...)` so `shinyAppDir` uses the
+correct path regardless of working directory.
 
-#### `R/shared-session.R` (modified)
+#### `R/modules.R` (modified)
 
-At the end of `register_session_id()`, added:
-
-```r
-if (!is_registerd && !is.null(session$token)) {
-  mcp_register_session(session = session, meta = list(
-    namespace = tryCatch(session$ns(""), error = function(e) ""),
-    url = tryCatch(shiny::isolate(session$clientData$url_search),
-                   error = function(e) "")
-  ))
-}
-```
-
-The `is_registerd` flag (existing code) prevents double-registration
-on reconnect. `onSessionEnded` cleanup is handled inside
-`mcp_register_session()`.
+Session MCP registration happens inside module server injection (Phase 3
+architecture), not in `shared-session.R`. Each module's server function
+body is prepended with a block that calls `register_session_mcp(session)`
+and then populates `entry$tools` from the module's tool generators.
 
 #### `R/ui-adminlte.R` (unchanged)
 
-Originally planned to intercept `/mcp` here, but Shiny only passes GET
-requests to the UI function. POST routing is handled entirely by
-`mcp_app_handler()` at the app level.
+Shiny passes only GET requests to the UI function; POST/DELETE are
+handled by `register_mcp_route()` at the app level.
 
 ### Verification (completed)
 
@@ -241,26 +243,46 @@ When a new MCP tool is added:
 
 | Tool | Description | Inputs |
 |------|-------------|--------|
-| `hello_world` | Verify tunnel works | `name: string` |
-| `list_shinysessions` | List active Shiny sessions | (none) |
-| `get_shiny_input_values` | Read input values from a session | `token: string` (required), `input_ids: string[]` (optional) |
+| `hello_world` | Verify tunnel works | `name: string` (optional) |
+| `list_shinysessions` | List active Shiny sessions with module_id and tool names | (none) |
+| `register_shinysession` | Bind MCP session to a Shiny session | `token: string` (required) |
+| `get_session_info` | Show current binding and available tools | (none) |
+| `get_shiny_input_values` | Read input values from the **bound** session | `input_ids: string[]` (optional) |
 
 ### Implementation
 
-#### Stateless token-passing
+#### Stateful session binding
 
-Each tool that needs a Shiny session takes `token` directly as a
-required parameter. No stateful cursor or session binding — each tool
-call is self-contained:
+`hello_world` and `get_shiny_input_values` are **not** hardcoded in
+`mcp-handler.R`. They live as `mcp_wrapper()` generators in
+`agents/tools/hello_world.R` and `agents/tools/get_shiny_input_values.R`
+and are instantiated with the live Shiny session at bind time.
+
+The MCP session binds to a Shiny session via `register_shinysession`.
+Binding is tracked in `entry$mcp_session_ids` (array) within the Shiny
+session's registry entry — no separate binding map exists. After
+binding, `get_shiny_input_values` reads from the enclosed `session`
+captured in its closure:
 
 ```r
-# get_shiny_input_values resolves session via O(1) lookup:
-mcp_get_shiny_entry(token)   # registry$get(token), checks not closed
+get_shiny_input_values <- shidashi::mcp_wrapper(
+  function(session) {
+    bound_session <- session   # captured in closure
+    ellmer::tool(
+      fun = function(input_ids = character()) {
+        shiny::isolate(shiny::reactiveValuesToList(bound_session$input))
+      }, ...
+    )
+  }
+)
 ```
 
-The `Mcp-Session-Id` header is still generated on `initialize` and
-echoed on responses (MCP protocol requirement) but is **not** stored
-in registry entries or used for Shiny session lookup.
+No `token` parameter is exposed to the AI agent — the session is
+already resolved at registration time. The `Mcp-Session-Id` header is
+generated on `initialize` and echoed on every response. On a successful
+`register_shinysession` call, an SSE response with a
+`notifications/tools/list_changed` notification is emitted so the
+client refreshes its tool catalogue.
 
 ### Verification
 
@@ -399,13 +421,181 @@ enabled — no need to list them.
 
 ## Phase 4: Skills (future)
 
-**Goal**: Add skill wrappers (`skill_wrapper()`) with progressive
-disclosure pattern (tricobbler-style). Skills use the prefix
-`skill__{module_id}__{skill_name}`. Defined in `agents/skills/*.R`.
-Permissions controlled via `agent.yaml`. `processx` in Suggests for
-background execution.
+**Goal**: Turn Anthropic-compliant skill directories (`SKILL.md` +
+optional `scripts/` + reference files) into single MCP tools via
+closure-based `skill_wrapper()`. Each skill becomes one tool named
+`skill__{namespace}__{sanitized_name}` that dispatches on an `action`
+enum (`readme` / `reference` / `script`). A server-side gate rejects
+premature script/reference calls with a condensed auto-generated
+summary (~200 tokens) embedded in the error — teaching the AI in the
+rejection itself, costing only 1 retry when the AI skips readme.
 
-*Not yet implemented.*
+**Status**: Not yet implemented.
+
+### Skill directory layout (Anthropic-compliant)
+
+Skills live at the **root level only** (not per-module):
+- `agents/skills/{skill-name}/SKILL.md`
+
+Modules enable skills via their `agents.yaml` but skills are always
+defined at the project root. This keeps skill definitions centralised
+and avoids duplication across modules.
+
+`SKILL.md` frontmatter uses standard Anthropic fields only:
+
+```yaml
+---
+name: analyze-data
+description: Runs the data analysis pipeline on selected inputs
+---
+
+## Instructions
+When analyzing data:
+1. Read the current input table with get_shiny_input_values
+2. Run clean.R --threshold 0.05
+3. Run analyze.R --input cleaned.csv
+...
+```
+
+Supporting file conventions (matching Anthropic spec):
+
+```
+analyze-data/
+├── SKILL.md              # required — frontmatter + instructions
+├── reference.md          # optional — detailed API docs
+├── examples/             # optional
+│   └── sample-output.md
+└── scripts/              # optional — CLI executables
+    ├── analyze.R
+    └── clean.R
+```
+
+### Naming convention
+
+Per the Anthropic spec, the **folder name is the canonical skill
+name**. No frontmatter `name` override. Discovery is a direct
+lookup — no directory iteration needed. Missing folders are
+silently dropped.
+
+```
+skill__{namespace}__{folder_name}
+```
+
+where `namespace` comes from `session$ns(NULL)` (e.g., `"demo"`).
+This parallels the `tool__{namespace}__{tool_name}` convention from
+Phase 3.
+
+### Token-efficiency strategy: three tiers of detail
+
+| Tier | Where | When loaded | Cost |
+|------|-------|-------------|------|
+| 1-line description | Tool `description` field in `tools/list` schema | Every request (prompt-cached) | ~30 tokens, effectively free |
+| Condensed summary | Auto-generated from frontmatter + file inventory; embedded in gate error | Only when AI skips readme | ~150-200 tokens, 1 retry |
+| Full instructions | SKILL.md body via `action=readme` | On-demand | 500-2000 tokens |
+
+### Gate + condensed error mechanism
+
+```r
+# Auto-generated at closure creation time
+condensed_summary <- paste0(
+  "## ", skill_name, "\n",
+  description, "\n\n",
+  if (has_scripts) paste0("Scripts: ", paste(script_names, collapse=", "), "\n"),
+  if (has_references) paste0("References: ", paste(ref_files, collapse=", "), "\n"),
+  "\nCall action='readme' first, then retry."
+)
+
+tool_fn <- function(action, reference_kwargs = NULL, cli_kwargs = NULL) {
+  if (action != "readme" && !readme_unlocked) {
+    stop(
+      "Read the skill guidelines first.\n\n",
+      condensed_summary
+    )
+  }
+  # ... dispatch
+}
+```
+
+### Action dispatchers
+
+- **`action=readme`**: Sets `readme_unlocked <<- TRUE` in closure.
+  Returns SKILL.md body + runtime info. Full instructions — loaded
+  only on-demand.
+- **`action=reference`**: Takes `file_name`, optional `pattern`
+  (grep), `line_start`, `n_rows`. Returns paginated file content.
+  Gated behind readme.
+- **`action=script`**: Takes `file_name`, `args`, optional `envs`.
+  Runs via `processx::run()` with interpreter resolved from file
+  extension (`.R` → Rscript, `.py` → python3, `.sh` → bash).
+  Supports optional `runtime` config for virtualenv activation etc.
+  Gated behind readme.
+
+### Package files
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `R/skill-parse.R` | new | `parse_skill_md()`, `discover_references()`, `discover_scripts()`, `sanitize_skill_name()` |
+| `R/skill-runner.R` | new | `build_script_command()`, script execution via `processx::run()` |
+| `R/skill-wrapper.R` | new | `skill_wrapper()` constructor — takes skill dir path, returns closure with class `shidashi_skill_wrapper` that produces `ellmer::tool` per session |
+| `R/modules.R` | modified | Scan `agents/skills/*/SKILL.md` (root + module level), wire into `tool_gen_fun` pipeline |
+| `DESCRIPTION` | modified | `processx` in Suggests |
+
+### `skill_wrapper()` API
+
+```r
+skill_wrapper(skill_path, runtime = NULL)
+```
+
+Returns a closure with class `shidashi_skill_wrapper`. The closure
+accepts `session` (same interface as `mcp_wrapper`) and returns an
+`ellmer::tool` that dispatches on `action`. No R6 — pure function
+enclosure.
+
+```r
+# Example: auto-generated at discovery time in modules.R
+wrapper <- skill_wrapper("agents/skills/analyze-data")
+
+# At session bind time:
+tool_def <- wrapper(session)  # returns ellmer::tool
+```
+
+### `agents.yaml` schema update
+
+Skills listed alongside tools:
+
+```yaml
+tools:
+- name: hello_world
+  category: [exploratory]
+  enabled: yes
+skills:
+- name: analyze-data
+  category: [executing]
+  enabled: yes
+parameters:
+  system_prompt: "You are an R shiny expert..."
+```
+
+Only skills with `enabled: yes` are active. Skills not listed are
+excluded.
+
+### Template demo skill
+
+Create `agents/skills/greet/` (root-level):
+- `SKILL.md` with Anthropic-compliant frontmatter
+- `scripts/greet.R` — simple Rscript that prints a greeting
+
+Update `modules/demo/agents.yaml` to enable it.
+
+### Deliverables
+
+- [ ] `R/skill-parse.R` with `parse_skill_md()`, `discover_references()`, `discover_scripts()`, `sanitize_skill_name()`
+- [ ] `R/skill-runner.R` with `build_script_command()` + processx execution
+- [ ] `R/skill-wrapper.R` with `skill_wrapper()` constructor
+- [ ] `R/modules.R` updated to discover + wire skills
+- [ ] `agents.yaml` schema extended for `skills:` list
+- [ ] Template: `agents/skills/greet/` demo skill (root-level)
+- [ ] Updated `adhoc/mcp/test_mcp_tools.sh` with skill tests (gate, readme, reference, script)
 
 ---
 
@@ -414,9 +604,10 @@ background execution.
 | Package    | Usage                                     | Type              |
 |------------|-------------------------------------------|-------------------|
 | jsonlite   | JSON parsing / serialization              | Imports (already) |
-| fastmap    | Session registry, active-session map      | Imports (already) |
+| fastmap    | Session registry                          | Imports (already) |
 | digest     | MCP session ID generation                 | Imports (already) |
-| ellmer     | `ToolDef` objects for MCP tools           | Suggests (new)    |
+| yaml       | Reading `agents.yaml` files               | Imports (already) |
+| ellmer     | `ToolDef` objects, schema via `as_json`   | Suggests `>= 0.4.0` |
 | shinychat  | UI for AI chats                           | Suggests          |
 | processx   | Background skill execution (Phase 4)      | Suggests          |
 
@@ -424,16 +615,28 @@ No new hard dependencies required for shidashi itself.
 
 ## VS Code Configuration
 
-After launching a shidashi app (e.g., on port 6564), add to
-`.vscode/mcp.json` in your workspace:
+`render()` calls `setup_mcp_proxy()` automatically and prints the
+config snippet. The proxy (`inst/mcp-proxy/shidashi-proxy.mjs`) is a
+Node.js stdio-to-HTTP bridge installed in the user cache. Add to
+`.vscode/mcp.json`:
 
 ```jsonc
 {
   "servers": {
     "shidashi": {
-      "type": "http",
-      "url": "http://localhost:6564/mcp"
+      "type": "stdio",
+      "command": "node",
+      "args": ["<path-to-cached-mcp-proxy.mjs>"]
     }
   }
 }
 ```
+
+To target a specific port (when multiple apps are running):
+
+```jsonc
+"args": ["<path-to-cached-mcp-proxy.mjs>", "6564"]
+```
+
+The proxy auto-discovers the most recent port record written to the
+user cache when no port arg is given.

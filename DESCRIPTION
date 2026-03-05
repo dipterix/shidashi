@@ -42,8 +42,11 @@ Imports:
     jsonlite
 Suggests: 
     logger (>= 0.2.1),
+    processx,
     rstudioapi (>= 0.13),
     htmltools,
     httpuv,
     ggplot2,
-    ggExtra
+    ggExtra,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

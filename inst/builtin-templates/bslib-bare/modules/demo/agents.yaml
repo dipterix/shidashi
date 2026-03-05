@@ -11,7 +11,11 @@ tools:
   category:
   - executing
   enabled: yes
-skills: []
+skills:
+- name: greet
+  category:
+  - executing
+  enabled: yes
 parameters:
   system_prompt: You are an R shiny expert. You have access to the shiny application
     via provided tools.
