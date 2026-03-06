@@ -2,7 +2,7 @@
 % Please edit documentation in R/chatbot.R
 \name{chatbot_ui}
 \alias{chatbot_ui}
-\title{Chatbot UI panel}
+\title{Chat-bot UI panel}
 \usage{
 chatbot_ui(id)
 }
@@ -17,7 +17,7 @@ A \code{shiny::tagList} containing the chat UI or empty.
 Returns the UI elements for the AI chat panel: a header bar with
 a \dQuote{New conversation} button and the \pkg{shinychat} widget.
 
-When \code{shinychat} is not installed or the chatbot is disabled via
+When \pkg{shinychat} is not installed or the chat-bot is disabled via
 \code{options(shidashi.chatbot = FALSE)}, returns an empty
 \code{tagList()}.
 

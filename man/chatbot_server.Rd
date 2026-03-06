@@ -2,7 +2,7 @@
 % Please edit documentation in R/chatbot.R
 \name{chatbot_server}
 \alias{chatbot_server}
-\title{Chatbot server logic (per-module)}
+\title{Chat-bot server logic (per-module)}
 \usage{
 chatbot_server(
   input,
@@ -15,7 +15,7 @@ chatbot_server(
 }
 \arguments{
 \item{input, output, session}{Standard Shiny server arguments
-(typically namespaced when inside \code{moduleServer}).}
+(typically module-scoped when inside \code{moduleServer}).}
 
 \item{id}{character; must match the \code{id} used in
 \code{chatbot_ui()}. Default \code{"shidashi-chatbot"}.}
@@ -34,7 +34,7 @@ Called for side effects (sets up observers). Returns
 \description{
 Sets up the chat server for a single module.
 Creates its own \code{\link[ellmer]{Chat}} object, binds tools from
-the MCP session registry, and manages per-module conversation
+the \verb{MCP} session registry, and manages per-module conversation
 history.
 
 The function renders \code{\link{chatbot_ui}()} into the drawer's
@@ -47,7 +47,7 @@ Any element with \code{data-shidashi-action="shidashi-button"}
 This function is injected into each module's server function by
 \code{modules.R} when \code{agents.yaml} has \code{enabled: yes}.
 It is called inside \code{shiny::moduleServer()}, so \code{session}
-is namespace-scoped.  Shinychat operations use the scoped
+is module-scoped.  \pkg{shinychat} operations use the scoped
 \code{session}; only drawer and event operations use
 \code{session$rootScope()}.
 }

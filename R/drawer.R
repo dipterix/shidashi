@@ -60,7 +60,7 @@ drawer_toggle <- function(session = shiny::getDefaultReactiveDomain()){
 #'
 #' The \code{ns()} function from the module's template evaluation
 #' environment is used automatically so that the output ID is
-#' properly namespaced.
+#' properly scoped to the module namespace.
 #'
 #' @param output_id character; the output ID for the
 #'   \code{uiOutput} placeholder inside the drawer.

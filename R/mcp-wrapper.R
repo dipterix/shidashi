@@ -733,6 +733,62 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
 }
 
+#' @name register_io
+#' @title Register Shiny Inputs and Outputs for \verb{MCP} Access
+#' @description
+#' Wrap \code{shiny} input and output constructors to register metadata
+#' so that \verb{MCP} (Model Context Protocol) agent tools can discover, read,
+#' and update them at runtime.  When called inside a module loaded by
+#' \code{shidashi}, the input/output specification is recorded as a side
+#' effect and the UI element is returned.  When called outside that
+#' context (e.g. in a plain Shiny app), the functions fall back to simply
+#' evaluating \code{expr}.
+#'
+#' @param expr a call expression that creates a \code{shiny} input or
+#'   output widget, e.g.
+#'   \code{shiny::textInput(inputId = ns("x"), label = "X")} or
+#'   \code{shiny::plotOutput(ns("plot1"), height = "100\%")}.
+#' @param inputId character string.  The \code{shiny} input ID
+#'   (without the module namespace prefix).
+#' @param outputId character string.  The \code{shiny} output ID
+#'   (without the module namespace prefix).
+#' @param update character string.  The fully qualified update function,
+#'   e.g. \code{"shiny::updateTextInput"}.  Field mappings such as
+#'   \code{"shiny::updateSelectInput(value=selected)"} override the
+#'   default argument names passed to the update function.
+#' @param description character string.  A human-readable description of
+#'   the input or output purpose, exposed to \verb{LLM} agents via \verb{MCP} tools.
+#' @param writable logical (default \code{TRUE}).  Whether the \verb{MCP}
+#'   update tool is allowed to change this input.
+#' @param quoted logical (default \code{FALSE}).  If \code{TRUE},
+#'   \code{expr} is treated as already quoted; otherwise it is captured
+#'   with \code{substitute()}.
+#' @param env the environment in which to evaluate \code{expr}.
+#' @return The evaluated UI element produced by \code{expr}.  The
+#'   input or output specification is registered as a side effect.
+#' @seealso \code{\link{init_app}}, \code{\link{mcp_wrapper}}
+#' @examples
+#' \dontrun{
+#' # inside a shidashi module UI function:
+#' ns <- shiny::NS("demo")
+#'
+#' register_input(
+#'   expr = shiny::sliderInput(
+#'     inputId = ns("threshold"),
+#'     label = "Threshold",
+#'     min = 0, max = 1, value = 0.5
+#'   ),
+#'   inputId = "threshold",
+#'   update = "shiny::updateSliderInput",
+#'   description = "Filter threshold for the plot"
+#' )
+#'
+#' register_output(
+#'   expr = shiny::plotOutput(ns("my_plot"), height = "100%"),
+#'   outputId = "my_plot",
+#'   description = "Scatter plot of filtered data"
+#' )
+#' }
 #' @export
 register_input <- function(expr,
                            inputId,
@@ -768,6 +824,7 @@ register_input <- function(expr,
 
 }
 
+#' @rdname register_io
 #' @export
 register_output <- function(expr, outputId, description = "", quoted = FALSE, env = parent.frame()) {
   if (!quoted) {

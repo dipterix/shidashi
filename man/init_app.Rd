@@ -7,14 +7,14 @@
 init_app(env = parent.frame())
 }
 \arguments{
-\item{env}{the environment in which to store the globals variable;
+\item{env}{the environment in which to store the global-stores variable;
 defaults to the caller's environment.}
 }
 \value{
-The globals environment (invisibly).
+The global stores environment (invisibly).
 }
 \description{
-Creates a fresh environment holding all per-application state
+Creates a fresh environment holding all per-application global stores
 (session registry, per-module input registries, etc.) and assigns it
 to \code{.__shidashi_globals__.} in the caller's environment.
 This function is designed to be called from a \file{global.R} file
@@ -26,7 +26,7 @@ The assigned variable \code{.__shidashi_globals__.} is an environment
 (with parent \code{emptyenv()}) containing:
 \describe{
   \item{\code{mcp_session_registry}}{A \code{fastmap::fastmap()} keyed by
-    Shiny session token, storing MCP session entries.}
+    Shiny session token, storing \verb{MCP} session entries.}
   \item{\code{module_input_registry}}{A \code{fastmap::fastmap()} keyed by
     module ID.
     Each value is itself a \code{fastmap} storing input specifications

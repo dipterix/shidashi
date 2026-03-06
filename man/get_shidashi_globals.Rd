@@ -2,7 +2,7 @@
 % Please edit documentation in R/init-app.R
 \name{get_shidashi_globals}
 \alias{get_shidashi_globals}
-\title{Retrieve the shidashi globals environment}
+\title{Retrieve the shidashi global stores environment}
 \usage{
 get_shidashi_globals(env = parent.frame())
 }
@@ -11,12 +11,12 @@ get_shidashi_globals(env = parent.frame())
 caller's environment.}
 }
 \value{
-The globals environment created by \code{\link{init_app}()}.
+The global stores environment created by \code{\link{init_app}()}.
   Raises an error if \code{.__shidashi_globals__.} cannot be found
   (i.e. \code{init_app()} was never called).
 }
 \description{
-Looks up \code{.__shidashi_globals__.} by walking the environment chain
+Looks up the global stores \code{.__shidashi_globals__.} by walking the environment chain
 from \code{env} upward.  Because \file{global.R} assigns the variable
 into the global environment, any code running in a child environment
 (UI rendering, server functions, module code) will find it via

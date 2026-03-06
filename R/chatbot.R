@@ -20,18 +20,14 @@
 
 # ---- Provider dispatch ----
 
-#' Create an ellmer Chat object for the chatbot
+#' Create an \pkg{ellmer} Chat object for the chat-bot
 #'
 #' @description
 #' Factory function that creates an \code{ellmer::Chat} object based on
 #' the configured provider.  Reads from
 #' \code{options(shidashi.chat_provider)}, \code{shidashi.chat_model},
-#' and \code{shidashi.chat_base_url}.
-#'
-#' Each module creates its own Chat object via this factory.
-#' Per-module conversation history (multiple conversations each with
-#' title, turns, last_visited) is managed separately via
-#' \code{chat$get_turns()} / \code{chat$set_turns()}.
+#' and \code{shidashi.chat_base_url}. These arguments are passed to
+#' \code{\link[ellmer]{chat}}.
 #'
 #' @param system_prompt character; the system prompt.  Defaults to
 #'   \code{getOption("shidashi.chat_system_prompt")}.
@@ -39,7 +35,7 @@
 #'   \code{getOption("shidashi.chat_provider", "anthropic")}.
 #' @param model character or \code{NULL}; model name override.
 #' @param base_url character or \code{NULL}; base URL for
-#'   OpenAI-compatible providers.
+#'   API-compatible providers.
 #' @return An \code{ellmer::Chat} R6 object (tools not yet bound).
 #' @keywords internal
 init_chat <- function(
@@ -62,37 +58,27 @@ init_chat <- function(
   provider <- tolower(provider)
 
   # Build args common to most providers
-  args <- list(system_prompt = system_prompt)
+  args <- list(system_prompt = system_prompt, name = provider)
   if (length(model) == 1L && nzchar(model)) {
     args$model <- model
   }
-
-  chat <- switch(provider,
-    anthropic = do.call(ellmer::chat_anthropic, args),
-    openai    = do.call(ellmer::chat_openai, args),
-    google    = do.call(ellmer::chat_google, args),
-    {
-      # Fallback: OpenAI-compatible with custom base_url
-      if (length(base_url) == 1L && nzchar(base_url)) {
-        args$base_url <- base_url
-      }
-      do.call(ellmer::chat_openai, args)
-    }
-  )
-
+  if (length(base_url) == 1L && nzchar(base_url)) {
+    args$base_url <- base_url
+  }
+  do.call(ellmer::chat_openai, args)
   chat
 }
 
 
 # ---- UI component ----
 
-#' Chatbot UI panel
+#' Chat-bot UI panel
 #'
 #' @description
 #' Returns the UI elements for the AI chat panel: a header bar with
 #' a \dQuote{New conversation} button and the \pkg{shinychat} widget.
 #'
-#' When \code{shinychat} is not installed or the chatbot is disabled via
+#' When \pkg{shinychat} is not installed or the chat-bot is disabled via
 #' \code{options(shidashi.chatbot = FALSE)}, returns an empty
 #' \code{tagList()}.
 #'
@@ -146,12 +132,12 @@ chatbot_ui <- function(id) {
 
 # ---- Server component ----
 
-#' Chatbot server logic (per-module)
+#' Chat-bot server logic (per-module)
 #'
 #' @description
 #' Sets up the chat server for a single module.
 #' Creates its own \code{\link[ellmer]{Chat}} object, binds tools from
-#' the MCP session registry, and manages per-module conversation
+#' the \verb{MCP} session registry, and manages per-module conversation
 #' history.
 #'
 #' The function renders \code{\link{chatbot_ui}()} into the drawer's
@@ -164,12 +150,12 @@ chatbot_ui <- function(id) {
 #' This function is injected into each module's server function by
 #' \code{modules.R} when \code{agents.yaml} has \code{enabled: yes}.
 #' It is called inside \code{shiny::moduleServer()}, so \code{session}
-#' is namespace-scoped.  Shinychat operations use the scoped
+#' is module-scoped.  \pkg{shinychat} operations use the scoped
 #' \code{session}; only drawer and event operations use
 #' \code{session$rootScope()}.
 #'
 #' @param input,output,session Standard Shiny server arguments
-#'   (typically namespaced when inside \code{moduleServer}).
+#'   (typically module-scoped when inside \code{moduleServer}).
 #' @param id character; must match the \code{id} used in
 #'   \code{chatbot_ui()}. Default \code{"shidashi-chatbot"}.
 #' @param drawer_id character; the output ID of the drawer's

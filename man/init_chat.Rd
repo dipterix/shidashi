@@ -2,7 +2,7 @@
 % Please edit documentation in R/chatbot.R
 \name{init_chat}
 \alias{init_chat}
-\title{Create an ellmer Chat object for the chatbot}
+\title{Create an \pkg{ellmer} Chat object for the chat-bot}
 \usage{
 init_chat(
   system_prompt = getOption("shidashi.chat_system_prompt", NULL),
@@ -21,7 +21,7 @@ init_chat(
 \item{model}{character or \code{NULL}; model name override.}
 
 \item{base_url}{character or \code{NULL}; base URL for
-OpenAI-compatible providers.}
+API-compatible providers.}
 }
 \value{
 An \code{ellmer::Chat} R6 object (tools not yet bound).
@@ -30,11 +30,7 @@ An \code{ellmer::Chat} R6 object (tools not yet bound).
 Factory function that creates an \code{ellmer::Chat} object based on
 the configured provider.  Reads from
 \code{options(shidashi.chat_provider)}, \code{shidashi.chat_model},
-and \code{shidashi.chat_base_url}.
-
-Each module creates its own Chat object via this factory.
-Per-module conversation history (multiple conversations each with
-title, turns, last_visited) is managed separately via
-\code{chat$get_turns()} / \code{chat$set_turns()}.
+and \code{shidashi.chat_base_url}. These arguments are passed to
+\code{\link[ellmer]{chat}}.
 }
 \keyword{internal}

@@ -38,5 +38,5 @@ Then in the module server:
 
 The \code{ns()} function from the module's template evaluation
 environment is used automatically so that the output ID is
-properly namespaced.
+properly scoped to the module namespace.
 }
