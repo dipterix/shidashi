@@ -640,3 +640,197 @@ To target a specific port (when multiple apps are running):
 
 The proxy auto-discovers the most recent port record written to the
 user cache when no port arg is given.
+
+---
+
+## Phase 6: In-App Chatbot Drawer
+
+**Goal**: Add an AI chatbot panel inside the drawer that uses `ellmer::Chat`
+with `shinychat` to let users interact with the active module's tools
+directly from the Shiny app — no external MCP client needed.
+
+### Key Architecture Principles
+
+1. **ellmer direct integration, not MCP HTTP**: The chatbot calls
+   `chat$register_tools(tool_list)` with R tool objects from the
+   `.__shidashi_globals__.` registry. The `/mcp` HTTP endpoint is
+   exclusively for **external** MCP clients (e.g. VS Code Copilot).
+   The in-app chatbot never routes through HTTP.
+
+2. **One session token per iframe**: Each iframe (module page) or root
+   page has exactly **one** Shiny session and one `session$token` —
+   analogous to `private_id`. In JS, `_sessionToken` is a single string,
+   not a map. When a module registers via `register_session_mcp()`, it
+   sends its token to JS via `shidashi.register_module_token`. JS stores
+   it as a single value (overwritten on each module activation).
+
+3. **Token included in `@shidashi_active_module@`**: The
+   `_reportActiveModule(moduleId)` method now includes the token in the
+   Shiny input: `{ module_id, token, timestamp }`. This lets R-side code
+   (e.g. `chatbot_server()`) look up the active module's tools from the
+   MCP registry keyed by token.
+
+4. **JS fires event only — R opens the drawer**: When the chatbot FAB
+   button is clicked, JS broadcasts a `shidashi-event` of type `chatbot`
+   with `{ module_id, token }`. It does **not** open the drawer or switch
+   tabs from JS. The R-side `chatbot_server()` observes this event, calls
+   `shidashi::drawer_open(session)`, and handles all chat logic. This way,
+   if the chatbot is disabled (no shinychat / `options(shidashi.chatbot =
+   FALSE)`), the button simply does nothing.
+
+### Design Decisions
+
+- **Per-module chat sessions**: Separate `ellmer::Chat` objects per module,
+  stored in `.__shidashi_globals__.$chat_sessions` (fastmap keyed by
+  module_id). Switching modules switches the conversation context.
+- **Tabbed drawer**: The drawer gets Bootstrap 5 nav-tabs: **Settings** tab
+  (existing `drawer_ui()` content) and **Chat** tab (`chatbot_ui()` content).
+- **Provider via `options()`**: `options(shidashi.chat_provider = "anthropic")`
+  with optional `shidashi.chat_model` and `shidashi.chat_base_url`. The
+  `init_chat()` function dispatches to the appropriate `ellmer::chat_*()`.
+- **Conditional on shinychat**: Feature disabled when
+  `options(shidashi.chatbot = FALSE)` or `shinychat` is not installed.
+  `chatbot_ui()` returns empty `tagList()`; `chatbot_server()` no-ops.
+- **FAB button**: A `.btn-chatbot` element added to `.shidashi-back-to-top`
+  (via `back_top_button()`), with `data-shidashi-action="chatbot-toggle"`.
+
+### Sub-phase 6a: Persist Session Token in JS
+
+**`R/mcp-handler.R`** — In `register_session_mcp()`, after
+`registry$set(token, entry)`, send the token to JS. Since this runs
+inside a module iframe, use `session$sendCustomMessage()` directly
+(module session and root session are the same Shiny websocket in iframe
+context):
+
+```r
+session$sendCustomMessage("shidashi.register_module_token",
+  list(module_id = namespace, token = token))
+```
+
+**`src/index.js`** — Add `_sessionToken = null` to `ShidashiApp`
+constructor (single string, not a map). Add handler:
+
+```js
+this.shinyHandler('register_module_token', (params) => {
+  this._sessionToken = params.token;
+  // Re-report active module so R gets the updated token
+  if (this._activeModuleId) {
+    this._reportActiveModule(this._activeModuleId);
+  }
+});
+```
+
+**`_reportActiveModule(moduleId)`** — Include token:
+
+```js
+this._shiny.onInputChange('@shidashi_active_module@', {
+  module_id: moduleId,
+  token: this._sessionToken || null,
+  timestamp: Date.now()
+});
+```
+
+### Sub-phase 6b: Chatbot FAB Button
+
+**`R/widgets.R`** — Modify `back_top_button()` to conditionally append
+a chatbot button with `data-shidashi-action="chatbot-toggle"` and an
+`fa-robot` icon. Only rendered when
+`getOption("shidashi.chatbot", TRUE)` and `shinychat` is available.
+
+**`src/shidashi.scss`** — `.btn-chatbot` in `.shidashi-back-to-top`:
+round button with primary-color background, stacked above the existing
+buttons.
+
+**`src/index.js`** — On `chatbot-toggle` action: broadcast a
+`shidashi-event` of type `chatbot` with
+`{ module_id: this._activeModuleId, token: this._sessionToken }`.
+**Do NOT open the drawer or switch tabs from JS.** R handles that.
+
+### Sub-phase 6c: Tabbed Drawer
+
+**`index.html`** — Restructure `.shidashi-drawer` content into two
+BS5 nav-tabs: Settings and Chat:
+
+```html
+<ul class="nav nav-tabs shidashi-drawer-tabs" role="tablist">
+  <li ...><button ... data-bs-target="#shidashi-drawer-settings">
+    <i class="fas fa-cog"></i> Settings</button></li>
+  <li ...><button ... data-bs-target="#shidashi-drawer-chat">
+    <i class="fas fa-robot"></i> Chat</button></li>
+</ul>
+<div class="tab-content shidashi-drawer-tab-content">
+  <div ... id="shidashi-drawer-settings">{{ drawer_ui() }}</div>
+  <div ... id="shidashi-drawer-chat">{{ chatbot_ui() }}</div>
+</div>
+```
+
+**`src/shidashi.scss`** — Drawer tabs fill remaining height. Chat pane:
+flex column with messages scrollable and input pinned. Drawer width
+increases to ~420px on hover/active.
+
+### Sub-phase 6d: Chat State in `init_app()`
+
+**`R/init-app.R`** — Add:
+
+```r
+global_env$chat_sessions        <- fastmap::fastmap()  # module_id -> Chat
+global_env$module_agent_config  <- fastmap::fastmap()  # module_id -> params
+```
+
+**`R/modules.R`** — After parsing `agents.yaml`, store config:
+
+```r
+globals$module_agent_config$set(module_id, agent_conf$parameters)
+```
+
+### Sub-phase 6e: `init_chat()` Provider Factory
+
+**`R/chatbot.R`** (new file):
+- `init_chat(provider_name, model, base_url, module_id)` — reads
+  options, creates `ellmer::Chat`, sets `system_prompt` from
+  `module_agent_config`.
+- Returns bare `Chat` (tools bound lazily by `chatbot_server()`).
+
+### Sub-phase 6f: `chatbot_ui()` and `chatbot_server()`
+
+**`chatbot_ui(id = "shidashi-chatbot")`**: Guard + `shinychat::chat_ui()`.
+
+**`chatbot_server(id = "shidashi-chatbot", session)`**:
+- Observes `@shidashi_event@` type `"chatbot"`:
+  - Extracts `module_id`, `token`
+  - Opens drawer via `shidashi::drawer_open(session)`
+  - Creates or retrieves `Chat` from `chat_sessions` (keyed by module_id)
+  - Finds tools from `mcp_session_registry()$get(token)$tools`
+  - Calls `chat$register_tools(tools)` (ellmer direct, no HTTP)
+  - Switches chat context in the UI
+- Observes `input${id}_user_input`:
+  - Streams via `chat$stream_async()` → `shinychat::chat_append()`
+
+### Sub-phase 6g: Wire into Scaffolding
+
+**`R/barebone.R`** — Generated `server.R` calls
+`shidashi::chatbot_server()`. Generated `R/common.R` includes
+`chatbot_ui <- function() shidashi::chatbot_ui()`.
+
+### Sub-phase 6h: Module Switching
+
+When the active module changes and the chatbot event fires again,
+`chatbot_server()` swaps the `Chat` context: saves current turns
+(already in Chat object), loads target module's Chat, replays
+history.
+
+### Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `R/chatbot.R` | **Create** | `init_chat()`, `chatbot_ui()`, `chatbot_server()` |
+| `R/init-app.R` | Modify | Add `chat_sessions`, `module_agent_config` |
+| `R/modules.R` | Modify | Store `agent_conf$parameters` in globals |
+| `R/mcp-handler.R` | Modify | Send module token to JS (already done) |
+| `R/widgets.R` | Modify | Add chatbot FAB to `back_top_button()` (already done) |
+| `R/barebone.R` | Modify | Generated `server.R`/`common.R` call chatbot helpers |
+| `src/index.js` | Modify | `_sessionToken` (single), include token in active module input, chatbot-toggle fires event only |
+| `src/shidashi.scss` | Modify | Drawer tabs, chatbot button (partially done) |
+| `index.html` | Modify | Tabbed drawer structure (already done) |
+| `NAMESPACE` | Modify | Export `chatbot_ui`, `chatbot_server`, `init_chat` |
+| `DESCRIPTION` | Modify | Add `shinychat` to Suggests |

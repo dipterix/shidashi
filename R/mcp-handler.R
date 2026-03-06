@@ -69,6 +69,17 @@ register_session_mcp <- function(session) {
 
   registry$set(token, entry)
 
+  
+  # Send module token to root-level JS so the chatbot can bind
+  if (length(namespace) == 1L && nzchar(namespace)) {
+    # It does not matter who send out custom messages, can be root session or 
+    # session proxy: they will be the same to JS
+    session$sendCustomMessage(
+      "shidashi.register_module_token",
+      list(module_id = namespace, token = token)
+    )
+  }
+
   # Belt: onSessionEnded cleanup
   session$onSessionEnded(function() {
     mcp_unregister_session(session)
@@ -488,7 +499,11 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
       content = list(list(
         type = "text",
         text = paste0(
-          "No Shiny session bound, or the session has been ended/closed. Call `list_shinysessions` first to list available sessions, and then `register_shinysession` to bind to a shiny session"
+          "No Shiny session bound, or the session has been ended/closed. ",
+          "Call `list_shinysessions` first to list available sessions, and ",
+          "then `register_shinysession` to bind to a shiny session. ",
+          "To un-register or re-register, call this tool again with other ",
+          "tokens."
         )
       )),
       isError = TRUE
@@ -617,21 +632,23 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
 
   # Validate Shiny session exists and is open
   entry <- mcp_get_shiny_entry(token)
+
+  # Unregister existing sessions
+  mcp_tool_unregister_shinysession(mcp_session_id = mcp_session_id)
+
   if (is.null(entry)) {
     return(list(
       content = list(list(
         type = "text",
         text = paste0(
           "Error: No active session for token '", token,
-          "'. Call list_shinysessions to list available session tokens."
+          "'. Call list_shinysessions to list available session tokens. ",
+          "In addition, your previous sessions have been unregistered."
         )
       )),
       isError = TRUE
     ))
   }
-
-  # Unregister existing sessions
-  mcp_tool_unregister_shinysession(mcp_session_id = mcp_session_id)
 
   # re-fetch
   entry <- mcp_get_shiny_entry(token)

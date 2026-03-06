@@ -38,13 +38,12 @@ Imports:
     fastmap (>= 1.1.0),
     formatR (>= 1.11),
     httr2,
-    later,
-    promises,
     S7,
     shiny (>= 1.7.0),
     yaml,
     jsonlite
 Suggests: 
+    shinychat,
     logger (>= 0.2.1),
     processx,
     promises,

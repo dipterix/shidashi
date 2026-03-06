@@ -276,10 +276,12 @@ class ShidashiApp {
    */
   _reportActiveModule(moduleId) {
     if (!moduleId) return;
+    this._activeModuleId = moduleId;
     this.ensureShiny(() => {
       if (typeof this._shiny.onInputChange !== 'function') return;
       this._shiny.onInputChange('@shidashi_active_module@', {
         module_id: moduleId,
+        token: this._sessionToken || null,
         timestamp: Date.now()
       });
     });
@@ -841,11 +843,7 @@ class ShidashiApp {
   // ---------- Drawer ----------
 
   drawerOpen() {
-    // Relay to parent frame if running inside an iframe
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerOpen(); } catch(e) {}
-      return;
-    }
+    // Drawer is always local to the current frame (module iframe)
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.add('open');
@@ -854,10 +852,6 @@ class ShidashiApp {
   }
 
   drawerClose() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerClose(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.remove('open');
@@ -866,10 +860,6 @@ class ShidashiApp {
   }
 
   drawerToggle() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerToggle(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     if (drawer && drawer.classList.contains('open')) {
       this.drawerClose();
@@ -1138,20 +1128,21 @@ class ShidashiApp {
       });
     });
 
-    // Drawer overlay click → close drawer
-    const drawerOverlay = document.querySelector('.shidashi-drawer-overlay');
-    if (drawerOverlay) {
-      drawerOverlay.addEventListener('click', () => this.drawerClose());
-    }
+    // Drawer overlay click → close drawer (use delegation for dynamic content)
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('shidashi-drawer-overlay')) {
+        this.drawerClose();
+      }
+    });
 
     // Drawer close-tab click → close drawer (no-overlay mode)
-    const drawerCloseTab = document.querySelector('.shidashi-drawer-close-tab');
-    if (drawerCloseTab) {
-      drawerCloseTab.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+      const closeTab = e.target.closest('.shidashi-drawer-close-tab');
+      if (closeTab) {
         e.stopPropagation();
         this.drawerClose();
-      });
-    }
+      }
+    });
 
     // Drawer toggle button
     document.addEventListener('click', (evt) => {
@@ -1539,6 +1530,32 @@ class ShidashiApp {
 
     this.shinyHandler('drawer_toggle', (params) => {
       this.drawerToggle();
+    });
+
+    // --- Activate a specific drawer tab (for chatbot) ---
+
+    this.shinyHandler('activate_drawer_tab', (params) => {
+      if (params.target) {
+        const tabBtn = document.querySelector(
+          `.shidashi-drawer-tabs [data-bs-target="${params.target}"]`
+        );
+        if (tabBtn && window.bootstrap && window.bootstrap.Tab) {
+          const tab = new window.bootstrap.Tab(tabBtn);
+          tab.show();
+        }
+      }
+    });
+
+    // --- Module token registration (for chatbot) ---
+
+    this.shinyHandler('register_module_token', (params) => {
+      if (params.token) {
+        this._sessionToken = params.token;
+        // Re-report active module so R gets the updated token
+        if (this._activeModuleId) {
+          this._reportActiveModule(this._activeModuleId);
+        }
+      }
     });
 
     // --- Open URL handler ---

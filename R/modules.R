@@ -307,11 +307,16 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             "application via provided tools."
           )
         }
+        # Top-level enabled flag: default TRUE when agents.yaml exists
+        if (is.null(agent_conf$enabled)) {
+          agent_conf$enabled <- TRUE
+        } else {
+          agent_conf$enabled <- isTRUE(agent_conf$enabled)
+        }
       } else {
-        # agents are disabled
+        # agents.yaml missing → agents disabled for this module
         agent_conf <- list(
-          # enabled: TRUE (enable by default); FALSE (disable default)
-          # not provided tools are banned
+          enabled = FALSE,
           tools = list(
             # list(
             #   name = "hello_world",
@@ -432,11 +437,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       }
 
       env$.mcptools_maker <- tool_gen_fun
-      # env$.mcptools <- env$.mcptools_maker(session)
-
-
-      # ---- Register server function ----
-      # env$.mcptools <- env$.mcptools_maker(session)
+      # Store agent config in module env for chatbot_ui / back_top_button
 
       module_handler <- file.path(root_path, 'modules', module_id, 'server.R')
       if (file.exists(module_handler)) {
@@ -454,6 +455,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         }
 
         # inject to body
+        agent_enabled <- isTRUE(agent_conf$enabled)
         body(server_function) <- bquote({
           local({
             shidashi <- asNamespace("shidashi")
@@ -463,6 +465,16 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             tools <- .mcptools_maker(session)
             entry$tools <- tools$as_list()
             registry$set(session$token, entry)
+
+            # Initialize chatbot server if agents are enabled for this module
+            if (.(isTRUE(agent_conf$enabled))) {
+              shidashi$chatbot_server(
+                input, output, session,
+                agent_conf = .(agent_conf)
+              )
+            }
+
+
           })
 
           .(body(server_function))

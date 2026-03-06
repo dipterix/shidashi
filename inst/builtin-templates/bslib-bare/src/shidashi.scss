@@ -1240,6 +1240,11 @@ body.shidashi-card-maximized {
   right: 1.25rem;
   z-index: 1039;
 
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  align-items: center;
+
   // Break the btn-group into a vertical stack of separate round buttons
   [role="group"] {
     display: flex;
@@ -1671,8 +1676,15 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   box-shadow: -4px 0 12px rgba(0,0,0,0.15);
   transform: translateX(calc(100% + 20px));
   transition: transform 0.3s ease;
-  overflow-y: auto;
-  padding: 1rem;
+  overflow-y: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+
+  body.in-iframe & {
+    top: 0;
+    height: 100vh;
+  }
 
   &.open {
     transform: translateX(0);
@@ -1682,6 +1694,38 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   // Shown only when body has .shidashi-drawer-no-overlay.
   .shidashi-drawer-close-tab {
     display: none;
+    flex-shrink: 0;
+  }
+
+  // Drawer tab navigation
+  .shidashi-drawer-tabs {
+    flex-shrink: 0;
+    padding: 0.5rem 0.5rem 0;
+  }
+
+  // Drawer tab content — fills remaining height, scrollable per pane
+  .shidashi-drawer-tab-content {
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    > .tab-pane {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 1rem;
+
+      // Chat pane: flex column, input pinned at bottom
+      &#shidashi-drawer-chat {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+
+        &.active {
+          display: flex;
+        }
+      }
+    }
   }
 
   .dark-mode & {
@@ -1690,6 +1734,42 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
     box-shadow: -4px 12px 12px rgba(0,0,0,0.4);
   }
 }
+
+// Chatbot header bar inside the drawer
+.shidashi-chatbot-header {
+  flex-shrink: 0;
+
+  & .shiny-input-container,
+  & .shidashi-chatbot-new-conv {
+    margin-bottom: 0.75rem !important;
+  }
+
+}
+
+// Drawer content — fills remaining height, allows children to flex
+.shidashi-drawer-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  // The shiny uiOutput wrapper must also flex-fill
+  > .shiny-html-output {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  // shinychat container inside the drawer should fill remaining space
+  shiny-chat-container {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
 
 // No-overlay mode — class on <body>
 body.shidashi-drawer-no-overlay {
@@ -1746,6 +1826,12 @@ body.shidashi-drawer-no-overlay {
   background: rgba(0,0,0,0.3);
   z-index: 1044;
   top: $navbar-height;
+
+  body.in-iframe & {
+    top: 0;
+    inset: 0;
+    height: 100vh;
+  }
 
   &.open {
     display: block;

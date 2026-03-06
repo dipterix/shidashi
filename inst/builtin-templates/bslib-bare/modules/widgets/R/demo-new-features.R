@@ -126,14 +126,13 @@ ui_new_features <- function() {
           div(
             style = "flex:1; padding: 0.5rem; overflow:auto;",
             p("Left pane"),
-            p(class = "text-muted", "Drag the divider to resize.")
+            p("Drag the divider to resize.")
           ),
           div(class = "resize-horizontal"),
           div(
             style = "flex:1; padding: 0.5rem; overflow:auto;",
             p("Right pane"),
-            p(class = "text-muted",
-              "Add class ",
+            p("Add class ",
               tags$code('resize-horizontal'),
               " to a divider element."),
             plotOutput(ns("resize_demo_plot2"), height = "120px",

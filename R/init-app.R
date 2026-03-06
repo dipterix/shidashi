@@ -57,6 +57,13 @@ init_app <- function(env = parent.frame()) {
   global_env$module_input_registry <- fastmap::fastmap()
   global_env$module_output_registry <- fastmap::fastmap()
 
+  # Chatbot: per-module conversation history
+  # (Chat objects are created per-module in chatbot_server closures)
+
+  # module_id -> list(active_idx, conversations)
+  # Each conversation: list(title, turns, last_visited)
+  global_env$module_conversations <- fastmap::fastmap()
+
   global_env$get_module_input_specs <- function(module_id) {
     if (!global_env$module_input_registry$has(module_id)) {
       global_env$module_input_registry$set(module_id, fastmap::fastmap())

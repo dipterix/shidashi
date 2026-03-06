@@ -100,8 +100,21 @@ flex_break <- function(..., class = NULL){
 #' 'HTML' code to generate small back-to-top button
 #' @description This function is a template function that should be called
 #' in 'HTML' templates before closing the \code{"</body>"} tag.
+#'
+#' When \code{open_drawer = TRUE}, an additional button is rendered
+#' that fires a \code{"button.click"} shidashi-event with
+#' \code{type = "open_drawer"}.
+#' Module server code (or \code{\link{chatbot_server}}) can observe
+#' this event via \code{\link{register_session_events}} and call
+#' \code{\link{drawer_open}} / \code{shiny::renderUI} to fill the
+#' drawer with content.
+#'
 #' @param icon the icon for back-to-top button
 #' @param title the expanded menu title
+#' @param open_drawer logical; whether to include a drawer-toggle
+#'   button. Defaults to \code{TRUE} if a
+#'   \code{.shidashi-drawer} element will be present in the page
+#'   (e.g.\ from \code{\link{module_drawer}()}).
 #' @return 'HTML' tags
 #'
 #' @examples
@@ -110,14 +123,31 @@ flex_break <- function(..., class = NULL){
 #' back_top_button("rocket")
 #'
 #' @export
-back_top_button <- function(icon = "chevron-up", title = "Jump to"){
+back_top_button <- function(icon = "chevron-up", title = "Jump to",
+                            open_drawer = TRUE) {
   if(!length(title)){
     title <- NULL
   } else {
     title <- shiny::h6(class="dropdown-header", title)
   }
+
+  # ---- Optional drawer button (fires shidashi-event, no logic) ----
+  if (isTRUE(open_drawer)) {
+    drawer_btn <- shiny::a(
+      type = "button",
+      class = "btn btn-default btn-drawer-toggle",
+      href = "#",
+      "data-shidashi-action" = "drawer-toggle",
+      title = "Open panel",
+      as_icon("ellipsis")
+    )
+  } else {
+    drawer_btn <- NULL
+  }
+
   shiny::div(
     class = "shidashi-back-to-top",
+    drawer_btn,
     shiny::div(
       class = "btn-group dropup",
       role = "group",

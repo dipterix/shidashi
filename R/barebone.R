@@ -184,6 +184,7 @@ create_barebone <- function(path){
   {
     writeLines(
       c(
+        "enabled: yes",
         "tools:",
         "- name: hello_world",
         "  category:",
@@ -234,7 +235,7 @@ create_barebone_bslib <- function(path){
       c(
         "library(shiny)",
         "",
-        "server <- function(input, output, session){",
+        "server <- function(input, output, session) {",
         "",
         "  shared_data <- shidashi::register_session_id(session)",
         "  shared_data$enable_broadcast()",
@@ -270,6 +271,9 @@ create_barebone_bslib <- function(path){
         "      str(module_data)",
         "    }",
         "  })",
+        "",
+        "  # Chatbot server runs per-module (injected by modules.R when",
+        "  # agents.yaml has enabled: yes).  No chatbot_server() call here.",
         "}"
       ), file.path(path, "server.R"))
   }
@@ -323,39 +327,7 @@ create_barebone_bslib <- function(path){
         "}",
         "",
         "module_breadcrumb <- function() {}",
-        "",
-        "drawer_ui <- function() {",
-        "  # Return the inner content for the drawer panel.",
-        "  # The outer .shidashi-drawer wrapper is provided by index.html.",
-        "  # Override this function in your project's R/common.R to add",
-        "  # custom drawer content (settings panels, controls, etc.)",
-        "  shiny::tagList(",
-        "    shiny::h5(\"Settings\"),",
-        "    shiny::p(",
-        "      \"This is the right-side drawer panel. \",",
-        "      \"Customize this in \",",
-        "      shiny::tags$code(\"R/common.R\"),",
-        "      \" by editing the \",",
-        "      shiny::tags$code(\"drawer_ui()\"),",
-        "      \" function.\"",
-        "    ),",
-        "    shiny::hr(),",
-        "    shiny::tags$small(",
-        "      \"Open with \",",
-        "      shiny::tags$code(\"drawer_open()\"),",
-        "      \" or the \",",
-        "      shiny::tags$i(class = \"fas fa-cog\"),",
-        "      \" icon.\"",
-        "    ),",
-        "    shiny::hr(),",
-        "    shiny::p(",
-        "      \"Current module info can be obtained via \",",
-        "      shiny::tags$code(\"shidashi::active_module()\"),",
-        "      \":\"",
-        "    ),",
-        "    shiny::verbatimTextOutput(\"drawer_output\")",
-        "  )",
-        "}"
+        ""
       ),
       con = file.path(path, 'R', 'common.R'))
   }
@@ -421,6 +393,7 @@ create_barebone_bslib <- function(path){
   {
     writeLines(
       c(
+        "enabled: yes",
         "tools:",
         "- name: hello_world",
         "  category:",

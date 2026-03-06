@@ -4,12 +4,17 @@
 \alias{back_top_button}
 \title{'HTML' code to generate small back-to-top button}
 \usage{
-back_top_button(icon = "chevron-up", title = "Jump to")
+back_top_button(icon = "chevron-up", title = "Jump to", open_drawer = TRUE)
 }
 \arguments{
 \item{icon}{the icon for back-to-top button}
 
 \item{title}{the expanded menu title}
+
+\item{open_drawer}{logical; whether to include a drawer-toggle
+button. Defaults to \code{TRUE} if a
+\code{.shidashi-drawer} element will be present in the page
+(e.g.\ from \code{\link{module_drawer}()}).}
 }
 \value{
 'HTML' tags
@@ -17,6 +22,14 @@ back_top_button(icon = "chevron-up", title = "Jump to")
 \description{
 This function is a template function that should be called
 in 'HTML' templates before closing the \code{"</body>"} tag.
+
+When \code{open_drawer = TRUE}, an additional button is rendered
+that fires a \code{"button.click"} shidashi-event with
+\code{type = "open_drawer"}.
+Module server code (or \code{\link{chatbot_server}}) can observe
+this event via \code{\link{register_session_events}} and call
+\code{\link{drawer_open}} / \code{shiny::renderUI} to fill the
+drawer with content.
 }
 \examples{
 
