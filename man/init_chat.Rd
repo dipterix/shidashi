@@ -7,7 +7,6 @@
 init_chat(
   system_prompt = getOption("shidashi.chat_system_prompt", NULL),
   provider = getOption("shidashi.chat_provider", "anthropic"),
-  model = getOption("shidashi.chat_model", NULL),
   base_url = getOption("shidashi.chat_base_url", NULL)
 )
 }
@@ -15,10 +14,8 @@ init_chat(
 \item{system_prompt}{character; the system prompt.  Defaults to
 \code{getOption("shidashi.chat_system_prompt")}.}
 
-\item{provider}{character; provider name. Defaults to
-\code{getOption("shidashi.chat_provider", "anthropic")}.}
-
-\item{model}{character or \code{NULL}; model name override.}
+\item{provider}{character; provider name or provider name with models.
+Defaults to \code{getOption("shidashi.chat_provider", "anthropic")}.}
 
 \item{base_url}{character or \code{NULL}; base URL for
 API-compatible providers.}

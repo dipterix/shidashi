@@ -42,6 +42,7 @@ Imports:
     jsonlite
 Suggests: 
     shinychat,
+    cli,
     logger (>= 0.2.1),
     processx,
     promises,

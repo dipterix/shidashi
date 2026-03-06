@@ -10,7 +10,7 @@
 #' @return 'HTML' tags
 #' @export
 adminlte_ui <- function(root_path = template_root()){
-  function(req){
+  function(req) {
 
     tryCatch({
       resource <- load_module(root_path = root_path, request = req)

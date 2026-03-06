@@ -31,9 +31,8 @@
 #'
 #' @param system_prompt character; the system prompt.  Defaults to
 #'   \code{getOption("shidashi.chat_system_prompt")}.
-#' @param provider character; provider name. Defaults to
-#'   \code{getOption("shidashi.chat_provider", "anthropic")}.
-#' @param model character or \code{NULL}; model name override.
+#' @param provider character; provider name or provider name with models.
+#'   Defaults to \code{getOption("shidashi.chat_provider", "anthropic")}.
 #' @param base_url character or \code{NULL}; base URL for
 #'   API-compatible providers.
 #' @return An \code{ellmer::Chat} R6 object (tools not yet bound).
@@ -41,7 +40,7 @@
 init_chat <- function(
   system_prompt = getOption("shidashi.chat_system_prompt", NULL),
   provider = getOption("shidashi.chat_provider", "anthropic"),
-  model = getOption("shidashi.chat_model", NULL),
+  # model = getOption("shidashi.chat_model", NULL),
   base_url = getOption("shidashi.chat_base_url", NULL)
 ) {
   if (!requireNamespace("ellmer", quietly = TRUE)) {
@@ -58,15 +57,14 @@ init_chat <- function(
   provider <- tolower(provider)
 
   # Build args common to most providers
-  args <- list(system_prompt = system_prompt, name = provider)
-  if (length(model) == 1L && nzchar(model)) {
-    args$model <- model
-  }
+  args <- list(system_prompt = system_prompt, name = provider, echo = "all")
+  # if (length(model) == 1L && nzchar(model)) {
+  #   args$model <- model
+  # }
   if (length(base_url) == 1L && nzchar(base_url)) {
     args$base_url <- base_url
   }
-  do.call(ellmer::chat_openai, args)
-  chat
+  do.call(ellmer::chat, args)
 }
 
 
@@ -250,7 +248,7 @@ chatbot_server <- function(input, output, session,
         active_idx = 1L,
         conversations = list(
           list(
-            title = "New Conversation",
+            title = "New conversation",
             turns = list(),
             last_visited = Sys.time()
           )
@@ -265,7 +263,7 @@ chatbot_server <- function(input, output, session,
   save_turns <- function(globals, mid, chat) {
     if (!length(mid) || !nzchar(mid) || is.null(chat)) return()
     turns <- tryCatch(chat$get_turns(), error = function(e) NULL)
-    if (is.null(turns)) return()
+    if (!length(turns)) return()
 
     entry <- ensure_conv_entry(globals, mid)
     idx   <- entry$active_idx
@@ -333,7 +331,34 @@ chatbot_server <- function(input, output, session,
   chat_task <- shiny::ExtendedTask$new(function(user_msg) {
     chat <- ensure_chat()
     if (is.null(chat)) return(promises::promise_resolve(NULL))
-    chat$stream_async(user_msg)
+
+    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
+
+    promises::promise(function(resolve, reject) {
+      resolve(chat$stream_async(
+        user_msg,
+        tool_mode = "sequential",
+        stream = "text"
+      ))
+    })$then(
+      onFulfilled = function(stream) {
+        save_turns(globals, module_id, local_chat)
+        update_conv_dropdown()
+        shinychat::chat_append(id, stream, session = session)
+      }
+    )$catch(onRejected = function(e) {
+      save_turns(globals, module_id, local_chat)
+      update_conv_dropdown()
+      shinychat::chat_append(
+        id,
+        response = sprintf(
+          "Error %s",
+          paste(cli::ansi_strip(conditionMessage(e)), collapse = " ")
+        ),
+        role = "assistant",
+        session = session
+      )
+    })
   })
 
   # ---- Observers ----
@@ -347,47 +372,51 @@ chatbot_server <- function(input, output, session,
     chat_task$invoke(user_msg)
   }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
-  # Consume the stream result and save turns after completion
-  shiny::observe({
-    stream <- chat_task$result()
-    if (is.null(stream)) return()
-    promises::then(
-      shinychat::chat_append(id, stream, session = session),
-      onFulfilled = function(value) {
-        globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-        save_turns(globals, module_id, local_chat)
-        update_conv_dropdown()
-      }
-    )
-  })
-
   # Conversation selector change
   conv_select_id <- paste0(id, "-conv_select")
 
   shiny::observeEvent(input[[conv_select_id]], {
-    selected <- as.integer(input[[conv_select_id]])
-    if (is.na(selected)) return()
+    tryCatch(
+      {
+        selected <- as.integer(input[[conv_select_id]])
+        if (is.na(selected)) return()
 
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-    if (is.null(globals)) return()
+        globals <- get_shidashi_globals()
+        if (is.null(globals)) return()
 
-    chat <- ensure_chat()
-    if (is.null(chat)) return()
+        chat <- ensure_chat()
+        if (is.null(chat)) return()
 
-    # Save current conversation before switching
-    save_turns(globals, module_id, chat)
+        # Save current conversation before switching
+        save_turns(globals, module_id, chat)
 
-    entry <- ensure_conv_entry(globals, module_id)
-    if (selected < 1L || selected > length(entry$conversations)) return()
-    entry$active_idx <- selected
-    globals$module_conversations$set(module_id, entry)
+        entry <- ensure_conv_entry(globals, module_id)
+        if (selected < 1L || selected > length(entry$conversations)) return()
+        entry$active_idx <- selected
+        globals$module_conversations$set(module_id, entry)
 
-    # Restore turns from selected conversation
-    restore_turns(globals, module_id, chat)
+        # Restore turns from selected conversation
+        restore_turns(globals, module_id, chat)
 
-    # Update the chat widget
-    shinychat::chat_clear(id = id, session = session)
-    shinychat::chat_restore(id = id, client = chat)
+        # Update the chat widget
+        shinychat::chat_clear(id = id, session = session)
+        shinychat::chat_restore
+        lapply(chat$get_turns(include_system_prompt = FALSE), function(turn) {
+          shinychat::chat_append(
+            id = id,
+            response = turn@text,
+            role = turn@role,
+            session = session
+          )
+        })
+        return()
+      },
+      error = function(e) {
+        warning(e)
+        traceback(e)
+      }
+    )
+
   }, ignoreInit = TRUE)
 
   # New conversation button

@@ -915,6 +915,64 @@ class ShidashiApp {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  /**
+   * Capture a <canvas> element as a data URL.
+   * Handles WebGL canvases whose drawing buffer may have been cleared
+   * after compositing (preserveDrawingBuffer === false) by reading
+   * pixels directly via gl.readPixels and compositing onto a 2D canvas.
+   * Returns null when capture is not possible (e.g. tainted canvas).
+   */
+  _captureCanvas(canvas) {
+    // Try the fast path first – works for 2D and WebGL with preserveDrawingBuffer
+    try {
+      const url = canvas.toDataURL('image/png');
+      // A blank WebGL canvas still returns a valid data-url but the
+      // base64 payload is very short (transparent 1×1 is ~100 chars).
+      // If the payload looks substantial, trust it.
+      const payload = url.split(',')[1] || '';
+      if (payload.length > 200) return url;
+    } catch (e) {
+      // Tainted – cannot capture at all
+      return null;
+    }
+
+    // Attempt WebGL readPixels capture
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) {
+      // It is a 2D canvas whose toDataURL already succeeded above
+      try { return canvas.toDataURL('image/png'); } catch (e) { return null; }
+    }
+
+    try {
+      const w = canvas.width;
+      const h = canvas.height;
+      const pixels = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+      // gl.readPixels returns rows bottom-to-top; flip vertically
+      const tmp = new Uint8Array(w * 4);
+      for (let row = 0; row < Math.floor(h / 2); row++) {
+        const topOffset = row * w * 4;
+        const botOffset = (h - row - 1) * w * 4;
+        tmp.set(pixels.subarray(topOffset, topOffset + w * 4));
+        pixels.copyWithin(topOffset, botOffset, botOffset + w * 4);
+        pixels.set(tmp, botOffset);
+      }
+
+      // Paint onto an offscreen 2D canvas and export
+      const c2d = document.createElement('canvas');
+      c2d.width = w;
+      c2d.height = h;
+      const ctx = c2d.getContext('2d');
+      const imageData = ctx.createImageData(w, h);
+      imageData.data.set(pixels);
+      ctx.putImageData(imageData, 0, 0);
+      return c2d.toDataURL('image/png');
+    } catch (e) {
+      return null;
+    }
+  }
+
   // ---------- Card tool click delegation ----------
 
   _bindCardTools() {
@@ -1586,9 +1644,8 @@ class ShidashiApp {
 
       // Check if element is a <canvas>
       if (el.tagName === 'CANVAS') {
-        try {
-          const dataUrl = el.toDataURL('image/png');
-          // dataUrl is "data:image/png;base64,..."
+        const dataUrl = this._captureCanvas(el);
+        if (dataUrl) {
           const parts = dataUrl.split(',');
           const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
           Shiny.setInputValue(inputId, {
@@ -1598,16 +1655,15 @@ class ShidashiApp {
             image_type: mime
           }, { priority: 'event' });
           return;
-        } catch (e) {
-          // Tainted canvas — fall through to innerHTML
         }
+        // Tainted or empty canvas — fall through to innerHTML
       }
 
       // Check if element contains a single <img> with a data URI or a <canvas> child
       const canvas = el.querySelector('canvas');
       if (canvas) {
-        try {
-          const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = this._captureCanvas(canvas);
+        if (dataUrl) {
           const parts = dataUrl.split(',');
           const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
           Shiny.setInputValue(inputId, {
@@ -1617,9 +1673,8 @@ class ShidashiApp {
             image_type: mime
           }, { priority: 'event' });
           return;
-        } catch (e) {
-          // fall through
         }
+        // fall through
       }
 
       const img = el.querySelector('img[src^="data:"]');

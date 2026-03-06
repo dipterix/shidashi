@@ -650,13 +650,9 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
           ellmer::type_string(description = "Shiny output ID"),
           description = "Optional: specific output IDs to query. Omit to list all registered outputs.",
           required = FALSE
-        ),
-        include_html = ellmer::type_boolean(
-          description = "If TRUE, also fetch the current rendered HTML for each output (requires browser round-trip). Default FALSE.",
-          required = FALSE
         )
       ),
-      fun = function(outputIds = character(), include_html = FALSE) {
+      fun = function(outputIds = character()) {
         outputIds <- unlist(outputIds)
         outputIds <- outputIds[!is.na(outputIds)]
         if (length(outputIds) > 0) {
@@ -670,44 +666,16 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
           as.list(item)
         })
 
-        if (!isTRUE(include_html) || is.null(session)) {
+        if (is.null(session)) {
           return(results)
         }
 
-        # Fetch HTML for each output via shiny_query_ui
-        promises::promise_all(
-          .list = lapply(results, function(item) {
-            if (is.null(item)) return(promises::promise_resolve(NULL))
-            selector <- paste0("#", session$ns(item$outputId))
-            # Call the query_ui tool's inner logic
-            request_id <- rand_string()
-            session$sendCustomMessage("shidashi.query_ui", list(
-              selector = selector,
-              request_id = request_id,
-              input_id = session$ns("@shiny_query_ui_result@")
-            ))
-            promises::promise(function(resolve, reject) {
-              remaining <- 10L
-              check_fn <- function() {
-                res <- shiny::isolate(session$input[["@shiny_query_ui_result@"]])
-                if (!is.null(res) && identical(res$request_id, request_id)) {
-                  item$html <- res$html %||% ""
-                  if (length(res$image_data) && nzchar(res$image_data)) {
-                    item$has_image <- TRUE
-                  }
-                  resolve(item)
-                } else if (remaining <= 0L) {
-                  item$html <- "(timeout)"
-                  resolve(item)
-                } else {
-                  remaining <<- remaining - 1L
-                  later::later(check_fn, 0.5)
-                }
-              }
-              check_fn()
-            })
-          })
-        )
+        results <- lapply(results, function(item) {
+          item$css_selector <- session$ns(item$outputId)
+          item
+        })
+
+        return(results)
       }
     )
 

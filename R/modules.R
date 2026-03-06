@@ -519,4 +519,3 @@ load_module <- function(
   env$.shared_id <- shared_id
   load_module_resource(root_path, module_id, env)
 }
-
