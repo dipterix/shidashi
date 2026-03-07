@@ -114,8 +114,8 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
     command = command,
     args    = cmd_args,
     env     = env_vars,
-    # working path is relative to script path
-    wd      = dirname(script_path),
+    # TODO: check this against skill specs
+    wd      = skill_dir,
     timeout = timeout_seconds,
     error_on_status = FALSE
   )
