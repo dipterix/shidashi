@@ -1746,6 +1746,41 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
 
 }
 
+// Chatbot status bar (model, tokens, cost)
+.shidashi-chatbot-status {
+  flex-shrink: 0;
+  border-top: 1px solid $border-color;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+
+  .shidashi-chatbot-status-model {
+    max-width: 40%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .shidashi-chatbot-status-counter {
+    cursor: default;
+  }
+}
+
+// Blinking animation for recalculating status
+.shidashi-chatbot-status-recalculating {
+  animation: shidashi-status-blink 2s infinite;
+}
+
+@keyframes shidashi-status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+// Strikethrough for unknown cost
+.shidashi-chatbot-status-unknown {
+  text-decoration: line-through;
+}
+
 // Drawer content — fills remaining height, allows children to flex
 .shidashi-drawer-content {
   flex: 1 1 auto;

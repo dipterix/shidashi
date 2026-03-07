@@ -57,7 +57,9 @@ init_chat <- function(
   provider <- tolower(provider)
 
   # Build args common to most providers
-  args <- list(system_prompt = system_prompt, name = provider, echo = "all")
+  args <- list(system_prompt = system_prompt,
+               name = provider,
+               echo = "output")
   # if (length(model) == 1L && nzchar(model)) {
   #   args$model <- model
   # }
@@ -99,6 +101,7 @@ chatbot_ui <- function(id) {
   }
   conv_select_id <- paste0(id, "-conv_select")
   new_conv_id    <- paste0(id, "-new_conversation")
+  status_id      <- paste0(id, "-status")
   shiny::tagList(
     shiny::div(
       class = "shidashi-chatbot-header d-flex align-items-center px-2 py-1 gap-1",
@@ -118,7 +121,35 @@ chatbot_ui <- function(id) {
         class = "shidashi-chatbot-new-conv btn btn-sm btn-outline-secondary"
       )
     ),
-    shinychat::chat_ui(id, fill = TRUE)
+    shinychat::chat_ui(id, fill = TRUE),
+    # Status bar: model name, token counts, estimated cost
+    shiny::tags$footer(
+      id = status_id,
+      class = "shidashi-chatbot-status d-flex align-items-center gap-2 small font-monospace px-2 py-1",
+      shiny::span(
+        id = paste0(status_id, "-model"),
+        class = "shidashi-chatbot-status-model text-truncate"
+      ),
+      shiny::span(class = "ms-auto"),
+      shiny::span(
+        id = paste0(status_id, "-tokens-input"),
+        class = "shidashi-chatbot-status-counter",
+        title = "Input tokens",
+        "\u2191 0"  # up arrow
+      ),
+      shiny::span(
+        id = paste0(status_id, "-tokens-output"),
+        class = "shidashi-chatbot-status-counter",
+        title = "Output tokens",
+        "\u2193 0"  # down arrow
+      ),
+      shiny::span(
+        id = paste0(status_id, "-cost"),
+        class = "shidashi-chatbot-status-counter",
+        title = "Estimated cost",
+        "$0.00"
+      )
+    )
   )
 }
 
@@ -219,13 +250,128 @@ chatbot_server <- function(input, output, session,
     # Bind tools from MCP registry
     bind_tools_from_registry(local_chat, session)
 
+    local_chat$on_tool_result(function(result) {
+      try(silent = TRUE, {
+        shinychat::chat_append(id = id, session = session, result)
+      })
+    })
+
     # Restore active conversation
     globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
     if (!is.null(globals)) {
       restore_turns(globals, module_id, local_chat)
     }
 
+    # Send initial status bar model info
+    send_chat_status_model(local_chat)
+
     local_chat
+  }
+
+  # ---- Status bar helpers ----
+
+  # Send provider/model info to the status bar
+  send_chat_status_model <- function(chat) {
+    if (is.null(chat)) return()
+    provider_name <- tryCatch(chat$get_provider()@name, error = function(e) "")
+    model_name    <- tryCatch(chat$get_model(), error = function(e) "")
+    label <- paste0(provider_name, "/", model_name)
+    session$sendCustomMessage(
+      "shidashi.update_chat_status",
+      list(
+        id     = session$ns(paste0(id, "-status-model")),
+        text   = label,
+        status = "ready"
+      )
+    )
+  }
+
+  # Extract token counts from the ellmer Chat object
+  chat_get_tokens <- function(chat) {
+    tokens <- tryCatch(chat$get_tokens(), error = function(e) NULL)
+    if (is.null(tokens) || nrow(tokens) == 0L) {
+      return(list(input = 0L, output = 0L, cached = 0L))
+    }
+    input_tokens  <- 0L
+    output_tokens <- 0L
+    cached_tokens <- 0L
+    if ("output" %in% colnames(tokens)) {
+      output_tokens <- sum(tokens$output, na.rm = TRUE)
+    }
+    if ("input" %in% colnames(tokens)) {
+      input_tokens <- tokens$input[[length(tokens$input)]]
+    }
+    if ("cached_input" %in% colnames(tokens)) {
+      cached_tokens <- tokens$cached_input[[length(tokens$cached_input)]]
+    }
+    list(
+      input  = as.integer(input_tokens),
+      output = as.integer(output_tokens),
+      cached = as.integer(cached_tokens)
+    )
+  }
+
+  # Extract cost from the ellmer Chat object
+  chat_get_cost <- function(chat) {
+    tryCatch(chat$get_cost(), error = function(e) NA_real_)
+  }
+
+  # Format a cost value with appropriate decimal places
+  format_cost <- function(cost) {
+    if (is.na(cost) || is.null(cost)) return("$?")
+    if (cost < 0.01) {
+      sprintf("$%.4f", cost)
+    } else if (cost < 0.10) {
+      sprintf("$%.3f", cost)
+    } else {
+      sprintf("$%.2f", cost)
+    }
+  }
+
+  # Push token/cost updates to the status bar via custom message handler
+  send_chat_status_update <- function(chat, status = "ready") {
+    if (is.null(chat)) return()
+    tokens <- chat_get_tokens(chat)
+    cost   <- chat_get_cost(chat)
+    ns_prefix <- session$ns(paste0(id, "-status"))
+
+    # Input tokens
+    cached_note <- ""
+    if (tokens$cached > 0L) {
+      cached_note <- sprintf(" (%s cached)",
+                             format(tokens$cached, big.mark = ","))
+    }
+    session$sendCustomMessage(
+      "shidashi.update_chat_status",
+      list(
+        id     = paste0(ns_prefix, "-tokens-input"),
+        text   = paste0("\u2191 ",
+                        format(tokens$input + tokens$cached, big.mark = ",")),
+        title  = paste0("Input tokens", cached_note),
+        status = status
+      )
+    )
+    # Output tokens
+    session$sendCustomMessage(
+      "shidashi.update_chat_status",
+      list(
+        id     = paste0(ns_prefix, "-tokens-output"),
+        text   = paste0("\u2193 ",
+                        format(tokens$output, big.mark = ",")),
+        title  = "Output tokens",
+        status = status
+      )
+    )
+    # Cost
+    session$sendCustomMessage(
+      "shidashi.update_chat_status",
+      list(
+        id     = paste0(ns_prefix, "-cost"),
+        text   = format_cost(cost),
+        title  = if (is.na(cost)) "Token pricing unknown" else "Estimated cost",
+        status = if (is.na(cost)) "unknown" else status
+      )
+    )
   }
 
   # ---- Conversation-history helpers ----
@@ -342,13 +488,21 @@ chatbot_server <- function(input, output, session,
       ))
     })$then(
       onFulfilled = function(stream) {
+        # chat_append returns a promise when given a stream;
+        # return it so the next .then() waits for streaming to finish
+        shinychat::chat_append(id, stream, session = session)
+      }
+    )$then(
+      onFulfilled = function(value) {
+        # Runs after the stream is fully consumed → tokens are available
         save_turns(globals, module_id, local_chat)
         update_conv_dropdown()
-        shinychat::chat_append(id, stream, session = session)
+        send_chat_status_update(local_chat)
       }
     )$catch(onRejected = function(e) {
       save_turns(globals, module_id, local_chat)
       update_conv_dropdown()
+      send_chat_status_update(local_chat)
       shinychat::chat_append(
         id,
         response = sprintf(
@@ -369,6 +523,8 @@ chatbot_server <- function(input, output, session,
   shiny::observeEvent(input[[user_input_id]], {
     user_msg <- input[[user_input_id]]
     if (!length(user_msg) || !nzchar(user_msg)) return()
+    # Set status bar to "recalculating" while waiting for response
+    send_chat_status_update(local_chat, status = "recalculating")
     chat_task$invoke(user_msg)
   }, ignoreNULL = TRUE, ignoreInit = TRUE)
 
@@ -400,15 +556,28 @@ chatbot_server <- function(input, output, session,
 
         # Update the chat widget
         shinychat::chat_clear(id = id, session = session)
-        shinychat::chat_restore
-        lapply(chat$get_turns(include_system_prompt = FALSE), function(turn) {
-          shinychat::chat_append(
-            id = id,
-            response = turn@text,
-            role = turn@role,
-            session = session
-          )
-        })
+
+        # as of 0.3.0, chat_restore does not work as expected and throws
+        # S7 error. Manually restore text instead
+        # shinychat::chat_restore
+        lapply(
+          chat$get_turns(include_system_prompt = FALSE),
+          function(turn) {
+            tryCatch(
+              {
+                shinychat::chat_append(
+                  id = id,
+                  response = turn@text,
+                  role = turn@role,
+                  session = session
+                )
+              },
+              error = function(e) {
+                # pass
+              }
+            )
+          }
+        )
         return()
       },
       error = function(e) {

@@ -41,6 +41,7 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
          paste(discover_scripts(skill_dir), collapse = ", "))
   }
   script_path <- normalizePath(script_path, mustWork = TRUE)
+  script_path <- gsub("[/|\\\\]+", "/", script_path)
 
   # ---- Resolve interpreter ----
   # Detect compound extension .sh.bat before simple extension
@@ -113,7 +114,8 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
     command = command,
     args    = cmd_args,
     env     = env_vars,
-    wd      = skill_dir,
+    # working path is relative to script path
+    wd      = dirname(script_path),
     timeout = timeout_seconds,
     error_on_status = FALSE
   )

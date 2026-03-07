@@ -1616,6 +1616,30 @@ class ShidashiApp {
       }
     });
 
+    // --- Chatbot status bar handler ---
+
+    this.shinyHandler('update_chat_status', (params) => {
+      // params: { id, text, title?, status: "ready"|"recalculating"|"unknown" }
+      const el = document.getElementById(params.id);
+      if (!el) return;
+      if (params.text !== undefined) {
+        el.textContent = params.text;
+      }
+      if (params.title !== undefined) {
+        el.setAttribute('title', params.title);
+      }
+      // Toggle recalculating blink
+      el.classList.toggle(
+        'shidashi-chatbot-status-recalculating',
+        params.status === 'recalculating'
+      );
+      // Mark unknown cost with strikethrough
+      el.classList.toggle(
+        'shidashi-chatbot-status-unknown',
+        params.status === 'unknown'
+      );
+    });
+
     // --- Open URL handler ---
 
     this.shinyHandler('open_url', (params) => {

@@ -472,6 +472,10 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
                 input, output, session,
                 agent_conf = .(agent_conf)
               )
+            } else {
+              output$shidashi_drawer <- shiny::renderUI({
+                shiny::p("AI agent has been disabled for this module.")
+              })
             }
 
 
