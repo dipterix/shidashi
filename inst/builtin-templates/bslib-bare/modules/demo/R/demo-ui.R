@@ -189,15 +189,24 @@ ui_demo_details <- function(){
         body_main = flip_box(
           front = div(
             class = "fill-width height-450 min-height-450 resize-vertical",
-            plotOutput(ns("iris_plot"), height = "100%")
+            shidashi::register_output(
+              plotOutput(ns("iris_plot"), height = "100%"),
+              outputId = "iris_plot",
+              description = "Scatter plot of iris, thresholded by input `iris_threshold`"
+            )
           ),
           back = tableOutput(ns("iris_plot_data"))
         ),
         body_side = div(
           class = "padding-top-50",
-          sliderInput(ns("iris_threshold"),
-                      label = "Threshold by Petal.Width",
-                      min = 0, max = 3, value = 0, step = 0.1)
+          shidashi::register_input(
+            inputId = "iris_threshold",
+            description = "Threshold Petal.Width and visualize the iris data with only selected data",
+            update = "shiny::updateSliderInput",
+            expr = sliderInput(inputId = ns("iris_threshold"),
+                               label = "Threshold by Petal.Width",
+                               min = 0, max = 3, value = 0, step = 0.1)
+          )
         )
       )
     ),
@@ -307,7 +316,7 @@ server_demo <- function(input, output, session, ...){
     ggplot(data=iris) +
       aes(x=Sepal.Length, y=Petal.Length, color=Species) +
       geom_point() +
-      geom_rug(col="steelblue",alpha=0.1, size=1.5) + ggtheme
+      geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
   })
 
   run_analysis <- function(){
@@ -396,3 +405,31 @@ server_demo <- function(input, output, session, ...){
     sample_size
   })
 }
+
+
+# Module-level MCP tool: Triggers the "refresh" button in the demo module.
+# This fires the same reactive chain as clicking the sync icon on the
+# Analysis card (inputId = ns("refresh")).
+#
+# Module-level tools are auto-enabled — no agent.yaml entry needed.
+
+trigger_refresh <- shidashi::mcp_wrapper(
+  function(session) {
+
+    # Capture the session's namespace function
+    ns <- session$ns
+
+    shared_data <- shidashi::register_session_id(session)
+
+
+    ellmer::tool(
+      fun = function() {
+        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        "Refresh triggered successfully. The analysis is being regenerated."
+      },
+      name = "trigger_refresh",
+      description = "Trigger the refresh/regenerate analysis action in the demo module. This generates random data and updates the histogram and summary table.",
+      arguments = list()
+    )
+  }
+)

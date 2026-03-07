@@ -1,7 +1,7 @@
 Package: shidashi
 Type: Package
-Title: A Shiny Dashboard Template System
-Version: 0.1.7
+Title: A Shiny Dashboard Template Modular System with Chat Bot Support
+Version: 0.1.8
 Language: en-US
 URL: https://dipterix.org/shidashi/,
     https://github.com/dipterix/shidashi
@@ -19,10 +19,8 @@ Authors@R: c(
     person("Rene", "Haas", role = c("ctb", "cph"), comment = "OverlayScrollbars library"),
     person("Zeno", "Rocha", role = c("ctb", "cph"), comment = "Clipboard.js library")
     )
-Description: A template system based on 'AdminLTE3' 
-    (<https://adminlte.io/themes/v3/>)
-    theme and 'Bootstrap 5'. Comes with default theme 
-    that can be easily customized. 
+Description: A template dashboard system with AI agent integrated. 
+    Comes with default themes that can be customized. 
     Developers can upload modified templates on 'Github', and users can 
     easily download templates with 'RStudio' project wizard.
     The key features of the default template include light and dark theme 
@@ -31,17 +29,28 @@ Description: A template system based on 'AdminLTE3'
     panels with back sides, as well as various of 'HTML' tool widgets.
 Imports: 
     utils,
-    bslib (>= 0.5.0),
+    tools,
+    bslib,
     digest (>= 0.6.27),
+    ellmer (>= 0.4.0),
     fastmap (>= 1.1.0),
     formatR (>= 1.11),
-    htmltools (>= 0.5.2),
-    httr (>= 1.4.2),
+    httr2,
+    S7,
     shiny (>= 1.7.0),
-    yaml (>= 2.2.1),
-    jsonlite (>= 1.7.2)
+    yaml,
+    jsonlite
 Suggests: 
+    shinychat,
+    cli,
     logger (>= 0.2.1),
+    processx,
+    promises,
+    later,
     rstudioapi (>= 0.13),
+    htmltools,
+    httpuv,
     ggplot2,
-    ggExtra
+    ggExtra,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

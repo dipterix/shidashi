@@ -276,10 +276,12 @@ class ShidashiApp {
    */
   _reportActiveModule(moduleId) {
     if (!moduleId) return;
+    this._activeModuleId = moduleId;
     this.ensureShiny(() => {
       if (typeof this._shiny.onInputChange !== 'function') return;
       this._shiny.onInputChange('@shidashi_active_module@', {
         module_id: moduleId,
+        token: this._sessionToken || null,
         timestamp: Date.now()
       });
     });
@@ -841,11 +843,7 @@ class ShidashiApp {
   // ---------- Drawer ----------
 
   drawerOpen() {
-    // Relay to parent frame if running inside an iframe
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerOpen(); } catch(e) {}
-      return;
-    }
+    // Drawer is always local to the current frame (module iframe)
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.add('open');
@@ -854,10 +852,6 @@ class ShidashiApp {
   }
 
   drawerClose() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerClose(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.remove('open');
@@ -866,10 +860,6 @@ class ShidashiApp {
   }
 
   drawerToggle() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerToggle(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     if (drawer && drawer.classList.contains('open')) {
       this.drawerClose();
@@ -923,6 +913,64 @@ class ShidashiApp {
 
   _escapeAttr(str) {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Capture a <canvas> element as a data URL.
+   * Handles WebGL canvases whose drawing buffer may have been cleared
+   * after compositing (preserveDrawingBuffer === false) by reading
+   * pixels directly via gl.readPixels and compositing onto a 2D canvas.
+   * Returns null when capture is not possible (e.g. tainted canvas).
+   */
+  _captureCanvas(canvas) {
+    // Try the fast path first – works for 2D and WebGL with preserveDrawingBuffer
+    try {
+      const url = canvas.toDataURL('image/png');
+      // A blank WebGL canvas still returns a valid data-url but the
+      // base64 payload is very short (transparent 1×1 is ~100 chars).
+      // If the payload looks substantial, trust it.
+      const payload = url.split(',')[1] || '';
+      if (payload.length > 200) return url;
+    } catch (e) {
+      // Tainted – cannot capture at all
+      return null;
+    }
+
+    // Attempt WebGL readPixels capture
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) {
+      // It is a 2D canvas whose toDataURL already succeeded above
+      try { return canvas.toDataURL('image/png'); } catch (e) { return null; }
+    }
+
+    try {
+      const w = canvas.width;
+      const h = canvas.height;
+      const pixels = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+      // gl.readPixels returns rows bottom-to-top; flip vertically
+      const tmp = new Uint8Array(w * 4);
+      for (let row = 0; row < Math.floor(h / 2); row++) {
+        const topOffset = row * w * 4;
+        const botOffset = (h - row - 1) * w * 4;
+        tmp.set(pixels.subarray(topOffset, topOffset + w * 4));
+        pixels.copyWithin(topOffset, botOffset, botOffset + w * 4);
+        pixels.set(tmp, botOffset);
+      }
+
+      // Paint onto an offscreen 2D canvas and export
+      const c2d = document.createElement('canvas');
+      c2d.width = w;
+      c2d.height = h;
+      const ctx = c2d.getContext('2d');
+      const imageData = ctx.createImageData(w, h);
+      imageData.data.set(pixels);
+      ctx.putImageData(imageData, 0, 0);
+      return c2d.toDataURL('image/png');
+    } catch (e) {
+      return null;
+    }
   }
 
   // ---------- Card tool click delegation ----------
@@ -1138,20 +1186,21 @@ class ShidashiApp {
       });
     });
 
-    // Drawer overlay click → close drawer
-    const drawerOverlay = document.querySelector('.shidashi-drawer-overlay');
-    if (drawerOverlay) {
-      drawerOverlay.addEventListener('click', () => this.drawerClose());
-    }
+    // Drawer overlay click → close drawer (use delegation for dynamic content)
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('shidashi-drawer-overlay')) {
+        this.drawerClose();
+      }
+    });
 
     // Drawer close-tab click → close drawer (no-overlay mode)
-    const drawerCloseTab = document.querySelector('.shidashi-drawer-close-tab');
-    if (drawerCloseTab) {
-      drawerCloseTab.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+      const closeTab = e.target.closest('.shidashi-drawer-close-tab');
+      if (closeTab) {
         e.stopPropagation();
         this.drawerClose();
-      });
-    }
+      }
+    });
 
     // Drawer toggle button
     document.addEventListener('click', (evt) => {
@@ -1541,10 +1590,139 @@ class ShidashiApp {
       this.drawerToggle();
     });
 
+    // --- Activate a specific drawer tab (for chatbot) ---
+
+    this.shinyHandler('activate_drawer_tab', (params) => {
+      if (params.target) {
+        const tabBtn = document.querySelector(
+          `.shidashi-drawer-tabs [data-bs-target="${params.target}"]`
+        );
+        if (tabBtn && window.bootstrap && window.bootstrap.Tab) {
+          const tab = new window.bootstrap.Tab(tabBtn);
+          tab.show();
+        }
+      }
+    });
+
+    // --- Module token registration (for chatbot) ---
+
+    this.shinyHandler('register_module_token', (params) => {
+      if (params.token) {
+        this._sessionToken = params.token;
+        // Re-report active module so R gets the updated token
+        if (this._activeModuleId) {
+          this._reportActiveModule(this._activeModuleId);
+        }
+      }
+    });
+
+    // --- Chatbot status bar handler ---
+
+    this.shinyHandler('update_chat_status', (params) => {
+      // params: { id, text, title?, status: "ready"|"recalculating"|"unknown" }
+      const el = document.getElementById(params.id);
+      if (!el) return;
+      if (params.text !== undefined) {
+        el.textContent = params.text;
+      }
+      if (params.title !== undefined) {
+        el.setAttribute('title', params.title);
+      }
+      // Toggle recalculating blink
+      el.classList.toggle(
+        'shidashi-chatbot-status-recalculating',
+        params.status === 'recalculating'
+      );
+      // Mark unknown cost with strikethrough
+      el.classList.toggle(
+        'shidashi-chatbot-status-unknown',
+        params.status === 'unknown'
+      );
+    });
+
     // --- Open URL handler ---
 
     this.shinyHandler('open_url', (params) => {
       this.openUrl(params.url, params.target || '_blank');
+    });
+
+    // --- Query UI handler (MCP) ---
+
+    this.shinyHandler('query_ui', (params) => {
+      // params: { selector, request_id, input_id }
+      const selector = params.selector;
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!selector || !requestId || !inputId) return;
+
+      const el = document.querySelector(selector);
+      if (!el) {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: '',
+          image_type: ''
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Check if element is a <canvas>
+      if (el.tagName === 'CANVAS') {
+        const dataUrl = this._captureCanvas(el);
+        if (dataUrl) {
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        }
+        // Tainted or empty canvas — fall through to innerHTML
+      }
+
+      // Check if element contains a single <img> with a data URI or a <canvas> child
+      const canvas = el.querySelector('canvas');
+      if (canvas) {
+        const dataUrl = this._captureCanvas(canvas);
+        if (dataUrl) {
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        }
+        // fall through
+      }
+
+      const img = el.querySelector('img[src^="data:"]');
+      if (img && el.querySelectorAll('img').length === 1) {
+        const src = img.getAttribute('src') || '';
+        // src is "data:image/png;base64,..."
+        const parts = src.split(',');
+        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: parts[1] || '',
+          image_type: mime
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Default: return innerHTML
+      Shiny.setInputValue(inputId, {
+        request_id: requestId,
+        html: el.innerHTML,
+        image_data: '',
+        image_type: ''
+      }, { priority: 'event' });
     });
   }
 }

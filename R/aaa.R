@@ -1,10 +1,10 @@
 #' @importFrom fastmap fastmap
 #' @importFrom digest digest
 #' @importFrom formatR tidy_source
-#' @importFrom httr parse_url
-#' @importFrom httr modify_url
+#' @importFrom httr2 url_modify
 #' @importFrom yaml read_yaml
 #' @importFrom jsonlite fromJSON
+#' @importFrom ellmer tool
 NULL
 
 #' Get Bootstrap 5 dependencies via \pkg{bslib}
@@ -12,12 +12,12 @@ NULL
 #' \pkg{bslib}. Intended to be called from HTML templates so that
 #' \code{headContent()} renders Bootstrap 5 CSS and JavaScript.
 #' @param ... additional arguments passed to \code{bslib::bs_theme}
-#' @return An \code{htmltools::tagList} containing Bootstrap 5 dependencies
+#' @return An \code{\link[shiny]{tagList}} containing Bootstrap 5 dependencies
 #' @export
 bslib_dependency <- function(...) {
   theme <- bslib::bs_theme(version = 5, ...)
   deps <- bslib::bs_theme_dependencies(theme)
-  htmltools::tagList(deps)
+  shiny::tagList(deps)
 }
 
 rand_string <- function(length = 10, prefix = NULL) {
@@ -275,3 +275,8 @@ show_ui_code <- function(
 }
 
 
+`%||%` <- function(a, b) if (is.null(a)) b else a
+
+drop_null <- function(x) {
+  as.list(x[!vapply(x, is.null, FALSE)])
+}

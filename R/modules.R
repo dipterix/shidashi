@@ -50,7 +50,7 @@
 #'   request = list(QUERY_STRING = "/?module=module_id"))
 #' env <- module_data$environment
 #'
-#' if(interactive()){
+#' if (interactive()){
 #'
 #' # get module title
 #' env$module_title()
@@ -81,8 +81,8 @@ module_info <- function(root_path = template_root(),
     x <- modules[[mid]]
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
-    url <- httr::modify_url("?module=", query = y)
-    if(length(x$group) == 1 && x$group %in% group_level){
+    url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
+    if (length(x$group) == 1 && x$group %in% group_level) {
       x$group <- group_level[group_level == x$group][[1]]
     } else {
       x$group <- NA
@@ -128,8 +128,8 @@ current_module <- function(
   if (!length(module_id) && is.environment(session)) {
     query_str <- shiny::isolate(session$clientData$url_search)
     if (length(query_str) == 1L) {
-      query_list <- httr::parse_url(query_str)
-      module_id <- query_list$query$module
+      query_list <- shiny::parseQueryString(query_str)
+      module_id <- query_list$module
     }
   }
 
@@ -148,9 +148,9 @@ current_module <- function(
 
 #' @rdname module_info
 #' @description \code{active_module} returns a \emph{reactive} value with
-#' information about the module that is currently visible in the iframe tab
-#' (or the standalone module if no iframe manager is present). Unlike
-#' \code{current_module} which is static and always returns the module
+#' information about the module that is currently visible in the \verb{iframe}
+#' tab (or the standalone module if no \verb{iframe} manager is present).
+#' Unlike \code{current_module} which is static and always returns the module
 #' whose server code is running, \code{active_module} dynamically tracks
 #' which module the user is looking at from any context.
 #' @details
@@ -205,6 +205,9 @@ active_module <- function(
 
 
 load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()){
+  if (length(module_id) > 1) {
+    stop("length of `module_id` must not exceed one.")
+  }
   root_path <- normalizePath(root_path, mustWork = TRUE)
 
   re <- list(
@@ -221,12 +224,12 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
   )
 
   r_folder <- file.path(root_path, "R")
-  if(dir.exists(r_folder)){
+  if (dir.exists(r_folder)) {
     fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                      recursive = FALSE, include.dirs = FALSE,
                      no.. = TRUE, all.files = TRUE, full.names = TRUE)
-    for(f in fs){
-      if(startsWith(basename(f), "shared-")) {
+    for (f in fs) {
+      if (startsWith(basename(f), "shared-")) {
         source(f, local = env, chdir = TRUE)
       } else {
         source(f, local = env, chdir = FALSE)
@@ -234,14 +237,23 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
     }
   }
 
-  if(length(module_id)){
-    if(length(module_id) > 1){
-      stop("length of `module_id` must not exceed one.")
+  # root_path <- 'inst/builtin-templates/bslib-bare/'
+  # module_id <- "demo"
+  root_agent_folder <- file.path(root_path, "agents", "tools")
+  if (dir.exists(root_agent_folder)) {
+    fs <- list.files(root_agent_folder, pattern = "\\.R$", ignore.case = TRUE,
+                     recursive = FALSE, include.dirs = FALSE,
+                     no.. = TRUE, all.files = TRUE, full.names = TRUE)
+    for (f in fs) {
+      source(f, local = env, chdir = TRUE)
     }
+  }
+
+  if (length(module_id) == 1) {
     module_root <- file.path(root_path, 'modules', module_id)
     module_info$template_path <- file.path(module_root, "module-ui.html")
 
-    if(dir.exists(module_root)){
+    if (dir.exists(module_root)) {
 
       re$has_module <- TRUE
       env$ns <- shiny::NS(module_id)
@@ -250,14 +262,25 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         modules <- module_info()
         modules$label[modules$id == module_id]
       }
+      shidashi_globals <- get_shidashi_globals(env)
+      shared_input_specs <- shidashi_globals$get_module_input_specs(module_id)
+      shared_output_specs <- shidashi_globals$get_module_output_specs(module_id)
+      wrapper_input_registry <- mcp_wrapper_input_output(
+        input_specs = shared_input_specs,
+        output_specs = shared_output_specs
+      )
+      env$.register_input <- wrapper_input_registry$input_helpers$register_input_specification
+      env$.register_output <- wrapper_input_registry$input_helpers$register_output_specification
+      env$.mcp_wrapper_inputs <- wrapper_input_registry$tool_generator
+      current_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
 
       r_folder <- file.path(module_root, 'R')
-      if(dir.exists(r_folder)){
+      if (dir.exists(r_folder)) {
         fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                          recursive = FALSE, include.dirs = FALSE,
                          no.. = TRUE, all.files = TRUE, full.names = TRUE)
-        for(f in fs){
-          if(startsWith(basename(f), "shared-")) {
+        for (f in fs) {
+          if (startsWith(basename(f), "shared-")) {
             source(f, local = env, chdir = TRUE)
           } else {
             source(f, local = env, chdir = FALSE)
@@ -265,20 +288,202 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         }
       }
 
+      new_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
+      if (nrow(new_input_table) > nrow(current_input_table)) {
+        message("Registered inputs to MCP server:", appendLF = TRUE)
+        print(new_input_table[, c("inputId", "update", "writable")])
+      }
+
+
+      # ---- Register MCP tools ----
+      # read agent.yaml
+      agent_conf_path <- file.path(module_root, "agents.yaml")
+      if (file.exists(agent_conf_path)) {
+        agent_conf <- yaml::read_yaml(agent_conf_path)
+        agent_conf$parameters <- as.list(agent_conf$parameters)
+        if (!length(agent_conf$parameters$system_prompt)) {
+          agent_conf$parameters$system_prompt <- paste(
+            "You are an R shiny expert. You have access to the shiny",
+            "application via provided tools."
+          )
+        }
+        # Top-level enabled flag: default TRUE when agents.yaml exists
+        if (is.null(agent_conf$enabled)) {
+          agent_conf$enabled <- TRUE
+        } else {
+          agent_conf$enabled <- isTRUE(agent_conf$enabled)
+        }
+      } else {
+        # agents.yaml missing → agents disabled for this module
+        agent_conf <- list(
+          enabled = FALSE,
+          tools = list(
+            # list(
+            #   name = "hello_world",
+            #   category = list("exploratory"),
+            #   enabled = TRUE
+            # ),
+            # list(
+            #   name = "get_shiny_input_values",
+            #   category = list("exploratory"),
+            #   enabled = TRUE
+            # )
+          ),
+          skills = list(),
+          parameters = list(
+            system_prompt = paste(
+              "You are a helpful assistant."
+            )
+          )
+        )
+      }
+
+      tool_names <- unlist(lapply(agent_conf$tools, "[[", "name"))
+      names(agent_conf$tools) <- tool_names
+
+      skill_names <- unlist(lapply(agent_conf$skills, "[[", "name"))
+      if (length(agent_conf$skills)) {
+        names(agent_conf$skills) <- skill_names
+      }
+
+      vnames <- ls(env, all.names = TRUE)
+      tools <- lapply(vnames, function(vname) {
+        value <- env[[vname]]
+        if (!is.function(value)) { return() }
+        if (inherits(value, "ellmer::ToolDef")) { return(value) }
+        if (inherits(value, "shidashi_mcp_wrapper")) { return(value) }
+        return(NULL)
+      })
+
+      tools <- drop_null(tools)
+
+      # ---- Discover skill directories (Phase 4) ----
+      # Per Anthropic spec, skill name == folder name. Direct lookup,
+      # no iteration needed. Missing folders are silently dropped.
+      skill_wrappers <- list()
+      if (length(skill_names)) {
+        root_skills_dir <- file.path(root_path, "agents", "skills")
+        for (sname in skill_names) {
+          skill_dir <- file.path(root_skills_dir, sname)
+          if (file.exists(file.path(skill_dir, "SKILL.md"))) {
+            skill_wrappers[[sname]] <- skill_wrapper(skill_dir)
+          }
+        }
+      }
+
+      # create a tool-generating function
+      tool_gen_fun <- function(session) {
+
+        tool_map <- fastmap::fastmap()
+        lapply(tools, function(tool) {
+
+          if (inherits(tool, "ellmer::ToolDef")) {
+            if (tool@name %in% tool_names) {
+              tool_conf <- agent_conf$tools[[tool@name]]
+              tool@annotations$shidashi_enabled <- isTRUE(tool_conf$enabled)
+              tool@annotations$shidashi_category <- as.character(tool_conf$category)
+              tool@annotations$shidashi_namespace <- session$ns(NULL)
+              old_name <- tool@name
+              tool@name <- sprintf("tool__%s__%s", session$ns(NULL), tool@name)
+              tool_map$set(old_name, tool)
+            }
+          } else {
+            # generator
+            toolset <- tool(session = session)
+            if (inherits(toolset, "ellmer::ToolDef")) {
+              toolset <- list(toolset)
+            }
+            lapply(toolset, function(tool) {
+              if (tool@name %in% tool_names) {
+                tool_conf <- agent_conf$tools[[tool@name]]
+                tool@annotations$shidashi_enabled <- isTRUE(tool_conf$enabled)
+                tool@annotations$shidashi_category <- as.character(tool_conf$category)
+                tool@annotations$shidashi_namespace <- session$ns(NULL)
+                old_name <- tool@name
+                tool@name <- sprintf("tool__%s__%s", session$ns(NULL), tool@name)
+                tool_map$set(tool@name, tool)
+              }
+            })
+          }
+
+        })
+
+        # ---- Process skill wrappers (Phase 4) ----
+        lapply(names(skill_wrappers), function(sname) {
+          wrapper <- skill_wrappers[[sname]]
+          skill_tool <- tryCatch(
+            wrapper(),
+            error = function(e) {
+              warning("Failed to create skill tool '", sname, "': ",
+                      conditionMessage(e))
+              NULL
+            }
+          )
+          if (inherits(skill_tool, "ellmer::ToolDef")) {
+            skill_conf <- agent_conf$skills[[sname]]
+            skill_tool@annotations$shidashi_enabled <-
+              isTRUE(skill_conf$enabled)
+            skill_tool@annotations$shidashi_category <-
+              c("skill", as.character(skill_conf$category))
+            skill_tool@annotations$shidashi_namespace <- session$ns(NULL)
+            skill_tool@name <- sprintf("skill__%s__%s",
+                                       session$ns(NULL), sname)
+            tool_map$set(skill_tool@name, skill_tool)
+          }
+        })
+
+        tool_map
+
+      }
+
+      env$.mcptools_maker <- tool_gen_fun
+      # Store agent config in module env for chatbot_ui / back_top_button
+
       module_handler <- file.path(root_path, 'modules', module_id, 'server.R')
-      if(file.exists(module_handler)){
+      if (file.exists(module_handler)) {
         # server_env <- new.env(parent = env)
         server_env <- env
         server_source <- source(module_handler, local = server_env)
 
         server_function <- server_source$value
-        if(!is.function(server_function)){
+        if (!is.function(server_function)) {
           server_function <- server_env$server
         }
 
-        if(!is.function(server_function)){
+        if (!is.function(server_function)) {
           stop("Module `", module_id, "` has server.R, but cannot detect server function.")
         }
+
+        # inject to body
+        agent_enabled <- isTRUE(agent_conf$enabled)
+        body(server_function) <- bquote({
+          local({
+            shidashi <- asNamespace("shidashi")
+            shidashi$register_session_mcp(session = session)
+            registry <- shidashi$mcp_session_registry()
+            entry <- registry$get(session$token)
+            tools <- .mcptools_maker(session)
+            entry$tools <- tools$as_list()
+            registry$set(session$token, entry)
+
+            # Initialize chatbot server if agents are enabled for this module
+            if (.(isTRUE(agent_conf$enabled))) {
+              shidashi$chatbot_server(
+                input, output, session,
+                agent_conf = .(agent_conf)
+              )
+            } else {
+              output$shidashi_drawer <- shiny::renderUI({
+                shiny::p("AI agent has been disabled for this module.")
+              })
+            }
+
+
+          })
+
+          .(body(server_function))
+        })
+
         module_info$server <- server_function
       }
 
@@ -302,15 +507,15 @@ load_module <- function(
 
   force(env)
   query_str <- request$QUERY_STRING
-  if(length(query_str) != 1) {
+  if (length(query_str) != 1) {
     query_str <- '/'
   }
-  query_list <- httr::parse_url(query_str)
-  module_id <- query_list$query$module
-  shared_id <- query_list$query$shared_id
+  query_list <- shiny::parseQueryString(query_str)
+  module_id <- query_list$module
+  shared_id <- query_list$shared_id
   shared_id <- tolower(shared_id)
   shared_id <- gsub("[^a-z0-9_]", "", shared_id)
-  if(length(shared_id) != 1 || nchar(shared_id) ){
+  if (length(shared_id) != 1 || nchar(shared_id) ) {
     shared_id <- rand_string(26)
   }
 
@@ -318,4 +523,3 @@ load_module <- function(
   env$.shared_id <- shared_id
   load_module_resource(root_path, module_id, env)
 }
-

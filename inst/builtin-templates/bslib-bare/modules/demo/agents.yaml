@@ -1,0 +1,34 @@
+tools:
+- name: hello_world
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_input_info
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_output_info
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_query_ui
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_input_update
+  category:
+  - executing
+  - destructive
+  enabled: yes
+- name: trigger_refresh
+  category:
+  - executing
+  enabled: yes
+skills:
+- name: greet
+  category:
+  - executing
+  enabled: yes
+parameters:
+  system_prompt: You are an R shiny expert. You have access to the shiny application
+    via provided tools.
