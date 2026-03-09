@@ -4,7 +4,7 @@
 \alias{chatbot_ui}
 \title{Chat-bot UI panel}
 \usage{
-chatbot_ui(id)
+chatbot_ui(id, modes = NULL, default_mode = NULL)
 }
 \arguments{
 \item{id}{character; the Shiny input/output namespace for the chat

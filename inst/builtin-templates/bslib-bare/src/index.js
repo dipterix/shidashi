@@ -1724,6 +1724,102 @@ class ShidashiApp {
         image_type: ''
       }, { priority: 'event' });
     });
+
+    // --- Ask-user handler (MCP built-in tool) ---
+
+    this.shinyHandler('ask_user', (params) => {
+      // params: { request_id, input_id, message, choices, allow_freeform }
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!requestId || !inputId) return;
+
+      const message = params.message || 'The agent needs your input:';
+      const choices = params.choices || [];
+      const allowFreeform = params.allow_freeform !== false;
+
+      // Build a Bootstrap 5 modal
+      const modalId = 'shidashi-ask-user-modal-' + requestId;
+      const existing = document.getElementById(modalId);
+      if (existing) existing.remove();
+
+      let bodyHTML = `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+
+      // Choice buttons
+      if (choices.length > 0) {
+        bodyHTML += '<div class="d-flex flex-wrap gap-2 mb-3">';
+        choices.forEach((choice, i) => {
+          bodyHTML += `<button type="button" class="btn btn-outline-primary shidashi-ask-user-choice" data-choice-index="${i}">${this._escapeHtml(choice)}</button>`;
+        });
+        bodyHTML += '</div>';
+      }
+
+      // Free-form input
+      if (allowFreeform) {
+        bodyHTML += `<div class="mb-2"><textarea class="form-control shidashi-ask-user-freeform" rows="3" placeholder="Type your response..."></textarea></div>`;
+      }
+
+      const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Agent Request</h5>
+              </div>
+              <div class="modal-body">${bodyHTML}</div>
+              <div class="modal-footer">
+                ${allowFreeform ? '<button type="button" class="btn btn-primary shidashi-ask-user-submit" disabled>Submit</button>' : ''}
+                <button type="button" class="btn btn-secondary shidashi-ask-user-cancel">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      const modalEl = document.getElementById(modalId);
+      const bsModal = new bootstrap.Modal(modalEl);
+
+      const respond = (value, cancelled) => {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          value: value,
+          cancelled: !!cancelled
+        }, { priority: 'event' });
+        bsModal.hide();
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+      };
+
+      // Choice button clicks
+      modalEl.querySelectorAll('.shidashi-ask-user-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.choiceIndex, 10);
+          respond(choices[idx], false);
+        });
+      });
+
+      // Free-form submit
+      const submitBtn = modalEl.querySelector('.shidashi-ask-user-submit');
+      const textarea = modalEl.querySelector('.shidashi-ask-user-freeform');
+      if (submitBtn && textarea) {
+        textarea.addEventListener('input', () => {
+          submitBtn.disabled = !textarea.value.trim();
+        });
+        submitBtn.addEventListener('click', () => {
+          respond(textarea.value.trim(), false);
+        });
+      }
+
+      // Cancel
+      modalEl.querySelector('.shidashi-ask-user-cancel').addEventListener('click', () => {
+        respond(null, true);
+      });
+
+      bsModal.show();
+
+      // Focus textarea if present
+      if (textarea) {
+        modalEl.addEventListener('shown.bs.modal', () => textarea.focus(), { once: true });
+      }
+    });
   }
 }
 

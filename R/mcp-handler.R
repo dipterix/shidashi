@@ -20,13 +20,6 @@
 #     tools              = <named list of ToolDef objects or NULL>
 #   )
 
-# Shiny session registry accessor.
-# The backing fastmap lives inside .__shidashi_globals__. which is
-# created by init_app() (called from global.R at app startup).
-mcp_session_registry <- function(env = parent.frame()) {
-  get_shidashi_globals(env = env)$mcp_session_registry
-}
-
 # ---------- Shiny session registry helpers --------------------------------
 
 # Register a Shiny session for MCP access
@@ -37,7 +30,7 @@ register_session_mcp <- function(session) {
 
   namespace <- session$ns(NULL)
 
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   registered <- registry$has(token)
   # Skip if registered
   if (registered && (length(namespace) != 1 || !nzchar(namespace))) {
@@ -69,10 +62,10 @@ register_session_mcp <- function(session) {
 
   registry$set(token, entry)
 
-  
+
   # Send module token to root-level JS so the chatbot can bind
   if (length(namespace) == 1L && nzchar(namespace)) {
-    # It does not matter who send out custom messages, can be root session or 
+    # It does not matter who send out custom messages, can be root session or
     # session proxy: they will be the same to JS
     session$sendCustomMessage(
       "shidashi.register_module_token",
@@ -97,7 +90,7 @@ mcp_unregister_session <- function(session) {
   token <- session$token
   if (is.null(token) || !nzchar(token)) return(invisible(NULL))
 
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   if (registry$has(token)) {
     entry <- registry$get(token)
     if (identical(entry$shiny_session, session) || entry$shiny_session$isClosed()) {
@@ -113,7 +106,7 @@ mcp_tool_bound_shinysessions <- function(mcp_session_id) {
   if (length(mcp_session_id) != 1 || is.na(mcp_session_id) || !nzchar(mcp_session_id)) {
     return(character(0L))
   }
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   tokens <- registry$keys()
   tokens[
     vapply(tokens, function(token) {
@@ -128,7 +121,7 @@ mcp_tool_unregister_shinysession <- function(mcp_session_id) {
   tokens <- mcp_tool_bound_shinysessions(mcp_session_id)
   if (!length(tokens)) { return() }
 
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   lapply(tokens, function(token) {
     entry <- registry$get(token)
     entry$mcp_session_ids <- entry$mcp_session_ids[!entry$mcp_session_ids %in% mcp_session_id]
@@ -146,7 +139,7 @@ mcp_tool_unregister_shinysession <- function(mcp_session_id) {
 #' @keywords internal
 #' @noRd
 mcp_sweep_closed_sessions <- function() {
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   tokens <- registry$keys()
   lapply(tokens, function(token) {
     entry <- registry$get(token)
@@ -168,7 +161,7 @@ mcp_get_shiny_entry <- function(token) {
   if (length(token) != 1 || !is.character(token) || is.na(token) || !nzchar(token)) {
     return(NULL)
   }
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   if (!registry$has(token)) {
     return(NULL)
   }
@@ -439,11 +432,50 @@ mcp_handle_tools_list <- function(id, params, mcp_session_id) {
     # Only use the first session: can only bind one at a time
     bound_token <- bound_token[[1]]
     entry <- mcp_get_shiny_entry(bound_token)
-    if (length(entry)) {
-      schema <- lapply(entry$tools, ellmer_tool_schema)
-      tools <- c(tools, unname(schema))
+    if (length(entry) && is.list(entry$tools) && length(entry$tools)) {
+      # Filter tools by current agent mode
+      module_id <- entry$namespace
+      current_mode <- globals_get_agent_mode(module_id = module_id)
+      enabled_tools <- Filter(function(t) {
+        is_tool_enabled_for_mode(t, current_mode)
+      }, entry$tools)
+      if (length(enabled_tools)) {
+        schema <- lapply(enabled_tools, ellmer_tool_schema)
+        tools <- c(tools, unname(schema))
+      }
     }
   }
+
+  # ask_user built-in (always available; adapts to Shiny / console / reject)
+  tools <- c(tools, list(list(
+    name        = "ask_user",
+    description = paste(
+      "Ask the user a question via a modal dialog (when a Shiny",
+      "session is bound) or the R console. Use this when you need",
+      "the user to make a choice, confirm an action, or provide",
+      "free-form input. Returns the user's response or indicates",
+      "cancellation."
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        message = list(
+          type        = "string",
+          description = "The question or message to show the user."
+        ),
+        choices = list(
+          type        = "array",
+          items       = list(type = "string"),
+          description = "Optional predefined choices as buttons (e.g. ['Yes', 'No'])."
+        ),
+        allow_freeform = list(
+          type        = "boolean",
+          description = "Whether to show a text area for free-form input. Default: true."
+        )
+      ),
+      required = list("message")
+    )
+  )))
 
   mcp_json_result(id, list(tools = tools), mcp_session_id)
 }
@@ -473,6 +505,16 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
     "register_shinysession" = mcp_tool_register_shinysession(
       arguments, mcp_session_id),
     "get_session_info" = mcp_tool_get_session_info(mcp_session_id),
+    "ask_user" = {
+      # Find bound shiny session (if any) for the browser modal path
+      shiny_session <- NULL
+      bound <- mcp_tool_bound_shinysessions(mcp_session_id = mcp_session_id)
+      if (length(bound)) {
+        e <- mcp_get_shiny_entry(bound[[1L]])
+        if (!is.null(e)) shiny_session <- e$shiny_session
+      }
+      mcp_tool_ask_user(arguments, shiny_session)
+    },
     NULL # not a built-in
   )
 
@@ -546,6 +588,93 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
     return(mcp_json_result(id, result, mcp_session_id))
   }
 
+  # ---- Mode guard: reject if tool is not enabled for current mode ----
+  current_mode <- globals_get_agent_mode(module_id = entry$namespace)
+  if (!is_tool_enabled_for_mode(tool_obj, current_mode)) {
+    result <- list(
+      content = list(list(
+        type = "text",
+        text = paste0(
+          "Tool '", tool_name, "' is not enabled for mode '",
+          current_mode %||% "(none)", "'. ",
+          "Switch to an appropriate mode before calling this tool."
+        )
+      )),
+      isError = TRUE
+    )
+    return(mcp_json_result(id, result, mcp_session_id))
+  }
+
+  # ---- Skill script mode guard: per-script overrides ----
+  skill_scripts <- tool_obj@annotations$shidashi_skill_scripts
+  if (length(skill_scripts) && identical(arguments$action, "script") &&
+      length(arguments$file_name) && nzchar(arguments$file_name)) {
+    if (!is_script_enabled_for_mode(skill_scripts, arguments$file_name,
+                                    current_mode)) {
+      result <- list(
+        content = list(list(
+          type = "text",
+          text = paste0(
+            "Script '", arguments$file_name, "' in skill '", tool_name,
+            "' is not enabled for mode '", current_mode %||% "(none)", "'."
+          )
+        )),
+        isError = TRUE
+      )
+      return(mcp_json_result(id, result, mcp_session_id))
+    }
+  }
+
+  # ---- Destructive category guard: ask user for confirmation ----
+  tool_category <- tool_obj@annotations$shidashi_category
+  is_destructive <- is.character(tool_category) && "destructive" %in% tool_category
+  # Also check per-script destructive category for skills
+  if (!is_destructive && length(skill_scripts) &&
+      identical(arguments$action, "script") &&
+      length(arguments$file_name) && nzchar(arguments$file_name)) {
+    script_cat <- get_script_category(skill_scripts, arguments$file_name)
+    is_destructive <- "destructive" %in% script_cat
+  }
+  if (is_destructive && !is.null(entry$shiny_session)) {
+    confirm_result <- mcp_tool_ask_user(
+      arguments = list(
+        message = paste0(
+          "The agent wants to call '", tool_name, "' which is marked as ",
+          "destructive. Do you want to proceed?"
+        ),
+        choices = c("Proceed", "Stop and revise"),
+        allow_freeform = FALSE
+      ),
+      shiny_session = entry$shiny_session
+    )
+    if (promises::is.promise(confirm_result)) {
+      return(promises::then(confirm_result, function(res) {
+        user_answer <- res$content[[1]]$text
+        if (!identical(user_answer, "Proceed")) {
+          return(mcp_json_result(id, list(
+            content = list(list(
+              type = "text",
+              text = paste0(
+                "User declined destructive action on '", tool_name,
+                "'. User response: ", user_answer
+              )
+            )),
+            isError = TRUE
+          ), mcp_session_id))
+        }
+        # User confirmed — proceed with tool call
+        provider <- get_mcp_provider()
+        result <- ellmer_tool_call(tool_obj, arguments, provider = provider)
+        if (promises::is.promise(result)) {
+          return(promises::then(result, function(r) {
+            mcp_json_result(id, r, mcp_session_id)
+          }))
+        }
+        mcp_json_result(id, result, mcp_session_id)
+      }))
+    }
+  }
+
   # Call the ToolDef with the provided arguments
   provider <- get_mcp_provider()
   result <- ellmer_tool_call(tool_obj, arguments, provider = provider)
@@ -566,7 +695,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
 #' @keywords internal
 #' @noRd
 mcp_tool_list_shinysessions <- function(arguments) {
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   tokens <- registry$keys()
 
   sessions_info <- lapply(tokens, function(tk) {
@@ -655,7 +784,7 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
 
   # Bind MCP session to Shiny token
   entry$mcp_session_ids <- unique(c(entry$mcp_session_ids, mcp_session_id))
-  registry <- mcp_session_registry()
+  registry <- globals_mcp_session_registry()
   registry$set(token, entry)
 
   # Build response with info about the bound session
@@ -771,6 +900,150 @@ mcp_tool_get_session_info <- function(mcp_session_id) {
   text <- as.character(jsonlite::toJSON(info, auto_unbox = TRUE, null = "null"))
   list(
     content = list(list(type = "text", text = text)),
+    isError = FALSE
+  )
+}
+
+
+#' Ask the user a question
+#'
+#' Tries three strategies in order:
+#' \enumerate{
+#'   \item If a live Shiny session is provided, ask via a browser modal.
+#'   \item If \code{interactive()}, ask via the R console.
+#'   \item Otherwise reject with an error.
+#' }
+#' @param arguments list with \code{message}, optional \code{choices},
+#'   optional \code{allow_freeform}.
+#' @param shiny_session A Shiny session or \code{NULL}.
+#' @return A \code{promises::promise} (Shiny path) or a plain list with
+#'   \code{content} and \code{isError}.
+#' @keywords internal
+#' @noRd
+mcp_tool_ask_user <- function(arguments, shiny_session = NULL) {
+
+  message_text <- arguments$message
+  if (!is.character(message_text) || !nzchar(message_text)) {
+    return(list(
+      content = list(list(
+        type = "text",
+        text = "Invalid params: 'message' is required."
+      )),
+      isError = TRUE
+    ))
+  }
+
+  choices <- as.character(unlist(arguments$choices))
+  allow_freeform <- !identical(arguments$allow_freeform, FALSE)
+
+  # --- Strategy 1: Shiny browser modal -----------------------------------
+  session_ok <- !is.null(shiny_session) &&
+    is.environment(shiny_session) &&
+    !isTRUE(tryCatch(shiny_session$isClosed(), error = function(e) TRUE))
+
+  if (session_ok) {
+    return(mcp_tool_ask_user_shiny(
+      message_text, choices, allow_freeform, shiny_session
+    ))
+  }
+
+  # --- Strategy 2: interactive R console ---------------------------------
+  if (interactive()) {
+    return(mcp_tool_ask_user_console(
+      message_text, choices, allow_freeform
+    ))
+  }
+
+  # --- Strategy 3: reject ------------------------------------------------
+  list(
+    content = list(list(
+      type = "text",
+      text = "Cannot ask user: no Shiny session available and R is not interactive."
+    )),
+    isError = TRUE
+  )
+}
+
+# Ask user via Shiny browser modal (returns a promise)
+mcp_tool_ask_user_shiny <- function(message_text, choices, allow_freeform,
+                                    shiny_session) {
+  request_id <- rand_string(prefix = "ask_user_")
+  input_id <- shiny_session$ns("@shidashi_ask_user_result@")
+
+  shiny_session$sendCustomMessage("shidashi.ask_user", list(
+    request_id = request_id,
+    input_id = input_id,
+    message = message_text,
+    choices = choices,
+    allow_freeform = allow_freeform
+  ))
+
+  promises::promise(function(resolve, reject) {
+    remaining <- 120L  # 120 x 500ms = 60 seconds timeout
+    check_fn <- function() {
+      res <- shiny::isolate(
+        shiny_session$input[["@shidashi_ask_user_result@"]]
+      )
+      if (!is.null(res) && identical(res$request_id, request_id)) {
+        if (isTRUE(res$cancelled)) {
+          resolve(list(
+            content = list(list(type = "text",
+                               text = "User cancelled the request.")),
+            isError = FALSE
+          ))
+        } else {
+          resolve(list(
+            content = list(list(type = "text",
+                               text = res$value %||% "")),
+            isError = FALSE
+          ))
+        }
+      } else if (remaining <= 0L) {
+        resolve(list(
+          content = list(list(type = "text",
+                             text = "Timeout: no response from user within 60 seconds.")),
+          isError = FALSE
+        ))
+      } else {
+        remaining <<- remaining - 1L
+        later::later(check_fn, 0.5)
+      }
+    }
+    check_fn()
+  })
+}
+
+# Ask user via the R console (synchronous, returns a plain list)
+mcp_tool_ask_user_console <- function(message_text, choices, allow_freeform) {
+  cat("\n", message_text, "\n", sep = "")
+  answer <- NULL
+
+  if (length(choices)) {
+    sel <- utils::menu(choices, title = "Select an option:")
+    if (sel == 0L) {
+      return(list(
+        content = list(list(type = "text",
+                           text = "User cancelled the request.")),
+        isError = FALSE
+      ))
+    }
+    answer <- choices[[sel]]
+  }
+
+  if (allow_freeform) {
+    prompt <- if (is.null(answer)) "Your response: " else "Additional input (or Enter to skip): "
+    freeform <- readline(prompt)
+    if (nzchar(freeform)) {
+      answer <- if (is.null(answer)) freeform else paste0(answer, "\n", freeform)
+    }
+  }
+
+  if (is.null(answer) || !nzchar(answer)) {
+    answer <- "(no response)"
+  }
+
+  list(
+    content = list(list(type = "text", text = answer)),
     isError = FALSE
   )
 }

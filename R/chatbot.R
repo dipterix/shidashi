@@ -1,76 +1,32 @@
-# ---- In-App Chatbot (ellmer + shinychat) ----
-#
-# Phase 6 of the agent integration.
-# Provides init_chat(), chatbot_ui(), and chatbot_server() for
-# per-module AI chat inside the drawer panel.
-#
-# Design:
-#   - Drawers are module-level (inside each module iframe).
-#   - module_drawer() emits a minimal shell with uiOutput().
-#   - chatbot_server() renders chatbot_ui() into that uiOutput
-#     via standard shiny::renderUI — no special frontend needed.
-#   - A shidashi-button event ("open_drawer") is fired by the FAB;
-#     chatbot_server() observes it and calls drawer_open().
-#   - Any element with data-shidashi-action="shidashi-button"
-#     data-shidashi-type="open_drawer" can trigger the drawer.
-#   - Each module creates its own ellmer::Chat in its closure.
-#   - Per-module conversation history stored in
-#     .__shidashi_globals__.$module_conversations (fastmap).
-#   - Tools bound from MCP session registry via chat$set_tools().
-
-# ---- Provider dispatch ----
-
-#' Create an \pkg{ellmer} Chat object for the chat-bot
-#'
-#' @description
-#' Factory function that creates an \code{ellmer::Chat} object based on
-#' the configured provider.  Reads from
-#' \code{options(shidashi.chat_provider)}, \code{shidashi.chat_model},
-#' and \code{shidashi.chat_base_url}. These arguments are passed to
-#' \code{\link[ellmer]{chat}}.
-#'
-#' @param system_prompt character; the system prompt.  Defaults to
-#'   \code{getOption("shidashi.chat_system_prompt")}.
-#' @param provider character; provider name or provider name with models.
-#'   Defaults to \code{getOption("shidashi.chat_provider", "anthropic")}.
-#' @param base_url character or \code{NULL}; base URL for
-#'   API-compatible providers.
-#' @return An \code{ellmer::Chat} R6 object (tools not yet bound).
-#' @keywords internal
-init_chat <- function(
-  system_prompt = getOption("shidashi.chat_system_prompt", NULL),
-  provider = getOption("shidashi.chat_provider", "anthropic"),
-  # model = getOption("shidashi.chat_model", NULL),
-  base_url = getOption("shidashi.chat_base_url", NULL)
-) {
-  if (!requireNamespace("ellmer", quietly = TRUE)) {
-    stop("Package 'ellmer' is required for the chatbot feature.")
+# Format a cost value with appropriate decimal places
+format_cost <- function(cost) {
+  if (is.na(cost) || is.null(cost)) return("$?")
+  if (cost < 0.01) {
+    sprintf("$%.4f", cost)
+  } else if (cost < 0.10) {
+    sprintf("$%.3f", cost)
+  } else {
+    sprintf("$%.2f", cost)
   }
-
-  if (!length(system_prompt)) {
-    system_prompt <- paste(
-      "You are an R Shiny expert. You have access to the shiny",
-      "application via provided tools."
-    )
-  }
-
-  provider <- tolower(provider)
-
-  # Build args common to most providers
-  args <- list(system_prompt = system_prompt,
-               name = provider,
-               echo = "output")
-  # if (length(model) == 1L && nzchar(model)) {
-  #   args$model <- model
-  # }
-  if (length(base_url) == 1L && nzchar(base_url)) {
-    args$base_url <- base_url
-  }
-  do.call(ellmer::chat, args)
 }
 
-
-# ---- UI component ----
+format_token <- function(cost) {
+  if (is.na(cost) || is.null(cost)) return("0")
+  # 1G = 1000M = 1e6K = 1e9
+  base <- 1
+  unit <- ""
+  if (cost >= 1e10) {
+    base <- 1e9
+    unit <- "G"
+  } else if (cost >= 1e7) {
+    base <- 1e6
+    unit <- "M"
+  } else if (cost >= 1e4) {
+    base <- 1e3
+    unit <- "K"
+  }
+  sprintf("%s%s", format(cost / base, big.mark = ",", digits = 4), unit)
+}
 
 #' Chat-bot UI panel
 #'
@@ -90,7 +46,7 @@ init_chat <- function(
 #'   widget. Default \code{"shidashi-chatbot"}.
 #' @return A \code{shiny::tagList} containing the chat UI or empty.
 #' @keywords internal
-chatbot_ui <- function(id) {
+chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
   if (!isTRUE(getOption("shidashi.chatbot", TRUE))) {
     return(shiny::tagList("AI is disabled"))
   }
@@ -101,7 +57,29 @@ chatbot_ui <- function(id) {
   }
   conv_select_id <- paste0(id, "-conv_select")
   new_conv_id    <- paste0(id, "-new_conversation")
+  mode_select_id <- paste0(id, "-mode_select")
   status_id      <- paste0(id, "-status")
+
+  # Build mode selector if modes are defined
+  mode_ui <- NULL
+  if (length(modes)) {
+    mode_choices <- vapply(modes, function(m) m$name, character(1))
+    names(mode_choices) <- vapply(modes, function(m) {
+      paste0(m$name, if (length(m$description)) paste0(": ", m$description) else "")
+    }, character(1))
+    selected <- if (length(default_mode)) default_mode else mode_choices[[1]]
+    mode_ui <- shiny::div(
+      class = "shidashi-chatbot-mode-select px-2 py-1",
+      shiny::selectInput(
+        mode_select_id,
+        label = NULL,
+        choices = mode_choices,
+        selected = selected,
+        width = "100%"
+      )
+    )
+  }
+
   shiny::tagList(
     shiny::div(
       class = "shidashi-chatbot-header d-flex align-items-center px-2 py-1 gap-1",
@@ -121,6 +99,7 @@ chatbot_ui <- function(id) {
         class = "shidashi-chatbot-new-conv btn btn-sm btn-outline-secondary"
       )
     ),
+    mode_ui,
     shinychat::chat_ui(id, fill = TRUE),
     # Status bar: model name, token counts, estimated cost
     shiny::tags$footer(
@@ -147,7 +126,7 @@ chatbot_ui <- function(id) {
         id = paste0(status_id, "-cost"),
         class = "shidashi-chatbot-status-counter",
         title = "Estimated cost",
-        "$0.00"
+        "$0"
       )
     )
   )
@@ -203,7 +182,6 @@ chatbot_server <- function(input, output, session,
   if (!isTRUE(getOption("shidashi.chatbot", TRUE))) {
     return(invisible(NULL))
   }
-
   if (!requireNamespace("shinychat", quietly = TRUE)) {
     return(invisible(NULL))
   }
@@ -217,12 +195,33 @@ chatbot_server <- function(input, output, session,
   # Module ID from the calling moduleServer namespace
   module_id <- session$ns(NULL)
   if (!length(module_id) || !nzchar(module_id)) {
-    module_id <- "unknown"
+    module_id <- "__root__"
   }
+
+  # Handle user input from shinychat (scoped session)
+  user_input_id <- paste0(id, "_user_input")
+
+  # Conversation selector change
+  conv_select_id <- paste0(id, "-conv_select")
+
+  # New conversation button
+  new_conv_id <- paste0(id, "-new_conversation")
+
+  # Mode selector change
+  mode_select_id <- paste0(id, "-mode_select")
+
+  # ---- Mode state ----
+  agent_conf <- as.list(agent_conf)
+  agent_modes <- agent_conf$modes %||% "None"
+  agent_default_mode <- agent_conf$parameters$default_mode %||% agent_modes[[1]]
+  current_mode <- shiny::reactiveVal(agent_default_mode)
+  globals_set_agent_mode(module_id = module_id, mode = current_mode)
 
   # ---- Render chatbot UI into the drawer's uiOutput ----
   output[[drawer_id]] <- shiny::renderUI({
-    chatbot_ui(id = session$ns(id))
+    chatbot_ui(id = session$ns(id),
+               modes = agent_modes,
+               default_mode = agent_default_mode)
   })
 
   # ---- Per-module Chat object (created lazily) ----
@@ -231,122 +230,82 @@ chatbot_server <- function(input, output, session,
 
   ensure_chat <- function() {
     if (!is.null(local_chat)) return(local_chat)
-    system_prompt <- if (is.list(agent_conf)) {
-      agent_conf$parameters$system_prompt
-    }
-    local_chat <<- tryCatch(
-      init_chat(system_prompt = system_prompt),
+
+    tryCatch(
+      {
+        chat <- globals_new_chat(module_id = module_id, session = session)
+        chat$on_tool_result(function(result) {
+          try(silent = TRUE, {
+            shinychat::chat_append(id = id, session = session, result)
+          })
+        })
+
+        # Send provider/model info to the status bar
+        provider <- chat$get_provider()
+        session$sendCustomMessage(
+          "shidashi.update_chat_status",
+          list(
+            id     = session$ns(paste0(id, "-status-model")),
+            text   = sprintf("%s/%s", provider@name, provider@model),
+            status = "ready"
+          )
+        )
+
+        # Share chat object
+        local_chat <<- chat
+        chat
+      },
       error = function(e) {
-        show_notification(
-          title = "[shidashi] Failed to create chat",
-          message = conditionMessage(e),
-          type = "warning"
+        shinychat::chat_append(
+          id = id,
+          session = session,
+          response = sprintf(
+            "[shidashi] Failed to create chat: \n\n```\n%s\n```\n",
+            paste(conditionMessage(e), collapse = "\n")
+          ),
+          role = "assistant"
         )
         NULL
       }
     )
-    if (is.null(local_chat)) return(NULL)
 
-    # Bind tools from MCP registry
-    bind_tools_from_registry(local_chat, session)
-
-    local_chat$on_tool_result(function(result) {
-      try(silent = TRUE, {
-        shinychat::chat_append(id = id, session = session, result)
-      })
-    })
-
-    # Restore active conversation
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-    if (!is.null(globals)) {
-      restore_turns(globals, module_id, local_chat)
-    }
-
-    # Send initial status bar model info
-    send_chat_status_model(local_chat)
-
-    local_chat
   }
 
-  # ---- Status bar helpers ----
+  get_tokens <- function() {
+    res <- list(input = 0L, output = 0L, cached = 0L, cost = NA_real_)
+    if (!inherits(local_chat, "Chat")) { return(res) }
+    tokens <- local_chat$get_tokens()
+    if (!length(tokens)) { return(res) }
 
-  # Send provider/model info to the status bar
-  send_chat_status_model <- function(chat) {
-    if (is.null(chat)) return()
-    provider_name <- tryCatch(chat$get_provider()@name, error = function(e) "")
-    model_name    <- tryCatch(chat$get_model(), error = function(e) "")
-    label <- paste0(provider_name, "/", model_name)
-    session$sendCustomMessage(
-      "shidashi.update_chat_status",
-      list(
-        id     = session$ns(paste0(id, "-status-model")),
-        text   = label,
-        status = "ready"
-      )
+    res$output <- sum(c(tokens$output, 0), na.rm = TRUE)
+    res$input <- sum(c(tokens$input, 0), na.rm = TRUE)
+    if (length(tokens$cached_input)) {
+      res$cached <- tokens$cached_input[[length(tokens$cached_input)]]
+    }
+
+    res$cost <- tryCatch(
+      local_chat$get_cost(),
+      error = function(e)
+        NA_real_
     )
+    res
   }
 
-  # Extract token counts from the ellmer Chat object
-  chat_get_tokens <- function(chat) {
-    tokens <- tryCatch(chat$get_tokens(), error = function(e) NULL)
-    if (is.null(tokens) || nrow(tokens) == 0L) {
-      return(list(input = 0L, output = 0L, cached = 0L))
-    }
-    input_tokens  <- 0L
-    output_tokens <- 0L
-    cached_tokens <- 0L
-    if ("output" %in% colnames(tokens)) {
-      output_tokens <- sum(tokens$output, na.rm = TRUE)
-    }
-    if ("input" %in% colnames(tokens)) {
-      input_tokens <- tokens$input[[length(tokens$input)]]
-    }
-    if ("cached_input" %in% colnames(tokens)) {
-      cached_tokens <- tokens$cached_input[[length(tokens$cached_input)]]
-    }
-    list(
-      input  = as.integer(input_tokens),
-      output = as.integer(output_tokens),
-      cached = as.integer(cached_tokens)
-    )
-  }
-
-  # Extract cost from the ellmer Chat object
-  chat_get_cost <- function(chat) {
-    tryCatch(chat$get_cost(), error = function(e) NA_real_)
-  }
-
-  # Format a cost value with appropriate decimal places
-  format_cost <- function(cost) {
-    if (is.na(cost) || is.null(cost)) return("$?")
-    if (cost < 0.01) {
-      sprintf("$%.4f", cost)
-    } else if (cost < 0.10) {
-      sprintf("$%.3f", cost)
-    } else {
-      sprintf("$%.2f", cost)
-    }
-  }
-
-  # Push token/cost updates to the status bar via custom message handler
-  send_chat_status_update <- function(chat, status = "ready") {
-    if (is.null(chat)) return()
-    tokens <- chat_get_tokens(chat)
-    cost   <- chat_get_cost(chat)
+  update_chat_status <- function(status = "ready") {
+    if (!inherits(local_chat, "Chat")) { return() }
+    tokens <- get_tokens()
     ns_prefix <- session$ns(paste0(id, "-status"))
 
     # Input tokens
     cached_note <- ""
     if (tokens$cached > 0L) {
-      cached_note <- sprintf(" (%s cached)",
-                             format(tokens$cached, big.mark = ","))
+      cached_note <- sprintf(" (%s cached)", format_token(tokens$cached))
     }
     session$sendCustomMessage(
       "shidashi.update_chat_status",
       list(
         id     = paste0(ns_prefix, "-tokens-input"),
-        text   = paste0("\u2191 ",
-                        format(tokens$input + tokens$cached, big.mark = ",")),
+        text   = paste0("\u2191 ", format_token(tokens$input + tokens$cached)),
         title  = paste0("Input tokens", cached_note),
         status = status
       )
@@ -356,8 +315,7 @@ chatbot_server <- function(input, output, session,
       "shidashi.update_chat_status",
       list(
         id     = paste0(ns_prefix, "-tokens-output"),
-        text   = paste0("\u2193 ",
-                        format(tokens$output, big.mark = ",")),
+        text   = paste0("\u2193 ", format_token(tokens$output)),
         title  = "Output tokens",
         status = status
       )
@@ -367,102 +325,20 @@ chatbot_server <- function(input, output, session,
       "shidashi.update_chat_status",
       list(
         id     = paste0(ns_prefix, "-cost"),
-        text   = format_cost(cost),
-        title  = if (is.na(cost)) "Token pricing unknown" else "Estimated cost",
-        status = if (is.na(cost)) "unknown" else status
+        text   = format_cost(tokens$cost),
+        title  = if (is.na(tokens$cost)) "Token pricing unknown" else "Estimated cost",
+        status = if (is.na(tokens$cost)) "unknown" else status
       )
     )
-  }
-
-  # ---- Conversation-history helpers ----
-
-  # Derive a short title from the first user turn (max 30 chars)
-  conversation_title <- function(turns) {
-    if (!length(turns)) return("New conversation")
-    txt <- turns[[1]]@text
-    if (nchar(txt) > 30L) {
-      txt <- paste0(substr(txt, 1L, 27L), "...")
-    }
-    return(txt)
-  }
-
-  # Ensure module_conversations entry exists and return it
-  ensure_conv_entry <- function(globals, mid) {
-    entry <- globals$module_conversations$get(mid)
-    if (is.null(entry)) {
-      entry <- list(
-        active_idx = 1L,
-        conversations = list(
-          list(
-            title = "New conversation",
-            turns = list(),
-            last_visited = Sys.time()
-          )
-        )
-      )
-      globals$module_conversations$set(mid, entry)
-    }
-    entry
-  }
-
-  # Save current turns into the active conversation slot
-  save_turns <- function(globals, mid, chat) {
-    if (!length(mid) || !nzchar(mid) || is.null(chat)) return()
-    turns <- tryCatch(chat$get_turns(), error = function(e) NULL)
-    if (!length(turns)) return()
-
-    entry <- ensure_conv_entry(globals, mid)
-    idx   <- entry$active_idx
-    entry$conversations[[idx]] <- list(
-      title        = conversation_title(turns),
-      turns        = turns,
-      last_visited = Sys.time()
-    )
-    globals$module_conversations$set(mid, entry)
-  }
-
-  # Restore turns from the active conversation slot
-  restore_turns <- function(globals, mid, chat) {
-    entry <- ensure_conv_entry(globals, mid)
-    idx   <- entry$active_idx
-    conv  <- entry$conversations[[idx]]
-    if (!is.null(conv) && length(conv$turns)) {
-      chat$set_turns(conv$turns)
-    } else {
-      chat$set_turns(list())
-    }
-  }
-
-  # Bind tools from the MCP session registry
-  bind_tools_from_registry <- function(chat, sess) {
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-    if (is.null(globals)) return()
-
-    token <- sess$token
-    if (!length(token) || !nzchar(token)) return()
-
-    registry <- globals$mcp_session_registry
-    entry <- registry$get(token)
-    if (is.list(entry) && length(entry$tools)) {
-      enabled_tools <- Filter(function(t) {
-        isTRUE(t@annotations$shidashi_enabled)
-      }, entry$tools)
-      if (length(enabled_tools)) {
-        chat$set_tools(enabled_tools)
-      }
-    }
   }
 
   # ---- Conversation-dropdown helpers ----
-
   # Push current conversation list into the selectInput dropdown
   update_conv_dropdown <- function() {
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-    if (is.null(globals)) return()
-    entry   <- ensure_conv_entry(globals, module_id)
+    entry <- globals_get_conversation_entry(module_id = module_id)
     choices <- seq_along(entry$conversations)
     names(choices) <- vapply(entry$conversations, function(c) {
-      c$title %||% "New conversation"
+      paste(c$title %||% "New conversation", collapse = " ")
     }, character(1))
     shiny::updateSelectInput(
       session  = session,
@@ -473,15 +349,13 @@ chatbot_server <- function(input, output, session,
   }
 
   # ---- ExtendedTask for streaming chat ----
-
   chat_task <- shiny::ExtendedTask$new(function(user_msg) {
-    chat <- ensure_chat()
-    if (is.null(chat)) return(promises::promise_resolve(NULL))
-
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
+    ensure_chat()
+    if (is.null(local_chat)) return(promises::promise_resolve(NULL))
 
     promises::promise(function(resolve, reject) {
-      resolve(chat$stream_async(
+      update_chat_status(status = "recalculating")
+      resolve(local_chat$stream_async(
         user_msg,
         tool_mode = "sequential",
         stream = "text"
@@ -495,14 +369,14 @@ chatbot_server <- function(input, output, session,
     )$then(
       onFulfilled = function(value) {
         # Runs after the stream is fully consumed → tokens are available
-        save_turns(globals, module_id, local_chat)
+        globals_save_conversation(module_id = module_id, chat = local_chat)
         update_conv_dropdown()
-        send_chat_status_update(local_chat)
+        update_chat_status()
       }
     )$catch(onRejected = function(e) {
-      save_turns(globals, module_id, local_chat)
+      globals_save_conversation(module_id = module_id, chat = local_chat)
       update_conv_dropdown()
-      send_chat_status_update(local_chat)
+      update_chat_status()
       shinychat::chat_append(
         id,
         response = sprintf(
@@ -517,115 +391,129 @@ chatbot_server <- function(input, output, session,
 
   # ---- Observers ----
 
-  # Handle user input from shinychat (scoped session)
-  user_input_id <- paste0(id, "_user_input")
+  # On user prompt
+  shiny::bindEvent(
+    shiny::observe({
+      user_msg <- paste(input[[user_input_id]], collapse = "")
+      user_msg <- trimws(user_msg)
+      if (!nzchar(user_msg)) { return() }
+      chat_task$invoke(user_msg)
+    }),
+    input[[user_input_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
 
-  shiny::observeEvent(input[[user_input_id]], {
-    user_msg <- input[[user_input_id]]
-    if (!length(user_msg) || !nzchar(user_msg)) return()
-    # Set status bar to "recalculating" while waiting for response
-    send_chat_status_update(local_chat, status = "recalculating")
-    chat_task$invoke(user_msg)
-  }, ignoreNULL = TRUE, ignoreInit = TRUE)
+  # On switching conversation ID
+  shiny::bindEvent(
+    shiny::observe({
 
-  # Conversation selector change
-  conv_select_id <- paste0(id, "-conv_select")
+      selected <- as.integer(input[[conv_select_id]])
+      if (length(selected) != 1 || is.na(selected)) return()
 
-  shiny::observeEvent(input[[conv_select_id]], {
-    tryCatch(
-      {
-        selected <- as.integer(input[[conv_select_id]])
-        if (is.na(selected)) return()
+      entry <- globals_get_conversation_entry(module_id = module_id)
+      if (
+        selected < 1L ||
+        selected > length(entry$conversations) ||
+        isTRUE(entry$active_idx == selected)) {
 
-        globals <- get_shidashi_globals()
-        if (is.null(globals)) return()
-
-        chat <- ensure_chat()
-        if (is.null(chat)) return()
-
-        # Save current conversation before switching
-        save_turns(globals, module_id, chat)
-
-        entry <- ensure_conv_entry(globals, module_id)
-        if (selected < 1L || selected > length(entry$conversations)) return()
-        entry$active_idx <- selected
-        globals$module_conversations$set(module_id, entry)
-
-        # Restore turns from selected conversation
-        restore_turns(globals, module_id, chat)
-
-        # Update the chat widget
-        shinychat::chat_clear(id = id, session = session)
-
-        # as of 0.3.0, chat_restore does not work as expected and throws
-        # S7 error. Manually restore text instead
-        # shinychat::chat_restore
-        lapply(
-          chat$get_turns(include_system_prompt = FALSE),
-          function(turn) {
-            tryCatch(
-              {
-                shinychat::chat_append(
-                  id = id,
-                  response = turn@text,
-                  role = turn@role,
-                  session = session
-                )
-              },
-              error = function(e) {
-                # pass
-              }
-            )
-          }
-        )
+        # no need to change
         return()
-      },
-      error = function(e) {
-        warning(e)
-        traceback(e)
       }
-    )
 
-  }, ignoreInit = TRUE)
+      # Save current conversation before switching
+      globals_save_conversation(module_id = module_id, chat = local_chat)
 
-  # New conversation button
-  new_conv_id <- paste0(id, "-new_conversation")
+      # Switch conversation
+      entry$active_idx <- selected
+      globals_set_conversation_entry(entry = entry, module_id = module_id)
 
-  shiny::observeEvent(input[[new_conv_id]], {
-    chat <- ensure_chat()
-    if (is.null(chat)) return()
+      # restore chat
+      ensure_chat()
+      if (is.null(local_chat)) return()
 
-    globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-    if (is.null(globals)) return()
+      # Update the chat widget
+      shinychat::chat_clear(id = id, session = session)
 
-    # Save current conversation before starting a new one
-    save_turns(globals, module_id, chat)
+      # as of 0.3.0, chat_restore does not work as expected and throws
+      # S7 error. Manually restore text instead
+      # shinychat::chat_restore
+      lapply(
+        local_chat$get_turns(include_system_prompt = FALSE),
+        function(turn) {
+          tryCatch(
+            {
+              shinychat::chat_append(
+                id = id,
+                response = turn@text,
+                role = turn@role,
+                session = session
+              )
+            },
+            error = function(e) {
+              # pass
+            }
+          )
+        }
+      )
+      return()
 
-    # Append a new empty conversation and make it active
-    entry <- ensure_conv_entry(globals, module_id)
-    entry$conversations <- c(entry$conversations, list(list(
-      title        = "New conversation",
-      turns        = list(),
-      last_visited = Sys.time()
-    )))
-    entry$active_idx <- length(entry$conversations)
-    globals$module_conversations$set(module_id, entry)
+    }),
+    input[[conv_select_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
 
-    # Clear the Chat turns and UI
-    chat$set_turns(list())
-    shinychat::chat_clear(id = id, session = session)
+  # On starting new conversation
+  shiny::bindEvent(
+    shiny::observe({
 
-    update_conv_dropdown()
-  }, ignoreInit = TRUE)
+      # Save current conversation before starting a new one
+      globals_save_conversation(module_id = module_id, chat = local_chat)
+
+      chat <- ensure_chat()
+      if (is.null(chat)) return()
+
+      # Already saved, hence save_first = FALSE
+      globals_new_conversation(module_id = module_id,
+                               chat = chat,
+                               save_first = FALSE)
+
+      # Clear the UI
+      shinychat::chat_clear(id = id, session = session)
+      update_conv_dropdown()
+
+    }),
+    input[[new_conv_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
+
+  # On changing permission mode
+  shiny::bindEvent(
+    shiny::observe({
+      new_mode <- input[[mode_select_id]]
+      if (length(new_mode) != 1 || !nzchar(new_mode)) return()
+      current_mode(new_mode)
+
+      # Sync mode into globals so MCP handler can read it
+      globals_set_agent_mode(module_id = module_id, mode = new_mode)
+
+      if (!inherits(local_chat, "Chat")) { return() }
+
+      globals_bind_chat_tools(chat = local_chat,
+                              module_id = module_id,
+                              session = session)
+
+    }),
+    input[[mode_select_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
 
   # Save conversation on session end
   shiny::onSessionEnded(fun = function() {
-    if (!is.null(local_chat)) {
-      globals <- tryCatch(get_shidashi_globals(), error = function(e) NULL)
-      if (!is.null(globals)) {
-        save_turns(globals, module_id, local_chat)
-      }
-    }
+    globals_save_conversation(module_id = module_id, chat = local_chat)
   }, session = session)
 
   invisible(NULL)

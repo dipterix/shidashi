@@ -834,3 +834,316 @@ history.
 | `index.html` | Modify | Tabbed drawer structure (already done) |
 | `NAMESPACE` | Modify | Export `chatbot_ui`, `chatbot_server`, `init_chat` |
 | `DESCRIPTION` | Modify | Add `shinychat` to Suggests |
+
+---
+
+## Phase 7: Mode-Based Permissions, `ask_user`, Destructive Confirmation
+
+**Goal**: Implement runtime enforcement for the `agents.yaml`
+modes/permissions schema. Each tool/skill `enabled` field can be `true`
+(all modes) or a list of mode names (e.g. `["Plan", "Executing"]`).
+Add a UI mode selector in the chatbot header, a built-in `ask_user` MCP
+tool for interactive user prompts, and automatic confirmation prompts
+for tools/scripts annotated with `category: [destructive]`. All async
+via `promises` + `later`.
+
+**Status**: Implemented.
+
+### 7a: Mode State Management (R-side foundation)
+
+#### `R/init-app.R` — Add `module_agent_modes` fastmap
+
+New fastmap inside `.__shidashi_globals__.`, keyed by `module_id`.
+Each value: `list(current_mode, modes, default_mode)`.
+
+```r
+global_env$module_agent_modes <- fastmap::fastmap()
+```
+
+#### `R/modules.R` — Store raw `enabled` values in annotations
+
+Change `isTRUE(tool_conf$enabled)` to preserve the raw value for
+mode-aware filtering:
+
+```r
+# Before (Phase 6):
+tool@annotations$shidashi_enabled <- isTRUE(tool_conf$enabled)
+
+# After (Phase 7):
+tool@annotations$shidashi_enabled <- tool_conf$enabled
+```
+
+The value is either `TRUE`/`FALSE` (boolean) or a character vector of
+mode names. Same change for skill annotations.
+
+Additionally store per-script overrides on skill annotations:
+
+```r
+skill_tool@annotations$shidashi_skill_scripts <- skill_conf$scripts
+```
+
+And inject a mode-getter function so skill closures can check the
+current mode at call time:
+
+```r
+tool@annotations$shidashi_get_mode <- function() {
+  globals <- get_shidashi_globals()
+  mode_entry <- globals$module_agent_modes$get(module_id)
+  if (is.null(mode_entry)) return(NULL)
+  mode_entry$current_mode
+}
+```
+
+#### Helper functions (in `R/chatbot.R`)
+
+```r
+# Check if a tool is enabled for a given mode
+is_tool_enabled_for_mode <- function(tool, mode) {
+  enabled <- tool@annotations$shidashi_enabled
+  if (is.null(enabled)) return(FALSE)
+  if (isTRUE(enabled)) return(TRUE)
+  if (isFALSE(enabled)) return(FALSE)
+  mode %in% as.character(enabled)
+}
+
+# Check if a skill script is enabled for a given mode
+is_script_enabled_for_mode <- function(skill_scripts, script_name, mode) {
+  if (!length(skill_scripts)) return(TRUE)  # no overrides → skill-level
+  for (sc in skill_scripts) {
+    if (identical(sc$name, script_name)) {
+      enabled <- sc$enabled
+      if (is.null(enabled)) return(TRUE)
+      if (isTRUE(enabled)) return(TRUE)
+      if (isFALSE(enabled)) return(FALSE)
+      return(mode %in% as.character(enabled))
+    }
+  }
+  TRUE  # script not listed → falls back to skill-level
+}
+```
+
+### 7b: UI — Mode Selector in Chatbot Header
+
+#### `chatbot_ui()` — Add mode dropdown
+
+New `selectInput` next to the conversation dropdown:
+
+```r
+shiny::div(
+  class = "shidashi-chatbot-mode-select",
+  shiny::selectInput(
+    mode_select_id,
+    label = NULL,
+    choices = mode_choices,
+    selected = default_mode,
+    width = "100%"
+  )
+)
+```
+
+Choices populated from `agent_conf$modes` (`name` field), preselected
+to `agent_conf$parameters$default_mode`.
+
+#### `chatbot_server()` — Mode observer
+
+```r
+shiny::observeEvent(input[[mode_select_id]], {
+  new_mode <- input[[mode_select_id]]
+  globals$module_agent_modes$set(module_id, list(
+    current_mode = new_mode,
+    modes = agent_conf$modes,
+    default_mode = agent_conf$parameters$default_mode
+  ))
+  bind_tools_for_mode(local_chat, session, new_mode)
+})
+```
+
+#### `bind_tools_for_mode()` — Replaces `bind_tools_from_registry()`
+
+```r
+bind_tools_for_mode <- function(chat, sess, mode) {
+  # ... look up entry from registry ...
+  enabled_tools <- Filter(function(t) {
+    is_tool_enabled_for_mode(t, mode)
+  }, entry$tools)
+  chat$set_tools(enabled_tools)
+}
+```
+
+### 7c: Mode Enforcement on MCP Tool Calls
+
+#### `mcp_handle_tools_call()` — Mode guard
+
+After looking up `tool_obj` from `entry$tools`, before calling
+`ellmer_tool_call()`:
+
+```r
+# Read current mode
+globals <- get_shidashi_globals()
+mode_entry <- globals$module_agent_modes$get(entry$shidashi_module_id)
+current_mode <- if (!is.null(mode_entry)) mode_entry$current_mode
+
+# Check permission
+if (!is_tool_enabled_for_mode(tool_obj, current_mode)) {
+  enabled_val <- tool_obj@annotations$shidashi_enabled
+  allowed <- if (isTRUE(enabled_val)) "all modes"
+             else paste(enabled_val, collapse = ", ")
+  return(mcp_json_result(id, list(
+    content = list(list(type = "text",
+      text = paste0("Tool '", tool_name,
+                    "' is not available in '", current_mode,
+                    "' mode. Allowed: ", allowed))),
+    isError = TRUE
+  ), mcp_session_id))
+}
+```
+
+#### `mcp_handle_tools_list()` — Mode-aware listing
+
+Filter per-session tools by current mode before returning schema to
+MCP clients. External clients only see tools available in the active
+mode.
+
+#### Skill script mode check (`R/skill-wrapper.R`)
+
+In the `action="script"` branch, call
+`tool@annotations$shidashi_get_mode()` and check
+`is_script_enabled_for_mode()` before `run_skill_script()`.
+
+### 7d: Built-in `ask_user` MCP Tool
+
+#### Schema
+
+```
+name: "ask_user"
+description: "Ask the application user a question and wait for their
+  response. Use for confirmations, clarifications, or choices. Only
+  available when bound to a Shiny session."
+inputSchema:
+  type: object
+  properties:
+    question: { type: string }
+    choices:  { type: array, items: { type: string } }
+    timeout_seconds: { type: integer, default: 60 }
+  required: [question]
+```
+
+#### R implementation (`R/mcp-handler.R`)
+
+Mirror the `shiny_query_ui` async pattern:
+
+```r
+mcp_tool_ask_user <- function(arguments, entry) {
+  question <- arguments$question
+  choices  <- arguments$choices
+  timeout  <- arguments$timeout_seconds %||% 60L
+
+  session  <- entry$shiny_session
+  request_id <- rand_string()
+  input_id <- paste0(entry$namespace, "-@ask_user_result@")
+
+  session$sendCustomMessage("shidashi.ask_user", list(
+    question   = question,
+    choices    = choices,
+    request_id = request_id,
+    input_id   = input_id
+  ))
+
+  promises::promise(function(resolve, reject) {
+    remaining <- as.integer(timeout * 2L)  # 500ms intervals
+    check_fn <- function() {
+      res <- shiny::isolate(session$input[["@ask_user_result@"]])
+      if (!is.null(res) && identical(res$request_id, request_id)) {
+        resolve(res$response)
+      } else if (remaining <= 0L) {
+        reject(simpleError("Timeout: user did not respond"))
+      } else {
+        remaining <<- remaining - 1L
+        later::later(check_fn, 0.5)
+      }
+    }
+    check_fn()
+  })
+}
+```
+
+#### JS handler (`src/index.js`)
+
+Register `shidashi.ask_user`:
+- Render inline prompt in chatbot area: question text + choice buttons
+  (or text input if no choices)
+- On response: `Shiny.setInputValue(params.input_id, { request_id, response }, { priority: "event" })`
+- Auto-dismiss UI after response
+
+#### CSS (`src/shidashi.scss`)
+
+Minimal styles for `.shidashi-ask-user-prompt` container within the
+chatbot drawer area.
+
+### 7e: Destructive Category Auto-Confirmation
+
+#### MCP tool calls (`mcp_handle_tools_call()`)
+
+After mode check passes, before `ellmer_tool_call()`:
+
+```r
+if ("destructive" %in% tool_obj@annotations$shidashi_category) {
+  confirm_result <- mcp_tool_ask_user(list(
+    question = paste0("Tool '", tool_name, "' is marked as destructive. Proceed?"),
+    choices = c("Proceed", "Stop and revise")
+  ), entry)
+
+  return(promises::then(confirm_result, function(response) {
+    if (identical(response, "Proceed")) {
+      result <- ellmer_tool_call(tool_obj, arguments, provider)
+      if (promises::is.promise(result)) result else mcp_json_result(id, result, mcp_session_id)
+    } else {
+      mcp_json_result(id, list(
+        content = list(list(type = "text", text = "Tool call cancelled by user.")),
+        isError = TRUE
+      ), mcp_session_id)
+    }
+  }))
+}
+```
+
+#### Skill scripts
+
+Before `run_skill_script()`, check script-level category for
+`"destructive"`. Use session getter from annotation to invoke the
+same confirmation pattern. Returns promise.
+
+### 7f: Integration & Polish
+
+- **Persist mode per conversation**: Extend conversation entry with
+  `mode` field. On save: store current mode. On restore: switch mode
+  selector to saved mode. On new conversation: reset to `default_mode`.
+
+- **`npm run build`** after JS/SCSS changes.
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `R/init-app.R` | Add `module_agent_modes` fastmap |
+| `R/modules.R` | Store raw `enabled`, script configs, mode getter in annotations |
+| `R/chatbot.R` | Mode selector UI, `bind_tools_for_mode()`, mode observer, helpers, conversation mode persistence |
+| `R/mcp-handler.R` | Mode guard in `tools/call`, mode filter in `tools/list`, `ask_user` built-in tool, destructive wrapper |
+| `R/skill-wrapper.R` | Script-level mode + destructive checks |
+| `src/index.js` | `shidashi.ask_user` JS handler |
+| `src/shidashi.scss` | `.shidashi-ask-user-prompt` styles |
+
+### Deliverables
+
+- [x] `module_agent_modes` in init-app globals
+- [x] Raw `enabled` preservation in tool/skill annotations
+- [x] `is_tool_enabled_for_mode()`, `is_script_enabled_for_mode()` helpers
+- [x] Mode selector dropdown in chatbot header UI
+- [x] Mode change observer + `bind_tools_for_mode()`
+- [x] Mode guard in `mcp_handle_tools_call()`
+- [x] Mode-aware `mcp_handle_tools_list()`
+- [x] `ask_user` built-in MCP tool (R + JS)
+- [x] Destructive auto-confirmation in MCP tool calls
+- [x] Destructive auto-confirmation for skill scripts (via per-script category check)
+- [x] Per-conversation mode persistence
+- [x] `npm run build` for JS/SCSS assets
