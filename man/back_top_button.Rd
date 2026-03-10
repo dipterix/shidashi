@@ -4,7 +4,12 @@
 \alias{back_top_button}
 \title{'HTML' code to generate small back-to-top button}
 \usage{
-back_top_button(icon = "chevron-up", title = "Jump to", open_drawer = TRUE)
+back_top_button(
+  icon = "chevron-up",
+  title = "Jump to",
+  open_drawer = TRUE,
+  drawer_icon = "ellipsis"
+)
 }
 \arguments{
 \item{icon}{the icon for back-to-top button}
@@ -15,6 +20,10 @@ back_top_button(icon = "chevron-up", title = "Jump to", open_drawer = TRUE)
 button. Defaults to \code{TRUE} if a
 \code{.shidashi-drawer} element will be present in the page
 (e.g.\ from \code{\link{module_drawer}()}).}
+
+\item{drawer_icon}{the icon for the drawer-toggle button;
+defaults to \code{"ellipsis"} (three dots). Use e.g.
+\code{"robot"} for AI-agent modules.}
 }
 \value{
 'HTML' tags
@@ -35,5 +44,6 @@ drawer with content.
 
 back_top_button()
 back_top_button("rocket")
+back_top_button("rocket", drawer_icon = "robot")
 
 }
