@@ -115,16 +115,20 @@ flex_break <- function(..., class = NULL){
 #'   button. Defaults to \code{TRUE} if a
 #'   \code{.shidashi-drawer} element will be present in the page
 #'   (e.g.\ from \code{\link{module_drawer}()}).
+#' @param drawer_icon the icon for the drawer-toggle button;
+#'   defaults to \code{"ellipsis"} (three dots). Use e.g.
+#'   \code{"robot"} for AI-agent modules.
 #' @return 'HTML' tags
 #'
 #' @examples
 #'
 #' back_top_button()
 #' back_top_button("rocket")
+#' back_top_button("rocket", drawer_icon = "robot")
 #'
 #' @export
 back_top_button <- function(icon = "chevron-up", title = "Jump to",
-                            open_drawer = TRUE) {
+                            open_drawer = TRUE, drawer_icon = "ellipsis") {
   if(!length(title)){
     title <- NULL
   } else {
@@ -139,7 +143,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
       href = "#",
       "data-shidashi-action" = "drawer-toggle",
       title = "Open panel",
-      as_icon("ellipsis")
+      as_icon(drawer_icon)
     )
   } else {
     drawer_btn <- NULL

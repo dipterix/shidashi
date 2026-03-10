@@ -827,6 +827,11 @@ body.in-iframe .card.shidashi-maximized {
 .no-padding { padding: 0 !important; }
 .no-margin { margin: 0 !important; }
 
+pre.pre-compact {
+  display: flex;
+  code { padding: 0; }
+}
+
 .space-vertical-5 {
   width: 100%;
   &::before { content: " "; display: block; height: 5px; }
