@@ -356,24 +356,14 @@ class ShidashiApp {
     const lightFallbackBg = '#ffffff';
     const darkFallbackFg = '#e9ecef';
     const lightFallbackFg = '#343a40';
-    const fallbackBg = mode === 'dark' ? darkFallbackBg : lightFallbackBg;
-    const fallbackFg = mode === 'dark' ? darkFallbackFg : lightFallbackFg;
+    const background = mode === 'dark' ? darkFallbackBg : lightFallbackBg;
+    const foreground = mode === 'dark' ? darkFallbackFg : lightFallbackFg;
 
-    // Defer to next frame so computed styles reflect the class change
-    requestAnimationFrame(() => {
-      const body = document.body;
-      const cardEl = document.querySelector('.card, .info-box');
-      let bgcolor;
-      if (cardEl) {
-        bgcolor = this._col2Hex(getComputedStyle(cardEl).backgroundColor, fallbackBg);
-      } else {
-        bgcolor = this._col2Hex(getComputedStyle(body).backgroundColor, fallbackBg);
-      }
-      this.broadcastEvent('theme.changed', {
-        mode: mode,
-        background: bgcolor,
-        foreground: this._col2Hex(getComputedStyle(body).color, fallbackFg)
-      });
+    this.broadcastEvent('theme.changed', {
+      theme: mode,
+      mode: mode,
+      background: background,
+      foreground: foreground
     });
   }
 

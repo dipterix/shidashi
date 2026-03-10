@@ -1667,7 +1667,7 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   position: fixed;
   top: $navbar-height;
   right: 0;
-  width: 320px;
+  width: 480px;
   max-width: 90vw;
   height: calc(100vh - #{$navbar-height});
   z-index: 1045;
@@ -1676,7 +1676,7 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   box-shadow: -4px 0 12px rgba(0,0,0,0.15);
   transform: translateX(calc(100% + 20px));
   transition: transform 0.3s ease;
-  overflow-y: hidden;
+  overflow: hidden;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -1688,6 +1688,12 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
 
   &.open {
     transform: translateX(0);
+  }
+
+  // When navbar is hidden, revert to full viewport height
+  body.navbar-hidden & {
+    top: 0;
+    height: 100vh;
   }
 
   // Close tab — sits on the drawer's left edge, hidden by default.
@@ -1788,6 +1794,8 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  font-size: small;
+  padding: 0.5rem;
 
   // The shiny uiOutput wrapper must also flex-fill
   > .shiny-html-output {
@@ -1802,6 +1810,25 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   shiny-chat-container {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
+  }
+
+  // Prevent chat message content from overflowing the drawer
+  shiny-chat-message {
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
+    pre {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    table {
+      display: block;
+      overflow-x: auto;
+      max-width: 100%;
+    }
   }
 }
 

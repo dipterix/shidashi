@@ -242,8 +242,10 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
       skill_tool@annotations$shidashi_category <- c("skill", as.character(skill_conf$category))
       skill_tool@annotations$shidashi_module_id <- module_id
       skill_tool@annotations$shidashi_skill_scripts <- structure(
-        skill_conf$scripts,
-        names = vapply(skill_conf$scripts, function(x) { x[["name"]] }, FUN.VALUE = "")
+        as.list(skill_conf$scripts),
+        names = vapply(skill_conf$scripts, function(x) {
+          x[["name"]]
+        }, FUN.VALUE = "")
       )
       skill_tool@name <- sprintf("skill__%s__%s", session$ns(NULL), sname)
       tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
