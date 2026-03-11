@@ -92,3 +92,45 @@ test_that("build_condensed_summary produces expected structure", {
   expect_match(summ, "action='readme'", fixed = TRUE)
   expect_match(summ, "greet", fixed = TRUE)
 })
+
+
+test_that("fuzzy_match_reference matches case-insensitively", {
+  ref_files <- c("references/doc_A.md", "config.yaml", "notes/data.txt")
+
+  # Exact match
+
+  expect_equal(fuzzy_match_reference("references/doc_A.md", ref_files),
+               "references/doc_A.md")
+
+  # Case-insensitive full path
+  expect_equal(fuzzy_match_reference("REFERENCES/DOC_A.MD", ref_files),
+               "references/doc_A.md")
+  expect_equal(fuzzy_match_reference("References/Doc_A.Md", ref_files),
+               "references/doc_A.md")
+
+  # Without prefix (just filename)
+  expect_equal(fuzzy_match_reference("doc_A.md", ref_files),
+               "references/doc_A.md")
+  expect_equal(fuzzy_match_reference("DOC_A.MD", ref_files),
+               "references/doc_A.md")
+
+  # reference/ vs references/ prefix handling
+  expect_equal(fuzzy_match_reference("reference/doc_A.md", ref_files),
+               "references/doc_A.md")
+
+  # Top-level file
+  expect_equal(fuzzy_match_reference("config.yaml", ref_files),
+               "config.yaml")
+  expect_equal(fuzzy_match_reference("CONFIG.YAML", ref_files),
+               "config.yaml")
+
+  # Nested file by basename
+  expect_equal(fuzzy_match_reference("data.txt", ref_files),
+               "notes/data.txt")
+
+  # No match returns NULL
+  expect_null(fuzzy_match_reference("nonexistent.md", ref_files))
+  expect_null(fuzzy_match_reference("", ref_files))
+  expect_null(fuzzy_match_reference(NULL, ref_files))
+  expect_null(fuzzy_match_reference("doc_A.md", character(0)))
+})

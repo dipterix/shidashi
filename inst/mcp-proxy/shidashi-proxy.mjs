@@ -6,15 +6,17 @@
  * HTTP POST to the shidashi /mcp endpoint, and writes JSON-RPC responses
  * (one per line) to stdout.
  *
- * Port resolution order:
- *   1. CLI argument: `node shidashi-proxy.mjs <port>`
- *   2. Latest record in ./ports/ (lexicographic = chronological, ms-timestamp filenames)
- *   3. Fallback: 6564
+ * Target resolution order:
+ *   1. CLI argument as full URL: `node shidashi-proxy.mjs http://host:port/path`
+ *   2. CLI argument as port only: `node shidashi-proxy.mjs <port>`
+ *   3. Latest record in ./ports/ (lexicographic = chronological, ms-timestamp filenames)
+ *   4. Fallback: http://127.0.0.1:6564/mcp
  *
  * Zero npm dependencies — only Node.js built-ins.
  */
 
 import http from 'http';
+import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
@@ -25,17 +27,43 @@ const PORTS_DIR = path.join(__dirname, 'ports');
 const FALLBACK_PORT = 6564;
 
 // ---------------------------------------------------------------------------
-// Port resolution
+// Target resolution
 // ---------------------------------------------------------------------------
 
-function resolvePort() {
+/**
+ * Resolves the target endpoint configuration.
+ * @returns {{ hostname: string, port: number, path: string, protocol: 'http:' | 'https:' }}
+ */
+function resolveTarget() {
   const arg = process.argv[2];
+
+  // Check if argument is a full URL
+  if (arg && /^https?:\/\//i.test(arg)) {
+    try {
+      const url = new URL(arg);
+      const target = {
+        hostname: url.hostname,
+        port: parseInt(url.port, 10) || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname + url.search,
+        protocol: url.protocol,
+      };
+      process.stderr.write(
+        `[shidashi-proxy] Using URL ${url.protocol}//${target.hostname}:${target.port}${target.path} (from argument)\n`
+      );
+      return target;
+    } catch (e) {
+      process.stderr.write(`[shidashi-proxy] Invalid URL: ${arg}, falling back\n`);
+    }
+  }
+
+  // Check if argument is just a port number
   if (arg && /^\d+$/.test(arg)) {
     const p = parseInt(arg, 10);
     process.stderr.write(`[shidashi-proxy] Using port ${p} (from argument)\n`);
-    return p;
+    return { hostname: '127.0.0.1', port: p, path: '/mcp', protocol: 'http:' };
   }
 
+  // Try reading from ports directory
   try {
     const files = fs.readdirSync(PORTS_DIR)
       .filter(f => f.endsWith('.json'))
@@ -49,17 +77,17 @@ function resolvePort() {
       process.stderr.write(
         `[shidashi-proxy] Using port ${data.port} (from ${latestFile}, created ${data.created})\n`
       );
-      return data.port;
+      return { hostname: '127.0.0.1', port: data.port, path: '/mcp', protocol: 'http:' };
     }
   } catch (e) {
     process.stderr.write(`[shidashi-proxy] Could not read ports directory: ${e.message}\n`);
   }
 
   process.stderr.write(`[shidashi-proxy] Using fallback port ${FALLBACK_PORT}\n`);
-  return FALLBACK_PORT;
+  return { hostname: '127.0.0.1', port: FALLBACK_PORT, path: '/mcp', protocol: 'http:' };
 }
 
-const TARGET_PORT = resolvePort();
+const TARGET = resolveTarget();
 let sessionId = null;
 
 // ---------------------------------------------------------------------------
@@ -81,11 +109,13 @@ function postToMcp(rawLine) {
       headers['Mcp-Session-Id'] = sessionId;
     }
 
-    const req = http.request(
+    const transport = TARGET.protocol === 'https:' ? https : http;
+
+    const req = transport.request(
       {
-        hostname: '127.0.0.1',
-        port: TARGET_PORT,
-        path: '/mcp',
+        hostname: TARGET.hostname,
+        port: TARGET.port,
+        path: TARGET.path,
         method: 'POST',
         headers,
       },

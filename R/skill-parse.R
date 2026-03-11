@@ -132,6 +132,53 @@ discover_references <- function(skill_dir) {
 }
 
 
+#' Fuzzy match a reference file name
+#'
+#' Performs case-insensitive matching and supports flexible path formats:
+#' \itemize{
+#'   \item Full relative path (e.g., "references/doc_a.md")
+#'   \item Just filename (e.g., "doc_a.md" or "DOC_A.MD")
+#'   \item Alternate folder names ("reference/" or "references/")
+#' }
+#'
+#' @param query The user-supplied file name to match.
+#' @param ref_files Character vector of available reference files
+#'   (relative paths from skill_dir).
+#' @return The matched file path from \code{ref_files}, or \code{NULL}
+#'   if no match found.
+#' @keywords internal
+#' @noRd
+fuzzy_match_reference <- function(query, ref_files) {
+  if (!length(ref_files) || !length(query) || !nzchar(query)) {
+    return(NULL)
+  }
+
+  # Normalize query: strip leading "reference/" or "references/" prefix
+  query_normalized <- sub("^references?/", "", query, ignore.case = TRUE)
+
+  # Try exact match first (case-insensitive on full path)
+  exact_match <- ref_files[tolower(ref_files) == tolower(query)]
+  if (length(exact_match)) {
+    return(exact_match[[1L]])
+  }
+
+  # Try matching without the prefix
+  for (ref in ref_files) {
+    # Compare full paths case-insensitively
+    ref_normalized <- sub("^references?/", "", ref, ignore.case = TRUE)
+    if (tolower(ref_normalized) == tolower(query_normalized)) {
+      return(ref)
+    }
+    # Also try matching just the basename
+    if (tolower(basename(ref)) == tolower(query_normalized)) {
+      return(ref)
+    }
+  }
+
+  NULL
+}
+
+
 #' Discover executable scripts in a skill directory
 #'
 #' Looks for files under the \code{scripts/} subdirectory.

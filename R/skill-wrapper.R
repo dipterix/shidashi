@@ -188,11 +188,14 @@ skill_wrapper <- function(skill_path) {
                    "Available: ", paste(ref_files, collapse = ", "),
                    call. = FALSE)
             }
-            if (!file_name %in% ref_files) {
+            # Fuzzy match: case-insensitive and supports "references/file" prefix
+            matched_file <- fuzzy_match_reference(file_name, ref_files)
+            if (is.null(matched_file)) {
               stop("Reference file not found: ", file_name,
                    "\nAvailable: ", paste(ref_files, collapse = ", "),
                    call. = FALSE)
             }
+            file_name <- matched_file
 
             ref_path <- file.path(skill_dir, file_name)
             all_lines <- readLines(ref_path, warn = FALSE)
