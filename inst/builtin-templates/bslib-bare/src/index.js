@@ -1566,6 +1566,24 @@ class ShidashiApp {
       }
     });
 
+    this.shinyHandler('add_attribute', (params) => {
+      // params: { selector, attribute, value }
+      if (params.selector && params.attribute) {
+        document.querySelectorAll(params.selector).forEach(el => {
+          el.setAttribute(params.attribute, params.value ?? '');
+        });
+      }
+    });
+
+    this.shinyHandler('remove_attribute', (params) => {
+      // params: { selector, attribute }
+      if (params.selector && params.attribute) {
+        document.querySelectorAll(params.selector).forEach(el => {
+          el.removeAttribute(params.attribute);
+        });
+      }
+    });
+
     // --- Drawer handlers ---
 
     this.shinyHandler('drawer_open', (params) => {
@@ -1628,6 +1646,53 @@ class ShidashiApp {
         'shidashi-chatbot-status-unknown',
         params.status === 'unknown'
       );
+    });
+
+    // --- Chatbot stop button initialization ---
+
+    this.shinyHandler('init_chat_stop_button', (params) => {
+      // params: { chat_id, stop_id }
+      const chatContainer = document.getElementById(params.chat_id);
+      if (!chatContainer) return;
+
+      const chatInput = chatContainer.querySelector('shiny-chat-input');
+      if (!chatInput) return;
+
+      // Don't create if already exists
+      if (document.getElementById(params.stop_id)) return;
+
+      // Create stop button - styles defined in shidashi.scss
+      const stopBtn = document.createElement('button');
+      stopBtn.type = 'button';
+      stopBtn.id = params.stop_id;
+      stopBtn.className = 'shidashi-chatbot-stop';
+      stopBtn.title = 'Stop generation';
+      stopBtn.setAttribute('aria-label', 'Stop generation');
+      stopBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M6.5 5A1.5 1.5 0 0 0 5 6.5v3A1.5 1.5 0 0 0 6.5 11h3A1.5 1.5 0 0 0 11 9.5v-3A1.5 1.5 0 0 0 9.5 5z"/>
+      </svg>`;
+
+      // Insert into the chat input container
+      chatInput.style.position = 'relative';
+      chatInput.appendChild(stopBtn);
+
+      // Bind Shiny input - increment counter on click
+      stopBtn.addEventListener('click', () => {
+        if (window.Shiny) {
+          const currentVal = Shiny.shinyapp.$inputValues[params.stop_id] || 0;
+          Shiny.setInputValue(params.stop_id, currentVal + 1, { priority: 'event' });
+        }
+      });
+    });
+
+    // --- Chatbot stop button toggle ---
+
+    this.shinyHandler('toggle_stop_button', (params) => {
+      // params: { id, visible }
+      const el = document.getElementById(params.id);
+      if (!el) return;
+      // Toggle visibility via CSS class
+      el.classList.toggle('shidashi-chatbot-stop-visible', params.visible);
     });
 
     // --- Open URL handler ---

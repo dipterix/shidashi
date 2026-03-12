@@ -78,7 +78,9 @@ skill_wrapper <- function(skill_path) {
   tool_description <- paste0(
     parsed$description,
     " [Skill: call action='readme' first",
-    if (length(script_files)) paste0("; scripts: ", paste(script_files, collapse = ", ")),
+    if (length(script_files)) {
+      paste0("; scripts: ", paste(script_files, collapse = ", "))
+    },
     "]"
   )
 
@@ -118,7 +120,7 @@ skill_wrapper <- function(skill_path) {
       required = FALSE
     ),
     pattern = ellmer::type_string(
-      description = "For action='reference': optional grep pattern to filter lines.",
+      description = "For action='reference': optional grep pattern to filter lines.", # nolint: line_length_linter.
       required = FALSE
     ),
     line_start = ellmer::type_integer(
@@ -126,7 +128,7 @@ skill_wrapper <- function(skill_path) {
       required = FALSE
     ),
     n_lines = ellmer::type_integer(
-      description = "For action='reference': max lines to return. Default: 200.",
+      description = "For action='reference': max lines to return. Default: 200.", # nolint: line_length_linter.
       required = FALSE
     ),
     args = ellmer::type_array(
@@ -136,7 +138,7 @@ skill_wrapper <- function(skill_path) {
     ),
     envs = ellmer::type_array(
       items = ellmer::type_string(),
-      description = "For action='script': environment variables as KEY=VALUE strings.",
+      description = "For action='script': environment variables as KEY=VALUE strings.", # nolint: line_length_linter.
       required = FALSE
     )
   )
@@ -188,7 +190,7 @@ skill_wrapper <- function(skill_path) {
                    "Available: ", paste(ref_files, collapse = ", "),
                    call. = FALSE)
             }
-            # Fuzzy match: case-insensitive and supports "references/file" prefix
+            # Fuzzy match: case-insensitive and supports "references/file"
             matched_file <- fuzzy_match_reference(file_name, ref_files)
             if (is.null(matched_file)) {
               stop("Reference file not found: ", file_name,

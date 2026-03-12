@@ -100,6 +100,7 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
       )
     ),
     mode_ui,
+    # Chat UI - stop button will be injected dynamically via JS
     shinychat::chat_ui(id, fill = TRUE),
     # Status bar: model name, token counts, estimated cost
     shiny::tags$footer(
@@ -210,6 +211,26 @@ chatbot_server <- function(input, output, session,
   # Mode selector change
   mode_select_id <- paste0(id, "-mode_select")
 
+  # Stop button
+  stop_btn_id <- paste0(id, "-stop")
+
+  # ---- Local state (fastmap for non-reactive mutable state) ----
+  local_data <- fastmap::fastmap()
+  local_data$set("chat_token", NULL)
+  local_data$set("is_streaming", FALSE)
+
+  # Generate a new chat token (invalidates any in-flight operations)
+  new_chat_token <- function() {
+    token <- paste0(Sys.time(), "-", rand_string())
+    local_data$set("chat_token", token)
+    token
+  }
+
+  # Check if a token is still valid (matches current)
+  is_token_valid <- function(token) {
+    isTRUE(token == local_data$get("chat_token"))
+  }
+
   # ---- Mode state ----
   agent_conf <- as.list(agent_conf)
   agent_modes <- agent_conf$modes %||% "None"
@@ -231,10 +252,29 @@ chatbot_server <- function(input, output, session,
   ensure_chat <- function() {
     if (!is.null(local_chat)) return(local_chat)
 
+    # Generate initial token for this chat session
+    new_chat_token()
+
     tryCatch(
       {
         chat <- globals_new_chat(module_id = module_id, session = session)
+
+        chat$on_tool_request(function(request) {
+          if (!is_token_valid(local_data$get("callback_token"))) {
+            ellmer::tool_reject(reason = paste(
+              "Callback token has changed.",
+              "User has terminated current conversation.",
+              "You should NOT make any tool calls and stop immediately."
+            ))
+          }
+        })
+
+        # Capture current token for tool result callback
         chat$on_tool_result(function(result) {
+          # Check if chat was stopped/reset - silently drop if so
+          if (!is_token_valid(local_data$get("callback_token"))) {
+            return(invisible(NULL))
+          }
           try(silent = TRUE, {
             shinychat::chat_append(id = id, session = session, result)
           })
@@ -248,6 +288,15 @@ chatbot_server <- function(input, output, session,
             id     = session$ns(paste0(id, "-status-model")),
             text   = sprintf("%s/%s", provider@name, provider@model),
             status = "ready"
+          )
+        )
+
+        # Initialize stop button in the chat input area
+        session$sendCustomMessage(
+          "shidashi.init_chat_stop_button",
+          list(
+            chat_id = session$ns(id),
+            stop_id = session$ns(stop_btn_id)
           )
         )
 
@@ -292,6 +341,14 @@ chatbot_server <- function(input, output, session,
   }
 
   update_chat_status <- function(status = "ready") {
+    # Update stop button visibility
+    session$sendCustomMessage(
+      "shidashi.toggle_stop_button",
+      list(
+        id = session$ns(stop_btn_id),
+        visible = (status == "recalculating")
+      )
+    )
     if (!inherits(local_chat, "Chat")) { return() }
     tokens <- get_tokens()
     ns_prefix <- session$ns(paste0(id, "-status"))
@@ -349,45 +406,88 @@ chatbot_server <- function(input, output, session,
   }
 
   # ---- ExtendedTask for streaming chat ----
-  chat_task <- shiny::ExtendedTask$new(function(user_msg) {
+  chat_task <- shiny::ExtendedTask$new(coro::async(function(user_msg) {
     ensure_chat()
-    if (is.null(local_chat)) return(promises::promise_resolve(NULL))
+    if (is.null(local_chat)) {
+      return(NULL)
+    }
 
-    promises::promise(function(resolve, reject) {
-      update_chat_status(status = "recalculating")
-      resolve(local_chat$stream_async(
-        user_msg,
-        tool_mode = "sequential",
-        stream = "text"
-      ))
-    })$then(
-      onFulfilled = function(stream) {
-        # chat_append returns a promise when given a stream;
-        # return it so the next .then() waits for streaming to finish
-        shinychat::chat_append(id, stream, session = session)
+    # Capture token at request start for validation in callbacks
+    request_token <- local_data$get("chat_token")
+    local_data$set("callback_token", request_token)
+    local_data$set("is_streaming", TRUE)
+
+    update_chat_status(status = "recalculating")
+
+    stream <- local_chat$stream_async(
+      user_msg,
+      tool_mode = "sequential",
+      stream = "text"
+    )
+
+    tryCatch(
+      {
+        user_stopped <- FALSE
+        while (TRUE) {
+          if (is_token_valid(request_token)) {
+            content <- coro::await(stream())
+          } else {
+            stream(close = TRUE)
+            user_stopped <- TRUE
+            content <- coro::exhausted()
+          }
+
+          if (user_stopped) {
+            shinychat::chat_append(
+              id,
+              response = "\n\n*[Generation stopped by user]*",
+              role = "assistant",
+              session = session
+            )
+          } else if (!coro::is_exhausted(content)) {
+            shinychat::chat_append_message(
+              id = id,
+              msg = list(role = "assistant", content = content),
+              chunk = "end",
+              operation = "append"
+            )
+          } else {
+            # Make sure to end the message to reenable the chatbox
+            shinychat::chat_append_message(
+              id = id,
+              msg = list(role = "assistant", content = ""),
+              chunk = "end",
+              operation = "append"
+            )
+          }
+
+          if (coro::is_exhausted(content)) {
+            request_token <- "N/A"
+            local_data$set("callback_token", request_token)
+            local_data$set("is_streaming", FALSE)
+            break
+          }
+        }
+      },
+      error = function(e) {
+        shinychat::chat_append(
+          id,
+          response = sprintf(
+            "Error %s",
+            paste(cli::ansi_strip(conditionMessage(e)), collapse = " ")
+          ),
+          role = "assistant",
+          session = session
+        )
       }
-    )$then(
-      onFulfilled = function(value) {
-        # Runs after the stream is fully consumed → tokens are available
-        globals_save_conversation(module_id = module_id, chat = local_chat)
-        update_conv_dropdown()
-        update_chat_status()
-      }
-    )$catch(onRejected = function(e) {
-      globals_save_conversation(module_id = module_id, chat = local_chat)
-      update_conv_dropdown()
-      update_chat_status()
-      shinychat::chat_append(
-        id,
-        response = sprintf(
-          "Error %s",
-          paste(cli::ansi_strip(conditionMessage(e)), collapse = " ")
-        ),
-        role = "assistant",
-        session = session
-      )
-    })
-  })
+    ) # tryCatch
+
+    # Runs after the stream is fully consumed -> tokens are available
+    globals_save_conversation(module_id = module_id, chat = local_chat)
+    update_conv_dropdown()
+    update_chat_status()
+
+  }))
 
   # ---- Observers ----
 
@@ -421,6 +521,9 @@ chatbot_server <- function(input, output, session,
         return()
       }
 
+      # Invalidate any pending operations from previous conversation
+      new_chat_token()
+
       # Save current conversation before switching
       globals_save_conversation(module_id = module_id, chat = local_chat)
 
@@ -431,6 +534,14 @@ chatbot_server <- function(input, output, session,
       # restore chat
       ensure_chat()
       if (is.null(local_chat)) return()
+
+      # Load the selected conversation's turns into local_chat
+      conv <- entry$conversations[[selected]]
+      if (length(conv$turns)) {
+        local_chat$set_turns(conv$turns)
+      } else {
+        local_chat$set_turns(list())
+      }
 
       # Update the chat widget
       shinychat::chat_clear(id = id, session = session)
@@ -468,6 +579,9 @@ chatbot_server <- function(input, output, session,
   shiny::bindEvent(
     shiny::observe({
 
+      # Invalidate any pending operations from previous conversation
+      new_chat_token()
+
       # Save current conversation before starting a new one
       globals_save_conversation(module_id = module_id, chat = local_chat)
 
@@ -485,6 +599,26 @@ chatbot_server <- function(input, output, session,
 
     }),
     input[[new_conv_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
+
+  # On stop button click
+  shiny::bindEvent(
+    shiny::observe({
+      if (!isTRUE(local_data$get("is_streaming"))) return()
+
+      # Invalidate current token - this causes all in-flight operations
+      # to be silently dropped when they check their captured token
+      new_chat_token()
+      local_data$set("is_streaming", FALSE)
+
+      # Save whatever we have and update UI
+      globals_save_conversation(module_id = module_id, chat = local_chat)
+      update_conv_dropdown()
+      update_chat_status(status = "ready")
+    }),
+    input[[stop_btn_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
   )

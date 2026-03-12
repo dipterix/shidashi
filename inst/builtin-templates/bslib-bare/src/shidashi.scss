@@ -1757,6 +1757,31 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
 
 }
 
+// Chatbot stop button — positioned inside shiny-chat-input next to send button
+.shidashi-chatbot-stop {
+  display: none;
+  position: absolute;
+  bottom: calc(6px + var(--_input-padding-bottom, 0px));
+  right: 8px;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-danger, #{$danger});
+  transition: color 0.25s ease-in-out;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 16px;
+  border-radius: 50%;
+  z-index: 10;
+
+  &:hover {
+    color: color.scale($danger, $lightness: -15%);
+  }
+
+  &.shidashi-chatbot-stop-visible {
+    display: block;
+  }
+}
+
 // Chatbot status bar (model, tokens, cost)
 .shidashi-chatbot-status {
   flex-shrink: 0;
