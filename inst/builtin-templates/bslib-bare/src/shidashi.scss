@@ -1746,17 +1746,6 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   }
 }
 
-// Chatbot header bar inside the drawer
-.shidashi-chatbot-header {
-  flex-shrink: 0;
-
-  & .shiny-input-container,
-  & .shidashi-chatbot-new-conv {
-    margin-bottom: 0.75rem !important;
-  }
-
-}
-
 // Chatbot stop button — positioned inside shiny-chat-input next to send button
 .shidashi-chatbot-stop {
   display: none;
@@ -1780,6 +1769,56 @@ body.dark-mode #shiny-notification-panel .shidashi-notification {
   &.shidashi-chatbot-stop-visible {
     display: block;
   }
+}
+
+// Chatbot controls bar (conversation, mode, policy selectors)
+.shidashi-chatbot-controls {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  // Allow select dropdowns to overflow upward
+  overflow: visible;
+  line-height: 1;
+
+  // Conversation selector takes remaining space
+  .shidashi-chatbot-conv-select {
+    min-width: 0; // Allow text truncation
+  }
+
+  // New conversation button
+  .shidashi-chatbot-new-conv {
+    flex-shrink: 0;
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    width: 100%;
+    border-color: transparent;
+  }
+
+  // Compact form controls
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.4rem;
+    height: auto;
+    line-height: 1.3;
+  }
+
+  .selectize-dropdown {
+    transform: translateY(calc(-100% - 1.75rem));
+  }
+
+  .selectize-input {
+    min-height: 25px;
+    height: 25px;
+    line-height: 1;
+    overflow: clip;
+    padding: 6px 12px;
+  }
+  
 }
 
 // Chatbot status bar (model, tokens, cost)

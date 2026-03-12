@@ -70,6 +70,10 @@ init_app <- function(env = parent.frame()) {
   # module_id -> list(current_mode, modes, default_mode)
   global_env$module_agent_modes <- fastmap::fastmap()
 
+  # Per-module confirmation policy for destructive tools
+  # module_id -> "auto_allow" | "ask" | "auto_reject"
+  global_env$module_confirmation_policy <- fastmap::fastmap()
+
   # Stores the env to make sure the environment is not gc'ed
   env$.__shidashi_globals__. <- global_env
 
@@ -148,6 +152,30 @@ globals_set_agent_mode <- function(module_id, mode) {
     return(FALSE)
   }
   globals$module_agent_modes$set(module_id, list(current_mode = mode))
+  return(TRUE)
+}
+
+globals_get_confirmation_policy <- function(module_id, missing = "auto_allow") {
+  globals <- get_shidashi_globals()
+  if (!is.environment(globals)) {
+    return(missing)
+  }
+  policy <- globals$module_confirmation_policy$get(module_id)
+  if (!length(policy) || !policy %in% c("auto_allow", "ask", "auto_reject")) {
+    return(missing)
+  }
+  return(policy)
+}
+
+globals_set_confirmation_policy <- function(module_id, policy) {
+  globals <- get_shidashi_globals()
+  if (!is.environment(globals)) {
+    return(FALSE)
+  }
+  if (!policy %in% c("auto_allow", "ask", "auto_reject")) {
+    policy <- "auto_allow"
+  }
+  globals$module_confirmation_policy$set(module_id, policy)
   return(TRUE)
 }
 

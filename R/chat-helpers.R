@@ -289,9 +289,14 @@ wrap_tools_with_permissions <- function(tool, session) {
       stop("This tool is disabled under current agent permission mode.")
     }
 
-    if (!isTRUE(shidashi_permission) && !agent_mode %in% as.character(unlist(shidashi_permission))) {
-      stop("This tool is only enabled under the following agent modes: ",
-           paste(as.character(unlist(shidashi_permission)), collapse = ", "))
+    if (
+      !isTRUE(shidashi_permission) &&
+        !agent_mode %in% as.character(unlist(shidashi_permission))
+    ) {
+      stop(
+        "This tool is only enabled under the following agent modes: ",
+        paste(as.character(unlist(shidashi_permission)), collapse = ", ")
+      )
     }
 
     cl <- match.call()
@@ -324,7 +329,27 @@ wrap_tools_with_permissions <- function(tool, session) {
       return(do.call(original_fn, args))
     }
 
-    # Ask user for confirmation
+    # Check confirmation policy
+    policy <- globals_get_confirmation_policy(
+      module_id = module_id,
+      missing = "auto_allow"
+    )
+
+    if (identical(policy, "auto_allow")) {
+      # Auto-allow: execute without prompting
+      return(do.call(original_fn, args))
+    }
+
+    if (identical(policy, "auto_reject")) {
+      stop(
+        "Tool '", tool_name, "' is rejected by policy. ",
+        "User needs to change the confirmation policy to 'Auto-allow' ",
+        "in the app.",
+        call. = FALSE
+      )
+    }
+
+    # policy == "ask": Ask user for confirmation
     confirm_result <- mcp_tool_ask_user(
       arguments = list(
         message = paste0(

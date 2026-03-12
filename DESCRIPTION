@@ -38,11 +38,12 @@ Imports:
     httr2,
     S7,
     shiny (>= 1.7.0),
+    shinychat,
     yaml,
     jsonlite
 Suggests: 
-    shinychat,
     cli,
+    coro,
     logger (>= 0.2.1),
     processx,
     promises,

@@ -506,14 +506,19 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
       arguments, mcp_session_id),
     "get_session_info" = mcp_tool_get_session_info(mcp_session_id),
     "ask_user" = {
-      # Find bound shiny session (if any) for the browser modal path
-      shiny_session <- NULL
-      bound <- mcp_tool_bound_shinysessions(mcp_session_id = mcp_session_id)
-      if (length(bound)) {
-        e <- mcp_get_shiny_entry(bound[[1L]])
-        if (!is.null(e)) shiny_session <- e$shiny_session
-      }
-      mcp_tool_ask_user(arguments, shiny_session)
+      # In MCP mode (Mode 2), asking users via browser modals doesn't work
+      # because users are interacting in VSCode/IDE, not in the browser.
+      # Return an MCP error instructing the AI to ask questions in its own chat.
+      list(
+        content = list(list(
+          type = "text",
+          text = paste0(
+            "The ask_user tool is not available in MCP mode. ",
+            "Please ask the user directly in your chat interface instead."
+          )
+        )),
+        isError = TRUE
+      )
     },
     NULL # not a built-in
   )
@@ -588,8 +593,23 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
     return(mcp_json_result(id, result, mcp_session_id))
   }
 
-  # ---- Mode guard: reject if tool is not enabled for current mode ----
+  # ---- Mode guard: reject if mode is "None" ----
   current_mode <- globals_get_agent_mode(module_id = entry$namespace)
+  if (identical(current_mode, "None")) {
+    result <- list(
+      content = list(list(
+        type = "text",
+        text = paste0(
+          "Agent mode is 'None'. All tools & skills are disabled. ",
+          "Change the mode in the dashboard to enable tool calls."
+        )
+      )),
+      isError = TRUE
+    )
+    return(mcp_json_result(id, result, mcp_session_id))
+  }
+
+  # ---- Mode guard: reject if tool is not enabled for current mode ----
   if (!is_tool_enabled_for_mode(tool_obj, current_mode)) {
     result <- list(
       content = list(list(
@@ -625,54 +645,56 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
     }
   }
 
-  # ---- Destructive category guard: ask user for confirmation ----
+  # ---- Destructive/needs_confirmation category guard ----
   tool_category <- tool_obj@annotations$shidashi_category
-  is_destructive <- is.character(tool_category) && "destructive" %in% tool_category
-  # Also check per-script destructive category for skills
-  if (!is_destructive && length(skill_scripts) &&
+  needs_confirm <- is.character(tool_category) && 
+    any(c("destructive", "needs_confirmation") %in% tool_category)
+
+  # Also check per-script category for skills
+  if (!needs_confirm && length(skill_scripts) &&
       identical(arguments$action, "script") &&
       length(arguments$file_name) && nzchar(arguments$file_name)) {
     script_cat <- get_script_category(skill_scripts, arguments$file_name)
-    is_destructive <- "destructive" %in% script_cat
+    needs_confirm <- any(c("destructive", "needs_confirmation") %in% script_cat)
   }
-  if (is_destructive && !is.null(entry$shiny_session)) {
-    confirm_result <- mcp_tool_ask_user(
-      arguments = list(
-        message = paste0(
-          "The agent wants to call '", tool_name, "' which is marked as ",
-          "destructive. Do you want to proceed?"
-        ),
-        choices = c("Proceed", "Stop and revise"),
-        allow_freeform = FALSE
-      ),
-      shiny_session = entry$shiny_session
+
+  if (needs_confirm) {
+    # Check confirmation policy
+    policy <- globals_get_confirmation_policy(
+      module_id = entry$namespace, missing = "auto_allow"
     )
-    if (promises::is.promise(confirm_result)) {
-      return(promises::then(confirm_result, function(res) {
-        user_answer <- res$content[[1]]$text
-        if (!identical(user_answer, "Proceed")) {
-          return(mcp_json_result(id, list(
-            content = list(list(
-              type = "text",
-              text = paste0(
-                "User declined destructive action on '", tool_name,
-                "'. User response: ", user_answer
-              )
-            )),
-            isError = TRUE
-          ), mcp_session_id))
-        }
-        # User confirmed — proceed with tool call
-        provider <- get_mcp_provider()
-        result <- ellmer_tool_call(tool_obj, arguments, provider = provider)
-        if (promises::is.promise(result)) {
-          return(promises::then(result, function(r) {
-            mcp_json_result(id, r, mcp_session_id)
-          }))
-        }
-        mcp_json_result(id, result, mcp_session_id)
-      }))
+
+    if (identical(policy, "auto_reject")) {
+      result <- list(
+        content = list(list(
+          type = "text",
+          text = paste0(
+            "Tool '", tool_name, "' requires confirmation but policy is set to 'Auto-reject'. ",
+            "Change the confirmation policy in the dashboard to 'Auto-allow' to enable."
+          )
+        )),
+        isError = TRUE
+      )
+      return(mcp_json_result(id, result, mcp_session_id))
     }
+
+    if (identical(policy, "ask")) {
+      # In MCP mode (Mode 2), we can't show browser modals for confirmation.
+      # Auto-reject and instruct user to change policy if they want to allow.
+      result <- list(
+        content = list(list(
+          type = "text",
+          text = paste0(
+            "Tool '", tool_name, "' requires confirmation. ",
+            "In MCP mode, interactive confirmation is not available. ",
+            "Change the confirmation policy in the dashboard to 'Auto-allow' to enable this tool."
+          )
+        )),
+        isError = TRUE
+      )
+      return(mcp_json_result(id, result, mcp_session_id))
+    }
+    # policy == "auto_allow": proceed without confirmation
   }
 
   # Call the ToolDef with the provided arguments

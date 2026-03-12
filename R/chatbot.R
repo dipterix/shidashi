@@ -58,50 +58,80 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
   conv_select_id <- paste0(id, "-conv_select")
   new_conv_id    <- paste0(id, "-new_conversation")
   mode_select_id <- paste0(id, "-mode_select")
+  confirm_policy_id <- paste0(id, "-confirm_policy")
   status_id      <- paste0(id, "-status")
 
   # Build mode selector if modes are defined
   mode_ui <- NULL
   if (length(modes)) {
+    # Use mode names only (no descriptions)
     mode_choices <- vapply(modes, function(m) m$name, character(1))
-    names(mode_choices) <- vapply(modes, function(m) {
-      paste0(m$name, if (length(m$description)) paste0(": ", m$description) else "")
-    }, character(1))
+    names(mode_choices) <- mode_choices
     selected <- if (length(default_mode)) default_mode else mode_choices[[1]]
-    mode_ui <- shiny::div(
-      class = "shidashi-chatbot-mode-select px-2 py-1",
-      shiny::selectInput(
-        mode_select_id,
-        label = NULL,
-        choices = mode_choices,
-        selected = selected,
-        width = "100%"
-      )
+    mode_ui <- shiny::selectInput(
+      mode_select_id,
+      label = NULL,
+      choices = mode_choices,
+      selected = selected,
+      width = "100%"
     )
   }
 
-  shiny::tagList(
-    shiny::div(
-      class = "shidashi-chatbot-header d-flex align-items-center px-2 py-1 gap-1",
-      shiny::div(
-        class = "shidashi-chatbot-conv-select flex-grow-1",
-        shiny::selectInput(
-          conv_select_id,
-          label = NULL,
-          choices = c("New conversation" = "1"),
-          width = "100%"
-        )
-      ),
-      shiny::actionLink(
-        new_conv_id, label = NULL,
-        icon = shiny::icon("plus"),
-        title = "New conversation",
-        class = "shidashi-chatbot-new-conv btn btn-sm btn-outline-secondary"
-      )
+  # Confirmation policy selector
+  confirm_policy_ui <- shiny::selectInput(
+    confirm_policy_id,
+    label = NULL,
+    choices = c(
+      "Auto-allow" = "auto_allow",
+      "Ask before changes" = "ask",
+      "Auto-reject" = "auto_reject"
     ),
-    mode_ui,
+    selected = "auto_allow",
+    width = "100%"
+  )
+
+  # Conversation selector
+  conv_ui <- shiny::div(
+    class = "shidashi-chatbot-conv-select flex-grow-1",
+    shiny::selectInput(
+      conv_select_id,
+      label = NULL,
+      choices = c("New conversation" = "1"),
+      width = "100%"
+    )
+  )
+
+  # New conversation button
+  new_conv_ui <- shiny::actionLink(
+    new_conv_id, label = NULL,
+    icon = shiny::icon("plus"),
+    title = "New conversation",
+    class = "shidashi-chatbot-new-conv btn btn-sm btn-outline-secondary"
+  )
+
+  shiny::tagList(
     # Chat UI - stop button will be injected dynamically via JS
     shinychat::chat_ui(id, fill = TRUE),
+    # Control bar: all selectors in one compact row (dropup)
+    shiny::div(
+      class = "shidashi-chatbot-controls d-flex align-items-center gap-1 px-0 py-1",
+      shiny::div(
+        style = "flex: 3;",
+        mode_ui
+      ),
+      shiny::div(
+        style = "flex: 3;",
+        confirm_policy_ui
+      ),
+      shiny::div(
+        style = "flex: 5;",
+        conv_ui
+      ),
+      shiny::div(
+        style = "flex: 1;",
+        new_conv_ui
+      )
+    ),
     # Status bar: model name, token counts, estimated cost
     shiny::tags$footer(
       id = status_id,
@@ -210,6 +240,9 @@ chatbot_server <- function(input, output, session,
 
   # Mode selector change
   mode_select_id <- paste0(id, "-mode_select")
+
+  # Confirmation policy selector
+  confirm_policy_id <- paste0(id, "-confirm_policy")
 
   # Stop button
   stop_btn_id <- paste0(id, "-stop")
@@ -641,6 +674,18 @@ chatbot_server <- function(input, output, session,
 
     }),
     input[[mode_select_id]],
+    ignoreNULL = TRUE,
+    ignoreInit = TRUE
+  )
+
+  # On changing confirmation policy
+  shiny::bindEvent(
+    shiny::observe({
+      policy <- input[[confirm_policy_id]]
+      if (!length(policy) || !nzchar(policy)) return()
+      globals_set_confirmation_policy(module_id = module_id, policy = policy)
+    }),
+    input[[confirm_policy_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
   )
