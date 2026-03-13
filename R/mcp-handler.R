@@ -387,6 +387,169 @@ mcp_handle_ping <- function(id, mcp_session_id = NULL) {
   mcp_json_result(id, structure(list(), names = character(0L)), mcp_session_id)
 }
 
+# Pre-list shared tool & skill schemas (available before session binding).
+# Reads agents/tool-schema.yaml (for tools), discovers skills from
+# agents/skills/ via skill_wrapper(), and injects builtin shiny_* tools.
+# No caching — always re-reads so changes are picked up immediately.
+mcp_prelisted_tool_schemas <- function() {
+
+  schemas <- list()
+
+  # ---- Builtin shiny_* tool schemas (always available) ----
+  schemas[["tool__shiny_input_info"]] <- list(
+    name        = "tool__shiny_input_info",
+    description = paste(
+      "Query registered shiny input specifications.",
+      "Returns input IDs, descriptions, types, update functions,",
+      "whether each is writable, and (when a session is active)",
+      "whether each currently exists and its current value."
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        inputIds = list(
+          type        = "array",
+          items       = list(type = "string", description = "Shiny input ID"),
+          description = "Optional: specific input IDs to query. Omit to list all registered inputs."
+        )
+      )
+    )
+  )
+
+  schemas[["tool__shiny_input_update"]] <- list(
+    name        = "tool__shiny_input_update",
+    description = paste(
+      "Update a shiny input value by its ID.",
+      "The value will be sent to the corresponding shiny update function",
+      "(e.g. updateTextInput, updateSelectInput, updateNumericInput).",
+      "Call `tool__shiny_input_info` first to discover available input IDs,",
+      "their types, current values, and whether they are writable."
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        inputId = list(
+          type        = "string",
+          description = "Shiny input ID of which the value is to be changed"
+        ),
+        value = list(
+          type        = "string",
+          description = "The new value for the input. Use JSON encoding for non-string values (e.g. 123, [1,2,3], {\"a\":1})."
+        )
+      ),
+      required = list("inputId")
+    )
+  )
+
+  schemas[["tool__shiny_query_ui"]] <- list(
+    name        = "tool__shiny_query_ui",
+    description = paste(
+      "Request the HTML content of a UI element by CSS selector.",
+      "This sends a query to the browser and returns a request_id.",
+      "The browser response is asynchronous; call `tool__shiny_query_ui_result`",
+      "with the returned request_id to retrieve the actual content.",
+      "Wait briefly (1-2 seconds) before fetching the result."
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        css_selector = list(
+          type        = "string",
+          description = "A CSS selector to query (e.g. '#my_output', '.card-body', 'div[data-id=\"plot\"]')."
+        )
+      ),
+      required = list("css_selector")
+    )
+  )
+
+  schemas[["tool__shiny_query_ui_result"]] <- list(
+    name        = "tool__shiny_query_ui_result",
+    description = paste(
+      "Fetch the result of a previous `tool__shiny_query_ui` request.",
+      "Returns the innerHTML of the matched element, or an inline image",
+      "if the element is a canvas or contains only an <img> tag.",
+      "If the result is not yet available and the request has not timed out,",
+      "wait a moment and try again."
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        request_id = list(
+          type        = "string",
+          description = "The request_id returned by a prior `tool__shiny_query_ui` call."
+        )
+      ),
+      required = list("request_id")
+    )
+  )
+
+  schemas[["tool__shiny_output_info"]] <- list(
+    name        = "tool__shiny_output_info",
+    description = paste(
+      "List registered Shiny output elements and optionally retrieve",
+      "their rendered HTML content. When outputIds is omitted, returns",
+      "all registered outputs with their descriptions. You can get the",
+      "HTML content of output via `tool__shiny_query_ui(selector)`"
+    ),
+    inputSchema = list(
+      type       = "object",
+      properties = list(
+        outputIds = list(
+          type        = "array",
+          items       = list(type = "string", description = "Shiny output ID"),
+          description = "Optional: specific output IDs to query. Omit to list all registered outputs."
+        )
+      )
+    )
+  )
+
+  # ---- tool-schema.yaml: user-defined pre-listed tool schemas ----
+  root_path <- tryCatch(template_root(), error = function(e) NULL)
+  if (!is.null(root_path) && dir.exists(root_path)) {
+
+    schema_path <- file.path(root_path, "agents", "tool-schema.yaml")
+    if (file.exists(schema_path)) {
+      tool_schema_conf <- tryCatch(
+        yaml::read_yaml(schema_path),
+        error = function(e) NULL
+      )
+      if (is.list(tool_schema_conf$tools)) {
+        for (ts in tool_schema_conf$tools) {
+          if (!length(ts$name) || !nzchar(ts$name)) next
+          full_name <- sprintf("tool__%s", ts$name)
+          schemas[[full_name]] <- list(
+            name        = full_name,
+            description = ts$description %||% "",
+            inputSchema = ts$inputSchema %||% list(
+              type = "object",
+              properties = structure(list(), names = character(0))
+            )
+          )
+        }
+      }
+    }
+
+    # ---- Skill schemas: auto-discovered from agents/skills/ ----
+    skills_dir <- file.path(root_path, "agents", "skills")
+    if (dir.exists(skills_dir)) {
+      skill_dirs <- list.dirs(skills_dir, recursive = FALSE, full.names = TRUE)
+      for (sdir in skill_dirs) {
+        sname <- basename(sdir)
+        if (!file.exists(file.path(sdir, "SKILL.md"))) next
+        skill_tool <- tryCatch({
+          wrapper <- skill_wrapper(sdir)
+          wrapper()
+        }, error = function(e) NULL)
+        if (!inherits(skill_tool, "ellmer::ToolDef")) next
+        skill_tool@name <- sprintf("skill__%s", sanitize_skill_name(sname))
+        schemas[[skill_tool@name]] <- ellmer_tool_schema(skill_tool)
+      }
+    }
+  }
+
+  schemas
+}
+
 #' Handle MCP `tools/list` request
 #' @keywords internal
 #' @noRd
@@ -426,6 +589,9 @@ mcp_handle_tools_list <- function(id, params, mcp_session_id) {
     )
   )
 
+  # Collect names of bound-session tools for deduplication
+  bound_tool_names <- character(0)
+
   # If bound to a Shiny session, add per-session tools
   bound_token <- mcp_tool_bound_shinysessions(mcp_session_id = mcp_session_id)
   if (length(bound_token)) {
@@ -442,6 +608,20 @@ mcp_handle_tools_list <- function(id, params, mcp_session_id) {
       if (length(enabled_tools)) {
         schema <- lapply(enabled_tools, ellmer_tool_schema)
         tools <- c(tools, unname(schema))
+        bound_tool_names <- vapply(schema, `[[`, "name",
+                                   FUN.VALUE = character(1))
+      }
+    }
+  }
+
+  # Pre-listed tools & skills (visible even without a bound session).
+  # When a session IS bound, skip any pre-listed schema whose name
+  # already appeared in bound-session tools (live version wins).
+  prelisted <- mcp_prelisted_tool_schemas()
+  if (length(prelisted)) {
+    for (pschema in prelisted) {
+      if (!pschema$name %in% bound_tool_names) {
+        tools <- c(tools, list(pschema))
       }
     }
   }

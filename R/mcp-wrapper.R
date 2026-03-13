@@ -606,7 +606,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       description = paste(
         "Request the HTML content of a UI element by CSS selector.",
         "This sends a query to the browser and returns a request_id.",
-        "The browser response is asynchronous; call `tool__*__shiny_query_ui_result`",
+        "The browser response is asynchronous; call `tool__shiny_query_ui_result`",
         "with the returned request_id to retrieve the actual content.",
         "Wait briefly (1-2 seconds) before fetching the result."
       ),
@@ -634,7 +634,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
         paste0(
           "Request registered (id: ", request_id, "). ",
-          "Call `tool__*__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
+          "Call `tool__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
           "to retrieve the result."
         )
       }
@@ -682,7 +682,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
           # Not timed out yet — tell the AI to retry
           return(paste0(
             "Result not yet available (", round(elapsed, 1), "s elapsed). ",
-            "Wait a moment and call `tools__*__shiny_query_ui_result(request_id = \"",
+            "Wait a moment and call `tool__shiny_query_ui_result(request_id = \"",
             request_id, "\")` again."
           ))
         }

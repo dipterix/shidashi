@@ -545,5 +545,33 @@ create_barebone_agents <- function(path) {
     con = file.path(path, 'agents', 'skills', 'greet', 'scripts', 'greet.R')
   )
 
+  # agents/tool-schema.yaml
+  # Pre-listed tool schemas for MCP clients that do not support
+  # dynamic deferred tools.
+  writeLines(
+    c(
+      "# agents/tool-schema.yaml",
+      "#",
+      "# Pre-listed tool schemas for MCP clients that do not support",
+      "# dynamic deferred tools. These schemas are advertised in `tools/list`",
+      "# even before a Shiny session is bound. Calling the tools still",
+      "# requires a bound session.",
+      "#",
+      "# Skills (agents/skills/) are auto-discovered and do NOT need to be",
+      "# listed here.",
+      "",
+      "tools:",
+      "- name: hello_world",
+      "  description: \"Returns a greeting. Used to verify the MCP tunnel works.\"",
+      "  inputSchema:",
+      "    type: object",
+      "    properties:",
+      "      name:",
+      "        type: string",
+      "        description: \"Name to greet (default: 'World')\""
+    ),
+    con = file.path(path, 'agents', 'tool-schema.yaml')
+  )
+
   invisible()
 }

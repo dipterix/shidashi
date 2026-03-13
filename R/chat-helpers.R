@@ -215,7 +215,7 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
         tool@annotations$shidashi_category <- category
         tool@annotations$shidashi_module_id <- module_id
         old_name <- tool@name
-        tool@name <- sprintf("tool__%s__%s", session$ns(NULL), tool@name)
+        tool@name <- sprintf("tool__%s", tool@name)
 
         tool_map$set(tool@name, wrap_tools_with_permissions(tool = tool, session = session))
         return()
@@ -247,7 +247,7 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
           x[["name"]]
         }, FUN.VALUE = "")
       )
-      skill_tool@name <- sprintf("skill__%s__%s", session$ns(NULL), sname)
+      skill_tool@name <- sprintf("skill__%s", sname)
       tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
     })
 
@@ -354,8 +354,8 @@ wrap_tools_with_permissions <- function(tool, session) {
     }
 
     # policy == "ask": Ask user for confirmation
-    # Extract short tool name (strip module prefix like "tool__mod__")
-    short_name <- sub("^(tool|skill)__[^_]+__", "", tool_name)
+    # Extract short tool name (strip type prefix like "tool__" or "skill__")
+    short_name <- sub("^(tool|skill)__", "", tool_name)
 
     confirm_result <- mcp_tool_ask_user(
       arguments = list(
