@@ -647,7 +647,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
 
   # ---- Destructive/needs_confirmation category guard ----
   tool_category <- tool_obj@annotations$shidashi_category
-  needs_confirm <- is.character(tool_category) && 
+  needs_confirm <- is.character(tool_category) &&
     any(c("destructive", "needs_confirmation") %in% tool_category)
 
   # Also check per-script category for skills
@@ -829,11 +829,12 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
   if (length(tool_names)) {
     msg <- paste0(
       "Successfully bound to Shiny session '", token, "'.",
-      " The MCP tool list has been updated.",
-      " The following tools are NOW available as top-level MCP tools",
-      " you can call directly: ",
-      paste(tool_names, collapse = ", "), ".",
-      " Call tools/list to see their full schemas (<- it's UPDATED!)."
+      " Please NOW search for MCP tools before invoking deferred tools.",
+      # " The following tools will be available: ",
+      # paste(tool_names, collapse = ", "), ".",
+      " * Call `tools/list` (e.g. tool_search_tool_regex) to see their ",
+      "full schemas. You MUST search the tools again to enable ",
+      "the new deferred tools."
     )
   } else {
     msg <- paste0(
@@ -842,8 +843,9 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
     )
   }
 
-  detail <- as.character(jsonlite::toJSON(info, auto_unbox = TRUE, null = "null"))
-  text <- paste0(msg, "\n\nDetails:\n", detail)
+  # detail <- as.character(jsonlite::toJSON(info, auto_unbox = TRUE, null = "null"))
+  # text <- paste0(msg, "\n\nDetails:\n", detail)
+  text <- msg
   list(
     content = list(list(type = "text", text = text)),
     isError = FALSE
@@ -1010,39 +1012,41 @@ mcp_tool_ask_user_shiny <- function(message_text, choices, allow_freeform,
   }
   shiny_session$sendCustomMessage("shidashi.ask_user", payload)
 
-  promises::promise(function(resolve, reject) {
+  check_fn <- coro::async(function() {
     remaining <- 120L  # 120 x 500ms = 60 seconds timeout
-    check_fn <- function() {
+
+    while (remaining >= 0) {
+      remaining <- remaining - 1L
       res <- shiny::isolate(
         shiny_session$input[["@shidashi_ask_user_result@"]]
       )
       if (!is.null(res) && identical(res$request_id, request_id)) {
         if (isTRUE(res$cancelled)) {
-          resolve(list(
+          return(list(
             content = list(list(type = "text",
-                               text = "User cancelled the request.")),
+                                text = "User cancelled the request.")),
             isError = FALSE
           ))
         } else {
-          resolve(list(
+          return(list(
             content = list(list(type = "text",
-                               text = res$value %||% "")),
+                                text = res$value %||% "")),
             isError = FALSE
           ))
         }
-      } else if (remaining <= 0L) {
-        resolve(list(
-          content = list(list(type = "text",
-                             text = "Timeout: no response from user within 60 seconds.")),
-          isError = FALSE
-        ))
       } else {
-        remaining <<- remaining - 1L
-        later::later(check_fn, 0.5)
+        coro::async_sleep(0.5)
       }
     }
-    check_fn()
+
+    return(list(
+      content = list(list(type = "text",
+                          text = "Timeout: no response from user within 60 seconds.")),
+      isError = FALSE
+    ))
+
   })
+  check_fn()
 }
 
 # Ask user via the R console (synchronous, returns a plain list)

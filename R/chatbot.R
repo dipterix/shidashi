@@ -281,8 +281,8 @@ chatbot_server <- function(input, output, session,
   agent_conf <- as.list(agent_conf)
   agent_modes <- agent_conf$modes %||% "None"
   agent_default_mode <- agent_conf$parameters$default_mode %||% agent_modes[[1]]
+  globals_set_agent_mode(module_id = module_id, mode = agent_default_mode)
   current_mode <- shiny::reactiveVal(agent_default_mode)
-  globals_set_agent_mode(module_id = module_id, mode = current_mode)
 
   # ---- Render chatbot UI into the drawer's uiOutput ----
   output[[drawer_id]] <- shiny::renderUI({
@@ -321,9 +321,23 @@ chatbot_server <- function(input, output, session,
           if (!is_token_valid(local_data$get("callback_token"))) {
             return(invisible(NULL))
           }
-          try(silent = TRUE, {
+          tryCatch({
+            # if (!is.null(result@request) && endsWith(result@request@name, "shiny_query_ui")) {
+            #   return(invisible(NULL))
+            # }
+            if (
+              S7::S7_inherits(result@value, ellmer::ContentImage)
+            ) {
+              img_type <- result@value@type
+              img_data <- result@value@data
+              result <- sprintf("<img src='data:%s;base64,%s' style='max-width:100%%' />", img_type, img_data)
+            }
             shinychat::chat_append(id = id, session = session, result)
+          }, error = function(e) {
+            print(result)
+            warning(e)
           })
+          return()
         })
 
         # Send provider/model info to the status bar

@@ -320,6 +320,8 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
         # inject to body
         agent_enabled <- isTRUE(agent_conf$enabled)
+        default_mode <- agent_conf$parameters$default_mode %||%
+                         agent_conf$modes[[1]] %||% "None"
         body(server_function) <- bquote({
           local({
             shidashi <- asNamespace("shidashi")
@@ -331,6 +333,13 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             tools <- .mcptools_maker(session)
             entry$tools <- tools$as_list()
             registry$set(session$token, entry)
+
+            # Set agent mode early so MCP can filter tools even if
+            # the chat drawer is never opened
+            shidashi$globals_set_agent_mode(
+              module_id = .(module_id),
+              mode = .(default_mode)
+            )
 
             # Initialize chatbot server if agents are enabled for this module
             if (.(isTRUE(agent_conf$enabled))) {

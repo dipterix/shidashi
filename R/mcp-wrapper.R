@@ -456,6 +456,26 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     session = shiny::getDefaultReactiveDomain()
   ) {
 
+    query_requests <- fastmap::fastmap()
+
+    # Observer: when the browser responds via setInputValue, store the
+    # result in query_requests so shiny_query_ui_result can fetch it.
+    shiny::bindEvent(
+      shiny::observe({
+        res <- session$input[["@shiny_query_ui_result@"]]
+        res <- as.list(res)
+        rid <- res$request_id
+        if (length(rid) != 1 || !query_requests$has(rid)) {
+          return()
+        }
+        entry <- query_requests$get(rid)
+        entry$result <- res
+        query_requests$set(rid, entry)
+      }, domain = session),
+      session$input[["@shiny_query_ui_result@"]],
+      ignoreNULL = TRUE, ignoreInit = FALSE
+    )
+
     shiny_input_info <- ellmer::tool(
       name = "shiny_input_info",
       description = paste(
@@ -584,11 +604,11 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     shiny_query_ui <- ellmer::tool(
       name = "shiny_query_ui",
       description = paste(
-        "Query the HTML content of a UI element by CSS selector.",
-        "Returns the innerHTML of the first matching element.",
-        "If the element is a canvas or contains only an <img> tag,",
-        "its visual content is returned as an inline image.",
-        "This requires a round-trip to the browser and may take up to 5 seconds."
+        "Request the HTML content of a UI element by CSS selector.",
+        "This sends a query to the browser and returns a request_id.",
+        "The browser response is asynchronous; call `tool__*__shiny_query_ui_result`",
+        "with the returned request_id to retrieve the actual content.",
+        "Wait briefly (1-2 seconds) before fetching the result."
       ),
       arguments = list(
         css_selector = ellmer::type_string(
@@ -599,41 +619,88 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       fun = function(css_selector) {
         request_id <- rand_string()
 
+        query_requests$set(request_id, list(
+          request_id = request_id,
+          request_timestamp = Sys.time(),
+          selector = css_selector,
+          result = NULL
+        ))
+
         session$sendCustomMessage("shidashi.query_ui", list(
           selector = css_selector,
           request_id = request_id,
           input_id = session$ns("@shiny_query_ui_result@")
         ))
 
-        promises::promise(function(resolve, reject) {
-          remaining <- 10L  # 10 x 500ms = 5 seconds
-          check_fn <- function() {
-            res <- shiny::isolate(session$input[["@shiny_query_ui_result@"]])
-            if (!is.null(res) && identical(res$request_id, request_id)) {
-              html <- res$html %||% ""
-              # If the JS side captured a data-URI image (canvas / <img>)
-              if (length(res$image_data) && nzchar(res$image_data)) {
-                # image_data is base64 without the data:... prefix
-                mime <- res$image_type %||% "image/png"
-                resolve(ellmer::ContentImageInline(
-                  type = mime,
-                  data = res$image_data
-                ))
-              } else {
-                resolve(html)
-              }
-            } else if (remaining <= 0L) {
-              reject(simpleError(paste0(
-                "Timeout: no response from browser for selector '",
-                css_selector, "' within 5 seconds."
-              )))
-            } else {
-              remaining <<- remaining - 1L
-              later::later(check_fn, 0.5)
-            }
+        paste0(
+          "Request registered (id: ", request_id, "). ",
+          "Call `tool__*__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
+          "to retrieve the result."
+        )
+      }
+    )
+
+    shiny_query_ui_result <- ellmer::tool(
+      name = "shiny_query_ui_result",
+      description = paste(
+        "Fetch the result of a previous `shiny_query_ui` request.",
+        "Returns the innerHTML of the matched element, or an inline image",
+        "if the element is a canvas or contains only an <img> tag.",
+        "If the result is not yet available and the request has not timed out,",
+        "wait a moment and try again."
+      ),
+      arguments = list(
+        request_id = ellmer::type_string(
+          description = "The request_id returned by a prior `shiny_query_ui` call.",
+          required = TRUE
+        )
+      ),
+      fun = function(request_id) {
+        if (!query_requests$has(request_id)) {
+          stop(
+            "Unknown request_id: '", request_id, "'. ",
+            "It may have already been consumed or was never created. ",
+            "Call `shiny_query_ui` first to register a new request."
+          )
+        }
+
+        entry <- query_requests$get(request_id)
+        res <- entry$result
+
+        if (is.null(res)) {
+          elapsed <- as.double(
+            difftime(Sys.time(), entry$request_timestamp, units = "secs")
+          )
+          if (elapsed > 5) {
+            query_requests$remove(request_id)
+            stop(
+              "No response from browser for selector '",
+              entry$selector, "' within 5 seconds. ",
+              "The selector is most likely invalid (no matching results)."
+            )
           }
-          check_fn()
-        })
+          # Not timed out yet — tell the AI to retry
+          return(paste0(
+            "Result not yet available (", round(elapsed, 1), "s elapsed). ",
+            "Wait a moment and call `tools__*__shiny_query_ui_result(request_id = \"",
+            request_id, "\")` again."
+          ))
+        }
+
+        # Result available — consume and clean up
+        html <- res$html %||% ""
+        # If the JS side captured a data-URI image (canvas / <img>)
+        if (length(res$image_data) && nzchar(res$image_data)) {
+          mime <- res$image_type %||% "image/png"
+          html <- ellmer::ContentImageInline(
+            type = mime,
+            data = res$image_data
+          )
+        }
+
+        query_requests$remove(request_id)
+
+        html
       }
     )
 
@@ -671,7 +738,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         }
 
         results <- lapply(results, function(item) {
-          item$css_selector <- session$ns(item$outputId)
+          item$css_selector <- sprintf("#%s", session$ns(item$outputId))
           item
         })
 
@@ -683,6 +750,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       shiny_input_info = shiny_input_info,
       shiny_input_update = shiny_input_update,
       shiny_query_ui = shiny_query_ui,
+      shiny_query_ui_result = shiny_query_ui_result,
       shiny_output_info = shiny_output_info
     )
   })

@@ -15,6 +15,10 @@ tools:
   category:
   - exploratory
   enabled: ["Plan", "Executing"]
+- name: shiny_query_ui_result
+  category:
+  - exploratory
+  enabled: ["Plan", "Executing"]
 - name: shiny_input_update
   category:
   - executing

@@ -182,8 +182,31 @@ rl.on('line', async (line) => {
 
   try {
     const messages = await postToMcp(trimmed);
+    // Separate responses (have `id`) from server-initiated notifications.
+    // Send responses immediately; defer notifications so VS Code's MCP
+    // client reads them as distinct messages and acts on them (e.g.
+    // refreshing the tool catalog after notifications/tools/list_changed).
+    const responses = [];
+    const notifications = [];
     for (const msg of messages) {
+      if (msg.id !== undefined) {
+        responses.push(msg);
+      } else {
+        notifications.push(msg);
+      }
+    }
+    for (const msg of responses) {
       process.stdout.write(JSON.stringify(msg) + '\n');
+    }
+    if (notifications.length) {
+      setTimeout(() => {
+        for (const msg of notifications) {
+          process.stderr.write(
+            `[shidashi-proxy] Forwarding notification: ${msg.method}\n`
+          );
+          process.stdout.write(JSON.stringify(msg) + '\n');
+        }
+      }, 50);
     }
   } catch (err) {
     process.stderr.write(`[shidashi-proxy] Request error: ${err.message}\n`);
