@@ -66,7 +66,9 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
   if (length(modes)) {
     # Use mode names only (no descriptions)
     mode_choices <- vapply(modes, function(m) m$name, character(1))
-    names(mode_choices) <- mode_choices
+    names(mode_choices) <- vapply(modes, function(m) {
+      sprintf("%s - %s", m$name, m$description %||% "")
+    }, character(1))
     selected <- if (length(default_mode)) default_mode else mode_choices[[1]]
     mode_ui <- shiny::selectInput(
       mode_select_id,
@@ -106,7 +108,17 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
     new_conv_id, label = NULL,
     icon = shiny::icon("plus"),
     title = "New conversation",
-    class = "shidashi-chatbot-new-conv btn btn-sm btn-outline-secondary"
+    class = "shidashi-chatbot-new-conv shidashi-chatbot-ops-btn btn btn-sm btn-outline-secondary"
+  )
+
+  # Copy conversation button (plain button triggers JS directly)
+  copy_conv_ui <- shiny::tags$button(
+    type = "button",
+    class = "shidashi-chatbot-copy-conv shidashi-chatbot-ops-btn btn btn-sm btn-outline-secondary",
+    title = "Copy conversation to clipboard",
+    `data-shidashi-action` = "copy-conversation",
+    `data-shidashi-chat-id` = id,
+    shiny::icon("copy")
   )
 
   shiny::tagList(
@@ -114,7 +126,7 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
     shinychat::chat_ui(id, fill = TRUE),
     # Control bar: all selectors in one compact row (dropup)
     shiny::div(
-      class = "shidashi-chatbot-controls d-flex align-items-center gap-1 px-0 py-1",
+      class = "shidashi-chatbot-controls d-flex align-items-center gap-1 px-1 py-1",
       shiny::div(
         style = "flex: 3;",
         mode_ui
@@ -128,8 +140,9 @@ chatbot_ui <- function(id, modes = NULL, default_mode = NULL) {
         conv_ui
       ),
       shiny::div(
-        style = "flex: 1;",
-        new_conv_ui
+        class = "d-flex gap-1",
+        new_conv_ui,
+        copy_conv_ui
       )
     ),
     # Status bar: model name, token counts, estimated cost
@@ -331,6 +344,12 @@ chatbot_server <- function(input, output, session,
             chat_id = session$ns(id),
             stop_id = session$ns(stop_btn_id)
           )
+        )
+
+        # Initialize code copy buttons for pre blocks
+        session$sendCustomMessage(
+          "shidashi.init_chat_code_copy",
+          list(chat_id = session$ns(id))
         )
 
         # Share chat object

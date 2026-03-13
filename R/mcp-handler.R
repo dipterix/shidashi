@@ -965,7 +965,9 @@ mcp_tool_ask_user <- function(arguments, shiny_session = NULL) {
 
   if (session_ok) {
     return(mcp_tool_ask_user_shiny(
-      message_text, choices, allow_freeform, shiny_session
+      message_text, choices, allow_freeform, shiny_session,
+      tool_name = arguments$tool_name,
+      intent = arguments$intent
     ))
   }
 
@@ -988,17 +990,25 @@ mcp_tool_ask_user <- function(arguments, shiny_session = NULL) {
 
 # Ask user via Shiny browser modal (returns a promise)
 mcp_tool_ask_user_shiny <- function(message_text, choices, allow_freeform,
-                                    shiny_session) {
+                                    shiny_session,
+                                    tool_name = NULL, intent = NULL) {
   request_id <- rand_string(prefix = "ask_user_")
   input_id <- shiny_session$ns("@shidashi_ask_user_result@")
 
-  shiny_session$sendCustomMessage("shidashi.ask_user", list(
+  payload <- list(
     request_id = request_id,
     input_id = input_id,
     message = message_text,
     choices = choices,
     allow_freeform = allow_freeform
-  ))
+  )
+  if (length(tool_name) == 1 && nzchar(tool_name)) {
+    payload$tool_name <- tool_name
+  }
+  if (length(intent) == 1 && nzchar(intent)) {
+    payload$intent <- intent
+  }
+  shiny_session$sendCustomMessage("shidashi.ask_user", payload)
 
   promises::promise(function(resolve, reject) {
     remaining <- 120L  # 120 x 500ms = 60 seconds timeout

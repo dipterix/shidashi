@@ -304,6 +304,10 @@ wrap_tools_with_permissions <- function(tool, session) {
     caller <- parent.frame()
     args <- lapply(arg_exprs, eval, envir = caller)
 
+    # Extract and strip _intent before forwarding to original function
+    intent <- args[["_intent"]]
+    args[["_intent"]] <- NULL
+
     category <- shidashi_category
 
     # For skill scripts
@@ -350,15 +354,16 @@ wrap_tools_with_permissions <- function(tool, session) {
     }
 
     # policy == "ask": Ask user for confirmation
+    # Extract short tool name (strip module prefix like "tool__mod__")
+    short_name <- sub("^(tool|skill)__[^_]+__", "", tool_name)
+
     confirm_result <- mcp_tool_ask_user(
       arguments = list(
-        message = paste0(
-          "The agent wants to call '", tool_name,
-          "' which is marked as destructive or needs confirmation. ",
-          "Do you want to proceed?"
-        ),
+        message = "Do you want to proceed?",
         choices = c("Proceed", "Stop and revise"),
-        allow_freeform = FALSE
+        allow_freeform = FALSE,
+        tool_name = short_name,
+        intent = if (length(intent) == 1 && nzchar(intent)) intent
       ),
       shiny_session = session
     )
@@ -384,9 +389,17 @@ wrap_tools_with_permissions <- function(tool, session) {
 
   }
 
-  # Match formals so ellmer validation stays happy
-  formals(wrapper_fn) <- formals(original_fn)
+  # Match formals so ellmer validation stays happy, then inject _intent
+  fmls <- formals(original_fn)
+  fmls[["_intent"]] <- ""
+  formals(wrapper_fn) <- fmls
   S7::S7_data(tool) <- wrapper_fn
+
+  # Inject _intent into the tool's argument schema so the LLM sees it
+  tool@arguments@properties[["_intent"]] <- ellmer::type_string(
+    "Brief explanation of why you are calling this tool.",
+    required = FALSE
+  )
 
   tool
 }

@@ -7,91 +7,11 @@
  */
 
 import $ from 'jquery';
+import ClipboardJS from 'clipboard';
 import { IFrameManager } from './iframe-manager.js';
 import { Sidebar } from './sidebar.js';
-import ClipboardJS from 'clipboard';
-
-// ============================================================================
-// Output Bindings (registered once Shiny is available)
-// ============================================================================
-
-function registerOutputBindings() {
-  if (!window.Shiny) return;
-  const Shiny = window.Shiny;
-
-  // --- Progress Output Binding ---
-  const progressOutputBinding = new Shiny.OutputBinding();
-  progressOutputBinding.name = 'shidashi.progressOutputBinding';
-
-  $.extend(progressOutputBinding, {
-    find: function(scope) {
-      return $(scope).find('.shidashi-progress-output');
-    },
-    renderValue: function(el, value) {
-      let v = parseInt(value.value);
-      if (isNaN(v)) return;
-      if (v < 0) v = 0;
-      if (v > 100) v = 100;
-      $(el).find('.progress-bar').css('width', v + '%');
-      if (typeof value.description === 'string') {
-        $(el).find('.progress-description.progress-message').text(value.description);
-      }
-    },
-    renderError: function(el, err) {
-      if (err.message === 'argument is of length zero') {
-        $(el).removeClass('shidashi-progress-error');
-        $(el).find('.progress-bar').css('width', '0%');
-      } else {
-        $(el).addClass('shidashi-progress-error')
-          .find('.progress-description.progress-error')
-          .text(err.message);
-      }
-    },
-    clearError: function(el) {
-      $(el).removeClass('shidashi-progress-error');
-    }
-  });
-
-  Shiny.outputBindings.register(progressOutputBinding, 'shidashi.progressOutputBinding');
-
-  // --- Clipboard Output Binding ---
-  const clipboardOutputBinding = new Shiny.OutputBinding();
-  clipboardOutputBinding.name = 'shidashi.clipboardOutputBinding';
-
-  $.extend(clipboardOutputBinding, {
-    find: function(scope) {
-      return $(scope).find('.shidashi-clipboard-output');
-    },
-    renderValue: function(el, value) {
-      let el_ = $(el);
-      if (!el_.hasClass('clipboard-btn')) {
-        el_ = $(el).find('.clipboard-btn');
-      }
-      el_.attr('data-clipboard-text', value);
-    },
-    renderError: function(el, err) {
-      let el_ = $(el);
-      if (!el_.hasClass('clipboard-btn')) {
-        el_ = $(el).find('.clipboard-btn');
-      }
-      el_.attr('data-clipboard-text', 'Error: ' + err.message);
-    }
-  });
-
-  Shiny.outputBindings.register(clipboardOutputBinding, 'shidashi.clipboardOutputBinding');
-
-  // Clipboard click handler (delegation)
-  new ClipboardJS('.clipboard-btn').on('success', (e) => {
-    window.shidashi.createNotification({
-      title: 'Copied to clipboard',
-      delay: 1000,
-      autohide: true,
-      icon: 'fa fas fa-copy',
-      class: 'bg-success'
-    });
-    e.clearSelection();
-  });
-}
+import { registerOutputBindings } from './output-bindings.js';
+import { getConversationMarkdown, injectCodeCopyButtons, showToast } from './chat-helpers.js';
 
 // ============================================================================
 // Shidashi Main Class
@@ -1797,7 +1717,18 @@ class ShidashiApp {
       const existing = document.getElementById(modalId);
       if (existing) existing.remove();
 
-      let bodyHTML = `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+      let bodyHTML;
+      if (params.tool_name) {
+        bodyHTML = `<p class="mb-3">The agent wants to call tool <code>${this._escapeHtml(params.tool_name)}</code>.${
+          params.intent ? ' Reason:' : ''
+        }</p>`;
+        if (params.intent) {
+          bodyHTML += `<p class="mb-3"><em>${this._escapeHtml(params.intent)}</em></p>`;
+        }
+        bodyHTML += `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+      } else {
+        bodyHTML = `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+      }
 
       // Choice buttons
       if (choices.length > 0) {
@@ -1874,6 +1805,49 @@ class ShidashiApp {
       if (textarea) {
         modalEl.addEventListener('shown.bs.modal', () => textarea.focus(), { once: true });
       }
+    });
+
+    // --- Initialize code copy buttons for a chat container ---
+
+    this.shinyHandler('init_chat_code_copy', (params) => {
+      // params: { chat_id }
+      const chatContainer = document.getElementById(params.chat_id);
+      if (!chatContainer) return;
+
+      // Don't re-initialize
+      if (chatContainer._shidashiCodeCopyInit) return;
+      chatContainer._shidashiCodeCopyInit = true;
+
+      // Initialize ClipboardJS on copy-conversation button
+      const copyConvBtn = document.querySelector(
+        `[data-shidashi-action="copy-conversation"][data-shidashi-chat-id="${params.chat_id}"]`
+      );
+      if (copyConvBtn && !copyConvBtn._clipboardInit) {
+        copyConvBtn._clipboardInit = true;
+        const chatId = params.chat_id;  // Capture in closure
+        const clipboard = new ClipboardJS(copyConvBtn, {
+          text: () => getConversationMarkdown(chatId)
+        });
+        clipboard.on('success', (e) => {
+          e.clearSelection();
+          showToast('Conversation copied to clipboard');
+        });
+      }
+
+      // Inject copy buttons into existing code blocks
+      injectCodeCopyButtons(chatContainer);
+
+      // Watch for new code blocks (chat responses are added dynamically)
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              injectCodeCopyButtons(node);
+            }
+          });
+        });
+      });
+      observer.observe(chatContainer, { childList: true, subtree: true });
     });
   }
 }
