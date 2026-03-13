@@ -541,7 +541,7 @@ mcp_prelisted_tool_schemas <- function() {
           wrapper()
         }, error = function(e) NULL)
         if (!inherits(skill_tool, "ellmer::ToolDef")) next
-        skill_tool@name <- sprintf("skill__%s", sanitize_skill_name(sname))
+        skill_tool@name <- sprintf("skill__%s", sname)
         schemas[[skill_tool@name]] <- ellmer_tool_schema(skill_tool)
       }
     }

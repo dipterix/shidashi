@@ -1,12 +1,3 @@
-test_that("sanitize_skill_name works", {
-  expect_equal(sanitize_skill_name("greet"), "greet")
-  expect_equal(sanitize_skill_name("My Cool-Skill"), "my_cool_skill")
-  expect_equal(sanitize_skill_name("  Hello World  "), "hello_world")
-  expect_equal(sanitize_skill_name("a__b--c"), "a_b_c")
-  expect_equal(sanitize_skill_name("123"), "123")
-  expect_error(sanitize_skill_name("---"), "empty after sanitization")
-})
-
 test_that("parse_skill_md parses frontmatter and body", {
   skill_dir <- system.file(
     "builtin-templates/bslib-bare/agents/skills/greet",

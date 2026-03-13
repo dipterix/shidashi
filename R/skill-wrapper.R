@@ -84,8 +84,8 @@ skill_wrapper <- function(skill_path) {
     "]"
   )
 
-  # Sanitized name for tool registration (derived from folder name)
-  tool_name <- sanitize_skill_name(canonical_name)
+  # Tool name derived from folder name (used as @name on the ToolDef)
+  tool_name <- canonical_name
 
   # Build the argument schema — always include all params so formals match
   # (ellmer::tool requires arguments names to match function formals)

@@ -11,19 +11,6 @@
 #'
 #' @param name Character string; the skill name from SKILL.md frontmatter
 #'   or directory name.
-#' @return A single sanitized string suitable for tool naming.
-#' @keywords internal
-#' @noRd
-sanitize_skill_name <- function(name) {
-  name <- tolower(trimws(name))
-  name <- gsub("[^a-z0-9]+", "_", name)
-  name <- gsub("^_+|_+$", "", name)
-  name <- gsub("_+", "_", name)
-  if (!nzchar(name)) {
-    stop("Skill name is empty after sanitization")
-  }
-  name
-}
 
 
 #' Parse a SKILL.md file

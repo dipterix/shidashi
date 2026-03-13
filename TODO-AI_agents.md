@@ -534,7 +534,7 @@ tool_fn <- function(action, reference_kwargs = NULL, cli_kwargs = NULL) {
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `R/skill-parse.R` | new | `parse_skill_md()`, `discover_references()`, `discover_scripts()`, `sanitize_skill_name()` |
+| `R/skill-parse.R` | new | `parse_skill_md()`, `discover_references()`, `discover_scripts()` |
 | `R/skill-runner.R` | new | `build_script_command()`, script execution via `processx::run()` |
 | `R/skill-wrapper.R` | new | `skill_wrapper()` constructor — takes skill dir path, returns closure with class `shidashi_skill_wrapper` that produces `ellmer::tool` per session |
 | `R/modules.R` | modified | Scan `agents/skills/*/SKILL.md` (root + module level), wire into `tool_gen_fun` pipeline |
@@ -589,7 +589,7 @@ Update `modules/demo/agents.yaml` to enable it.
 
 ### Deliverables
 
-- [ ] `R/skill-parse.R` with `parse_skill_md()`, `discover_references()`, `discover_scripts()`, `sanitize_skill_name()`
+- [ ] `R/skill-parse.R` with `parse_skill_md()`, `discover_references()`, `discover_scripts()`
 - [ ] `R/skill-runner.R` with `build_script_command()` + processx execution
 - [ ] `R/skill-wrapper.R` with `skill_wrapper()` constructor
 - [ ] `R/modules.R` updated to discover + wire skills
