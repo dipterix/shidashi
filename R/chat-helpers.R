@@ -314,13 +314,14 @@ wrap_tools_with_permissions <- function(tool, session) {
     if (length(skill_scripts_permission) > 0 && identical(shidashi_type, "skill") && identical(args$action, "script")) {
       file_name <- args$file_name
       if (length(file_name) == 1 && nzchar(file_name)) {
-        script_permission <- skill_scripts_permission[[file_name]]
-        if (length(script_permission) > 0) {
-          if (isFALSE(script_permission$enabled) || !isTRUE(agent_mode %in% script_permission$enabled)) {
+        script_permission <- as.list(skill_scripts_permission[[file_name]])
+        if (
+          length(script_permission) > 0 &&
+          !isTRUE(script_permission$enabled)
+        ) {
+          if (isFALSE(script_permission$enabled) ||
+              !isTRUE(agent_mode %in% script_permission$enabled)) {
             stop("While skill is permitted, this specific script is disabled under current agent permission mode.")
-          }
-          if (length(script_permission$category)) {
-            category <- unique(c(category, unlist(script_permission$category)))
           }
         }
       }
