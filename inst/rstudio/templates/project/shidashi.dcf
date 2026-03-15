@@ -13,6 +13,6 @@ Position: left
 Parameter: theme
 Widget: TextInput
 Label: Theme name (github.com/<user>/shidashi-templates/<theme>)
-Default: AdminLTE3
+Default: bslib
 Position: left
 

@@ -7,91 +7,11 @@
  */
 
 import $ from 'jquery';
+import ClipboardJS from 'clipboard';
 import { IFrameManager } from './iframe-manager.js';
 import { Sidebar } from './sidebar.js';
-import ClipboardJS from 'clipboard';
-
-// ============================================================================
-// Output Bindings (registered once Shiny is available)
-// ============================================================================
-
-function registerOutputBindings() {
-  if (!window.Shiny) return;
-  const Shiny = window.Shiny;
-
-  // --- Progress Output Binding ---
-  const progressOutputBinding = new Shiny.OutputBinding();
-  progressOutputBinding.name = 'shidashi.progressOutputBinding';
-
-  $.extend(progressOutputBinding, {
-    find: function(scope) {
-      return $(scope).find('.shidashi-progress-output');
-    },
-    renderValue: function(el, value) {
-      let v = parseInt(value.value);
-      if (isNaN(v)) return;
-      if (v < 0) v = 0;
-      if (v > 100) v = 100;
-      $(el).find('.progress-bar').css('width', v + '%');
-      if (typeof value.description === 'string') {
-        $(el).find('.progress-description.progress-message').text(value.description);
-      }
-    },
-    renderError: function(el, err) {
-      if (err.message === 'argument is of length zero') {
-        $(el).removeClass('shidashi-progress-error');
-        $(el).find('.progress-bar').css('width', '0%');
-      } else {
-        $(el).addClass('shidashi-progress-error')
-          .find('.progress-description.progress-error')
-          .text(err.message);
-      }
-    },
-    clearError: function(el) {
-      $(el).removeClass('shidashi-progress-error');
-    }
-  });
-
-  Shiny.outputBindings.register(progressOutputBinding, 'shidashi.progressOutputBinding');
-
-  // --- Clipboard Output Binding ---
-  const clipboardOutputBinding = new Shiny.OutputBinding();
-  clipboardOutputBinding.name = 'shidashi.clipboardOutputBinding';
-
-  $.extend(clipboardOutputBinding, {
-    find: function(scope) {
-      return $(scope).find('.shidashi-clipboard-output');
-    },
-    renderValue: function(el, value) {
-      let el_ = $(el);
-      if (!el_.hasClass('clipboard-btn')) {
-        el_ = $(el).find('.clipboard-btn');
-      }
-      el_.attr('data-clipboard-text', value);
-    },
-    renderError: function(el, err) {
-      let el_ = $(el);
-      if (!el_.hasClass('clipboard-btn')) {
-        el_ = $(el).find('.clipboard-btn');
-      }
-      el_.attr('data-clipboard-text', 'Error: ' + err.message);
-    }
-  });
-
-  Shiny.outputBindings.register(clipboardOutputBinding, 'shidashi.clipboardOutputBinding');
-
-  // Clipboard click handler (delegation)
-  new ClipboardJS('.clipboard-btn').on('success', (e) => {
-    window.shidashi.createNotification({
-      title: 'Copied to clipboard',
-      delay: 1000,
-      autohide: true,
-      icon: 'fa fas fa-copy',
-      class: 'bg-success'
-    });
-    e.clearSelection();
-  });
-}
+import { registerOutputBindings } from './output-bindings.js';
+import { getConversationMarkdown, injectCodeCopyButtons, showToast } from './chat-helpers.js';
 
 // ============================================================================
 // Shidashi Main Class
@@ -276,10 +196,12 @@ class ShidashiApp {
    */
   _reportActiveModule(moduleId) {
     if (!moduleId) return;
+    this._activeModuleId = moduleId;
     this.ensureShiny(() => {
       if (typeof this._shiny.onInputChange !== 'function') return;
       this._shiny.onInputChange('@shidashi_active_module@', {
         module_id: moduleId,
+        token: this._sessionToken || null,
         timestamp: Date.now()
       });
     });
@@ -354,24 +276,14 @@ class ShidashiApp {
     const lightFallbackBg = '#ffffff';
     const darkFallbackFg = '#e9ecef';
     const lightFallbackFg = '#343a40';
-    const fallbackBg = mode === 'dark' ? darkFallbackBg : lightFallbackBg;
-    const fallbackFg = mode === 'dark' ? darkFallbackFg : lightFallbackFg;
+    const background = mode === 'dark' ? darkFallbackBg : lightFallbackBg;
+    const foreground = mode === 'dark' ? darkFallbackFg : lightFallbackFg;
 
-    // Defer to next frame so computed styles reflect the class change
-    requestAnimationFrame(() => {
-      const body = document.body;
-      const cardEl = document.querySelector('.card, .info-box');
-      let bgcolor;
-      if (cardEl) {
-        bgcolor = this._col2Hex(getComputedStyle(cardEl).backgroundColor, fallbackBg);
-      } else {
-        bgcolor = this._col2Hex(getComputedStyle(body).backgroundColor, fallbackBg);
-      }
-      this.broadcastEvent('theme.changed', {
-        mode: mode,
-        background: bgcolor,
-        foreground: this._col2Hex(getComputedStyle(body).color, fallbackFg)
-      });
+    this.broadcastEvent('theme.changed', {
+      theme: mode,
+      mode: mode,
+      background: background,
+      foreground: foreground
     });
   }
 
@@ -841,11 +753,7 @@ class ShidashiApp {
   // ---------- Drawer ----------
 
   drawerOpen() {
-    // Relay to parent frame if running inside an iframe
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerOpen(); } catch(e) {}
-      return;
-    }
+    // Drawer is always local to the current frame (module iframe)
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.add('open');
@@ -854,10 +762,6 @@ class ShidashiApp {
   }
 
   drawerClose() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerClose(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     const overlay = document.querySelector('.shidashi-drawer-overlay');
     if (drawer) drawer.classList.remove('open');
@@ -866,10 +770,6 @@ class ShidashiApp {
   }
 
   drawerToggle() {
-    if (window.self !== window.top) {
-      try { window.top.shidashi.drawerToggle(); } catch(e) {}
-      return;
-    }
     const drawer = document.querySelector('.shidashi-drawer');
     if (drawer && drawer.classList.contains('open')) {
       this.drawerClose();
@@ -923,6 +823,64 @@ class ShidashiApp {
 
   _escapeAttr(str) {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Capture a <canvas> element as a data URL.
+   * Handles WebGL canvases whose drawing buffer may have been cleared
+   * after compositing (preserveDrawingBuffer === false) by reading
+   * pixels directly via gl.readPixels and compositing onto a 2D canvas.
+   * Returns null when capture is not possible (e.g. tainted canvas).
+   */
+  _captureCanvas(canvas) {
+    // Try the fast path first – works for 2D and WebGL with preserveDrawingBuffer
+    try {
+      const url = canvas.toDataURL('image/png');
+      // A blank WebGL canvas still returns a valid data-url but the
+      // base64 payload is very short (transparent 1×1 is ~100 chars).
+      // If the payload looks substantial, trust it.
+      const payload = url.split(',')[1] || '';
+      if (payload.length > 200) return url;
+    } catch (e) {
+      // Tainted – cannot capture at all
+      return null;
+    }
+
+    // Attempt WebGL readPixels capture
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) {
+      // It is a 2D canvas whose toDataURL already succeeded above
+      try { return canvas.toDataURL('image/png'); } catch (e) { return null; }
+    }
+
+    try {
+      const w = canvas.width;
+      const h = canvas.height;
+      const pixels = new Uint8Array(w * h * 4);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+      // gl.readPixels returns rows bottom-to-top; flip vertically
+      const tmp = new Uint8Array(w * 4);
+      for (let row = 0; row < Math.floor(h / 2); row++) {
+        const topOffset = row * w * 4;
+        const botOffset = (h - row - 1) * w * 4;
+        tmp.set(pixels.subarray(topOffset, topOffset + w * 4));
+        pixels.copyWithin(topOffset, botOffset, botOffset + w * 4);
+        pixels.set(tmp, botOffset);
+      }
+
+      // Paint onto an offscreen 2D canvas and export
+      const c2d = document.createElement('canvas');
+      c2d.width = w;
+      c2d.height = h;
+      const ctx = c2d.getContext('2d');
+      const imageData = ctx.createImageData(w, h);
+      imageData.data.set(pixels);
+      ctx.putImageData(imageData, 0, 0);
+      return c2d.toDataURL('image/png');
+    } catch (e) {
+      return null;
+    }
   }
 
   // ---------- Card tool click delegation ----------
@@ -1138,20 +1096,21 @@ class ShidashiApp {
       });
     });
 
-    // Drawer overlay click → close drawer
-    const drawerOverlay = document.querySelector('.shidashi-drawer-overlay');
-    if (drawerOverlay) {
-      drawerOverlay.addEventListener('click', () => this.drawerClose());
-    }
+    // Drawer overlay click → close drawer (use delegation for dynamic content)
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('shidashi-drawer-overlay')) {
+        this.drawerClose();
+      }
+    });
 
     // Drawer close-tab click → close drawer (no-overlay mode)
-    const drawerCloseTab = document.querySelector('.shidashi-drawer-close-tab');
-    if (drawerCloseTab) {
-      drawerCloseTab.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+      const closeTab = e.target.closest('.shidashi-drawer-close-tab');
+      if (closeTab) {
         e.stopPropagation();
         this.drawerClose();
-      });
-    }
+      }
+    });
 
     // Drawer toggle button
     document.addEventListener('click', (evt) => {
@@ -1527,6 +1486,24 @@ class ShidashiApp {
       }
     });
 
+    this.shinyHandler('add_attribute', (params) => {
+      // params: { selector, attribute, value }
+      if (params.selector && params.attribute) {
+        document.querySelectorAll(params.selector).forEach(el => {
+          el.setAttribute(params.attribute, params.value ?? '');
+        });
+      }
+    });
+
+    this.shinyHandler('remove_attribute', (params) => {
+      // params: { selector, attribute }
+      if (params.selector && params.attribute) {
+        document.querySelectorAll(params.selector).forEach(el => {
+          el.removeAttribute(params.attribute);
+        });
+      }
+    });
+
     // --- Drawer handlers ---
 
     this.shinyHandler('drawer_open', (params) => {
@@ -1541,10 +1518,336 @@ class ShidashiApp {
       this.drawerToggle();
     });
 
+    // --- Activate a specific drawer tab (for chatbot) ---
+
+    this.shinyHandler('activate_drawer_tab', (params) => {
+      if (params.target) {
+        const tabBtn = document.querySelector(
+          `.shidashi-drawer-tabs [data-bs-target="${params.target}"]`
+        );
+        if (tabBtn && window.bootstrap && window.bootstrap.Tab) {
+          const tab = new window.bootstrap.Tab(tabBtn);
+          tab.show();
+        }
+      }
+    });
+
+    // --- Module token registration (for chatbot) ---
+
+    this.shinyHandler('register_module_token', (params) => {
+      if (params.token) {
+        this._sessionToken = params.token;
+        // Re-report active module so R gets the updated token
+        if (this._activeModuleId) {
+          this._reportActiveModule(this._activeModuleId);
+        }
+      }
+    });
+
+    // --- Chatbot status bar handler ---
+
+    this.shinyHandler('update_chat_status', (params) => {
+      // params: { id, text, title?, status: "ready"|"recalculating"|"unknown" }
+      const el = document.getElementById(params.id);
+      if (!el) return;
+      if (params.text !== undefined) {
+        el.textContent = params.text;
+      }
+      if (params.title !== undefined) {
+        el.setAttribute('title', params.title);
+      }
+      // Toggle recalculating blink
+      el.classList.toggle(
+        'shidashi-chatbot-status-recalculating',
+        params.status === 'recalculating'
+      );
+      // Mark unknown cost with strikethrough
+      el.classList.toggle(
+        'shidashi-chatbot-status-unknown',
+        params.status === 'unknown'
+      );
+    });
+
+    // --- Chatbot stop button initialization ---
+
+    this.shinyHandler('init_chat_stop_button', (params) => {
+      // params: { chat_id, stop_id }
+      const chatContainer = document.getElementById(params.chat_id);
+      if (!chatContainer) return;
+
+      const chatInput = chatContainer.querySelector('shiny-chat-input');
+      if (!chatInput) return;
+
+      // Don't create if already exists
+      if (document.getElementById(params.stop_id)) return;
+
+      // Create stop button - styles defined in shidashi.scss
+      const stopBtn = document.createElement('button');
+      stopBtn.type = 'button';
+      stopBtn.id = params.stop_id;
+      stopBtn.className = 'shidashi-chatbot-stop';
+      stopBtn.title = 'Stop generation';
+      stopBtn.setAttribute('aria-label', 'Stop generation');
+      stopBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M6.5 5A1.5 1.5 0 0 0 5 6.5v3A1.5 1.5 0 0 0 6.5 11h3A1.5 1.5 0 0 0 11 9.5v-3A1.5 1.5 0 0 0 9.5 5z"/>
+      </svg>`;
+
+      // Insert into the chat input container
+      chatInput.style.position = 'relative';
+      chatInput.appendChild(stopBtn);
+
+      // Bind Shiny input - increment counter on click
+      stopBtn.addEventListener('click', () => {
+        if (window.Shiny) {
+          const currentVal = Shiny.shinyapp.$inputValues[params.stop_id] || 0;
+          Shiny.setInputValue(params.stop_id, currentVal + 1, { priority: 'event' });
+        }
+      });
+    });
+
+    // --- Chatbot stop button toggle ---
+
+    this.shinyHandler('toggle_stop_button', (params) => {
+      // params: { id, visible }
+      const el = document.getElementById(params.id);
+      if (!el) return;
+      // Toggle visibility via CSS class
+      el.classList.toggle('shidashi-chatbot-stop-visible', params.visible);
+    });
+
     // --- Open URL handler ---
 
     this.shinyHandler('open_url', (params) => {
       this.openUrl(params.url, params.target || '_blank');
+    });
+
+    // --- Query UI handler (MCP) ---
+
+    this.shinyHandler('query_ui', (params) => {
+      // params: { selector, request_id, input_id }
+      const selector = params.selector;
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!selector || !requestId || !inputId) return;
+
+      const el = document.querySelector(selector);
+      if (!el) {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: '',
+          image_type: ''
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Check if element is a <canvas>
+      if (el.tagName === 'CANVAS') {
+        const dataUrl = this._captureCanvas(el);
+        if (dataUrl) {
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        }
+        // Tainted or empty canvas — fall through to innerHTML
+      }
+
+      // Check if element contains a single <img> with a data URI or a <canvas> child
+      const canvas = el.querySelector('canvas');
+      if (canvas) {
+        const dataUrl = this._captureCanvas(canvas);
+        if (dataUrl) {
+          const parts = dataUrl.split(',');
+          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+          Shiny.setInputValue(inputId, {
+            request_id: requestId,
+            html: '',
+            image_data: parts[1] || '',
+            image_type: mime
+          }, { priority: 'event' });
+          return;
+        }
+        // fall through
+      }
+
+      const img = el.querySelector('img[src^="data:"]');
+      if (img && el.querySelectorAll('img').length === 1) {
+        const src = img.getAttribute('src') || '';
+        // src is "data:image/png;base64,..."
+        const parts = src.split(',');
+        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          html: '',
+          image_data: parts[1] || '',
+          image_type: mime
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Default: return innerHTML
+      Shiny.setInputValue(inputId, {
+        request_id: requestId,
+        html: el.innerHTML,
+        image_data: '',
+        image_type: ''
+      }, { priority: 'event' });
+    });
+
+    // --- Ask-user handler (MCP built-in tool) ---
+
+    this.shinyHandler('ask_user', (params) => {
+      // params: { request_id, input_id, message, choices, allow_freeform }
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!requestId || !inputId) return;
+
+      const message = params.message || 'The agent needs your input:';
+      const choices = params.choices || [];
+      const allowFreeform = params.allow_freeform !== false;
+
+      // Build a Bootstrap 5 modal
+      const modalId = 'shidashi-ask-user-modal-' + requestId;
+      const existing = document.getElementById(modalId);
+      if (existing) existing.remove();
+
+      let bodyHTML;
+      if (params.tool_name) {
+        bodyHTML = `<p class="mb-3">The agent wants to call tool <code>${this._escapeHtml(params.tool_name)}</code>.${
+          params.intent ? ' Reason:' : ''
+        }</p>`;
+        if (params.intent) {
+          bodyHTML += `<p class="mb-3"><em>${this._escapeHtml(params.intent)}</em></p>`;
+        }
+        bodyHTML += `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+      } else {
+        bodyHTML = `<p class="mb-3">${this._escapeHtml(message)}</p>`;
+      }
+
+      // Choice buttons
+      if (choices.length > 0) {
+        bodyHTML += '<div class="d-flex flex-wrap gap-2 mb-3">';
+        choices.forEach((choice, i) => {
+          bodyHTML += `<button type="button" class="btn btn-outline-primary shidashi-ask-user-choice" data-choice-index="${i}">${this._escapeHtml(choice)}</button>`;
+        });
+        bodyHTML += '</div>';
+      }
+
+      // Free-form input
+      if (allowFreeform) {
+        bodyHTML += `<div class="mb-2"><textarea class="form-control shidashi-ask-user-freeform" rows="3" placeholder="Type your response..."></textarea></div>`;
+      }
+
+      const modalHTML = `
+        <div class="modal fade" id="${modalId}" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Agent Request</h5>
+              </div>
+              <div class="modal-body">${bodyHTML}</div>
+              <div class="modal-footer">
+                ${allowFreeform ? '<button type="button" class="btn btn-primary shidashi-ask-user-submit" disabled>Submit</button>' : ''}
+                <button type="button" class="btn btn-secondary shidashi-ask-user-cancel">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      const modalEl = document.getElementById(modalId);
+      const bsModal = new bootstrap.Modal(modalEl);
+
+      const respond = (value, cancelled) => {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          value: value,
+          cancelled: !!cancelled
+        }, { priority: 'event' });
+        bsModal.hide();
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+      };
+
+      // Choice button clicks
+      modalEl.querySelectorAll('.shidashi-ask-user-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.choiceIndex, 10);
+          respond(choices[idx], false);
+        });
+      });
+
+      // Free-form submit
+      const submitBtn = modalEl.querySelector('.shidashi-ask-user-submit');
+      const textarea = modalEl.querySelector('.shidashi-ask-user-freeform');
+      if (submitBtn && textarea) {
+        textarea.addEventListener('input', () => {
+          submitBtn.disabled = !textarea.value.trim();
+        });
+        submitBtn.addEventListener('click', () => {
+          respond(textarea.value.trim(), false);
+        });
+      }
+
+      // Cancel
+      modalEl.querySelector('.shidashi-ask-user-cancel').addEventListener('click', () => {
+        respond(null, true);
+      });
+
+      bsModal.show();
+
+      // Focus textarea if present
+      if (textarea) {
+        modalEl.addEventListener('shown.bs.modal', () => textarea.focus(), { once: true });
+      }
+    });
+
+    // --- Initialize code copy buttons for a chat container ---
+
+    this.shinyHandler('init_chat_code_copy', (params) => {
+      // params: { chat_id }
+      const chatContainer = document.getElementById(params.chat_id);
+      if (!chatContainer) return;
+
+      // Don't re-initialize
+      if (chatContainer._shidashiCodeCopyInit) return;
+      chatContainer._shidashiCodeCopyInit = true;
+
+      // Initialize ClipboardJS on copy-conversation button
+      const copyConvBtn = document.querySelector(
+        `[data-shidashi-action="copy-conversation"][data-shidashi-chat-id="${params.chat_id}"]`
+      );
+      if (copyConvBtn && !copyConvBtn._clipboardInit) {
+        copyConvBtn._clipboardInit = true;
+        const chatId = params.chat_id;  // Capture in closure
+        const clipboard = new ClipboardJS(copyConvBtn, {
+          text: () => getConversationMarkdown(chatId)
+        });
+        clipboard.on('success', (e) => {
+          e.clearSelection();
+          showToast('Conversation copied to clipboard');
+        });
+      }
+
+      // Inject copy buttons into existing code blocks
+      injectCodeCopyButtons(chatContainer);
+
+      // Watch for new code blocks (chat responses are added dynamically)
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              injectCodeCopyButtons(node);
+            }
+          });
+        });
+      });
+      observer.observe(chatContainer, { childList: true, subtree: true });
     });
   }
 }

@@ -1,0 +1,52 @@
+tools:
+- name: hello_world
+  category:
+  - exploratory
+  enabled: yes
+- name: shiny_input_info
+  category:
+  - exploratory
+  enabled: ["Plan", "Executing"]
+- name: shiny_output_info
+  category:
+  - exploratory
+  enabled: ["Plan", "Executing"]
+- name: shiny_query_ui
+  category:
+  - exploratory
+  enabled: ["Plan", "Executing"]
+- name: shiny_query_ui_result
+  category:
+  - exploratory
+  enabled: ["Plan", "Executing"]
+- name: shiny_input_update
+  category:
+  - executing
+  - destructive
+  enabled: ["Executing"]
+- name: trigger_refresh
+  category:
+  - executing
+  enabled: ["Executing"]
+skills:
+- name: greet
+  category:
+  - executing
+  enabled: yes
+  scripts:
+  - name: greet.R
+    enabled: ["Executing"]
+    category:
+    - destructive
+parameters:
+  system_prompt: You are an R shiny expert demonstrating AI agent features.
+    You have access to the shiny application via provided tools. You can
+    read and update inputs, inspect outputs, and run skills.
+  default_mode: "Executing"
+modes:
+- name: Ask
+  description: "Ask general questions about the module, no user data access"
+- name: Plan
+  description: "With data access, no code execution"
+- name: Executing
+  description: "With data access, with code execution"

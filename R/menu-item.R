@@ -85,14 +85,13 @@ menu_item <- function(
   icon <- as_icon(icon, class = "nav-icon fas")
   badge <- as_badge(badge)
   module <- ''
-  if(startsWith(href, "#")){
+  if (startsWith(href, "#")) {
     target <- "_self"
   } else if (startsWith(href, "?module=")) {
-    query_list <- httr::parse_url(href)
-    query_list$query
-    module <- query_list$query$module
+    query_list <- shiny::parseQueryString(href)
+    module <- query_list$module
     module <- gsub(pattern = " ", replacement = "", module)
-    if( grepl("[^a-zA-Z0-9_]", module) ){
+    if ( grepl("[^a-zA-Z0-9_]", module) ) {
       stop("Function `menu_item`: for `href` with module link (starts with '?module=<ID>'), the module `ID` can only contain letters, digits, and/or '_'.")
     }
   }

@@ -50,7 +50,7 @@
 #'   request = list(QUERY_STRING = "/?module=module_id"))
 #' env <- module_data$environment
 #'
-#' if(interactive()){
+#' if (interactive()){
 #'
 #' # get module title
 #' env$module_title()
@@ -81,8 +81,8 @@ module_info <- function(root_path = template_root(),
     x <- modules[[mid]]
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
-    url <- httr::modify_url("?module=", query = y)
-    if(length(x$group) == 1 && x$group %in% group_level){
+    url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
+    if (length(x$group) == 1 && x$group %in% group_level) {
       x$group <- group_level[group_level == x$group][[1]]
     } else {
       x$group <- NA
@@ -128,8 +128,8 @@ current_module <- function(
   if (!length(module_id) && is.environment(session)) {
     query_str <- shiny::isolate(session$clientData$url_search)
     if (length(query_str) == 1L) {
-      query_list <- httr::parse_url(query_str)
-      module_id <- query_list$query$module
+      query_list <- shiny::parseQueryString(query_str)
+      module_id <- query_list$module
     }
   }
 
@@ -148,9 +148,9 @@ current_module <- function(
 
 #' @rdname module_info
 #' @description \code{active_module} returns a \emph{reactive} value with
-#' information about the module that is currently visible in the iframe tab
-#' (or the standalone module if no iframe manager is present). Unlike
-#' \code{current_module} which is static and always returns the module
+#' information about the module that is currently visible in the \verb{iframe}
+#' tab (or the standalone module if no \verb{iframe} manager is present).
+#' Unlike \code{current_module} which is static and always returns the module
 #' whose server code is running, \code{active_module} dynamically tracks
 #' which module the user is looking at from any context.
 #' @details
@@ -205,6 +205,9 @@ active_module <- function(
 
 
 load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()){
+  if (length(module_id) > 1) {
+    stop("length of `module_id` must not exceed one.")
+  }
   root_path <- normalizePath(root_path, mustWork = TRUE)
 
   re <- list(
@@ -221,12 +224,12 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
   )
 
   r_folder <- file.path(root_path, "R")
-  if(dir.exists(r_folder)){
+  if (dir.exists(r_folder)) {
     fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                      recursive = FALSE, include.dirs = FALSE,
                      no.. = TRUE, all.files = TRUE, full.names = TRUE)
-    for(f in fs){
-      if(startsWith(basename(f), "shared-")) {
+    for (f in fs) {
+      if (startsWith(basename(f), "shared-")) {
         source(f, local = env, chdir = TRUE)
       } else {
         source(f, local = env, chdir = FALSE)
@@ -234,14 +237,23 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
     }
   }
 
-  if(length(module_id)){
-    if(length(module_id) > 1){
-      stop("length of `module_id` must not exceed one.")
+  # root_path <- 'inst/builtin-templates/bslib-bare/'
+  # module_id <- "demo"
+  root_agent_folder <- file.path(root_path, "agents", "tools")
+  if (dir.exists(root_agent_folder)) {
+    fs <- list.files(root_agent_folder, pattern = "\\.R$", ignore.case = TRUE,
+                     recursive = FALSE, include.dirs = FALSE,
+                     no.. = TRUE, all.files = TRUE, full.names = TRUE)
+    for (f in fs) {
+      source(f, local = env, chdir = TRUE)
     }
+  }
+
+  if (length(module_id) == 1) {
     module_root <- file.path(root_path, 'modules', module_id)
     module_info$template_path <- file.path(module_root, "module-ui.html")
 
-    if(dir.exists(module_root)){
+    if (dir.exists(module_root)) {
 
       re$has_module <- TRUE
       env$ns <- shiny::NS(module_id)
@@ -250,14 +262,26 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         modules <- module_info()
         modules$label[modules$id == module_id]
       }
+      shared_input_specs <- globals_get_module_input_specs(module_id)
+      shared_output_specs <- globals_get_module_output_specs(module_id)
+      wrapper_input_registry <- mcp_wrapper_input_output(
+        input_specs = shared_input_specs,
+        output_specs = shared_output_specs
+      )
+      env$.register_input <- wrapper_input_registry$input_helpers$register_input_specification
+      env$.register_output <- wrapper_input_registry$input_helpers$register_output_specification
+      env$.mcp_wrapper_inputs <- wrapper_input_registry$tool_generator
+      current_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
+
+      agent_conf <- load_agent_conf(root_path = root_path, module_id = module_id)
 
       r_folder <- file.path(module_root, 'R')
-      if(dir.exists(r_folder)){
+      if (dir.exists(r_folder)) {
         fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                          recursive = FALSE, include.dirs = FALSE,
                          no.. = TRUE, all.files = TRUE, full.names = TRUE)
-        for(f in fs){
-          if(startsWith(basename(f), "shared-")) {
+        for (f in fs) {
+          if (startsWith(basename(f), "shared-")) {
             source(f, local = env, chdir = TRUE)
           } else {
             source(f, local = env, chdir = FALSE)
@@ -265,20 +289,76 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         }
       }
 
+      new_input_table <- wrapper_input_registry$input_helpers$get_input_specification()
+      if (nrow(new_input_table) > nrow(current_input_table)) {
+        message("Registered inputs to MCP server:", appendLF = TRUE)
+        print(new_input_table[, c("inputId", "update", "writable")])
+      }
+
+
+      # ---- Register MCP tools ----
+
+      env$.mcptools_maker <- compile_tools_and_scripts(root_path = root_path,
+                                                       module_id = module_id,
+                                                       env = env)
+      # Store agent config in module env for chatbot_ui / back_top_button
+
       module_handler <- file.path(root_path, 'modules', module_id, 'server.R')
-      if(file.exists(module_handler)){
+      if (file.exists(module_handler)) {
         # server_env <- new.env(parent = env)
         server_env <- env
         server_source <- source(module_handler, local = server_env)
 
         server_function <- server_source$value
-        if(!is.function(server_function)){
+        if (!is.function(server_function)) {
           server_function <- server_env$server
         }
 
-        if(!is.function(server_function)){
+        if (!is.function(server_function)) {
           stop("Module `", module_id, "` has server.R, but cannot detect server function.")
         }
+
+        # inject to body
+        agent_enabled <- isTRUE(agent_conf$enabled)
+        default_mode <- agent_conf$parameters$default_mode %||%
+                         agent_conf$modes[[1]] %||% "None"
+        body(server_function) <- bquote({
+          local({
+            shidashi <- asNamespace("shidashi")
+            shidashi$register_session_mcp(session = session)
+            registry <- shidashi$globals_mcp_session_registry()
+            entry <- registry$get(session$token)
+
+            # Build MCP tools
+            tools <- .mcptools_maker(session)
+            entry$tools <- tools$as_list()
+            registry$set(session$token, entry)
+
+            # Set agent mode early so MCP can filter tools even if
+            # the chat drawer is never opened
+            shidashi$globals_set_agent_mode(
+              module_id = .(module_id),
+              mode = .(default_mode)
+            )
+
+            # Initialize chatbot server if agents are enabled for this module
+            if (.(isTRUE(agent_conf$enabled))) {
+              shidashi$chatbot_server(
+                input, output, session,
+                agent_conf = .(agent_conf)
+              )
+            } else {
+              output$shidashi_drawer <- shiny::renderUI({
+                shiny::p("AI agent has been disabled for this module.")
+              })
+            }
+
+
+          })
+
+          .(body(server_function))
+        })
+
         module_info$server <- server_function
       }
 
@@ -302,15 +382,15 @@ load_module <- function(
 
   force(env)
   query_str <- request$QUERY_STRING
-  if(length(query_str) != 1) {
+  if (length(query_str) != 1) {
     query_str <- '/'
   }
-  query_list <- httr::parse_url(query_str)
-  module_id <- query_list$query$module
-  shared_id <- query_list$query$shared_id
+  query_list <- shiny::parseQueryString(query_str)
+  module_id <- query_list$module
+  shared_id <- query_list$shared_id
   shared_id <- tolower(shared_id)
   shared_id <- gsub("[^a-z0-9_]", "", shared_id)
-  if(length(shared_id) != 1 || nchar(shared_id) ){
+  if (length(shared_id) != 1 || nchar(shared_id) ) {
     shared_id <- rand_string(26)
   }
 
@@ -318,4 +398,3 @@ load_module <- function(
   env$.shared_id <- shared_id
   load_module_resource(root_path, module_id, env)
 }
-

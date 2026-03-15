@@ -185,8 +185,8 @@ register_session_id <- function(
     shared_id <- session$userData$shidashi$shared_id
     if(length(shared_id) != 1 || !is.character(shared_id)){
       # get from session
-      query_list <- httr::parse_url(shiny::isolate(session$clientData$url_search))
-      shared_id <- query_list$query$shared_id
+      query_list <- shiny::parseQueryString(shiny::isolate(session$clientData$url_search))
+      shared_id <- query_list$shared_id
       shared_id <- tolower(shared_id)
       if(!length(shared_id) || grepl("[^a-z0-9_]", shared_id)){
         shared_id <- rand_string(length = 26)
@@ -257,9 +257,6 @@ register_session_id <- function(
       res$sync_observer$resume()
     }
   }
-
-  res
-
 
   # ----- For backward compatibility -----------------------------------
   session$cache$set("shidashi_shared_id", shared_id)

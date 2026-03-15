@@ -8,8 +8,7 @@ page_title <- function(complete = TRUE){
 }
 page_logo <- function(size = c("normal", "small", "large")){
   # Relative path to your logo icon in www/
-  # "shidashi/img/icon.png"
-  NULL
+  "shidashi/img/icon.png"
 }
 page_loader <- function(){
   # if no loader is needed, then return NULL
