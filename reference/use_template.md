@@ -8,7 +8,7 @@ Download 'shidashi' templates from 'Github'
 use_template(
   path,
   user = "dipterix",
-  theme = "AdminLTE3",
+  theme = "bslib",
   repo = "shidashi-templates",
   branch = "main",
   ...

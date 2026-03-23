@@ -4,18 +4,18 @@ running module. It looks up the .module_id variable in the calling
 environment (set automatically when a module is loaded), then retrieves
 the corresponding row from the module table.
 active_module returns a reactive value with
-information about the module that is currently visible in the iframe tab
-(or the standalone module if no iframe manager is present). Unlike
-current_module which is static and always returns the module
+information about the module that is currently visible in the iframe
+tab (or the standalone module if no iframe manager is present).
+Unlike current_module which is static and always returns the module
 whose server code is running, active_module dynamically tracks
 which module the user is looking at from any context."><meta property="og:description" content="current_module returns the information of the currently
 running module. It looks up the .module_id variable in the calling
 environment (set automatically when a module is loaded), then retrieves
 the corresponding row from the module table.
 active_module returns a reactive value with
-information about the module that is currently visible in the iframe tab
-(or the standalone module if no iframe manager is present). Unlike
-current_module which is static and always returns the module
+information about the module that is currently visible in the iframe
+tab (or the standalone module if no iframe manager is present).
+Unlike current_module which is static and always returns the module
 whose server code is running, active_module dynamically tracks
 which module the user is looking at from any context."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -25,7 +25,7 @@ which module the user is looking at from any context."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,9 +57,9 @@ running module. It looks up the <code>.module_id</code> variable in the calling
 environment (set automatically when a module is loaded), then retrieves
 the corresponding row from the module table.</p>
 <p><code>active_module</code> returns a <em>reactive</em> value with
-information about the module that is currently visible in the iframe tab
-(or the standalone module if no iframe manager is present). Unlike
-<code>current_module</code> which is static and always returns the module
+information about the module that is currently visible in the <code>iframe</code>
+tab (or the standalone module if no <code>iframe</code> manager is present).
+Unlike <code>current_module</code> which is static and always returns the module
 whose server code is running, <code>active_module</code> dynamically tracks
 which module the user is looking at from any context.</p>
     </div>
@@ -183,27 +183,29 @@ the function falls back to <code>current_module()</code>.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://shiny.posit.co/" class="external-link">shiny</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">module_info</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              id group          label                 icon      badge</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    getstarted  &lt;NA&gt;    Get Started               rocket           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          card Cards          Cards               square           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       widgets Cards        Widgets         puzzle-piece           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4          demo  &lt;NA&gt;           Demo            chart-bar           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 filestructure  &lt;NA&gt; File Structure          folder-open           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6       page500  &lt;NA&gt;      Error 500 exclamation-triangle           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7     module_id  &lt;NA&gt;   Module Label               circle New|bg-red</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              id  group           label                 icon badge</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    getstarted   &lt;NA&gt;     Get Started               rocket      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2          card  Cards           Cards               square      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       widgets  Cards         Widgets         puzzle-piece      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4       aiagent Agents   AI Agent Demo                robot      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      mcpsetup Agents MCP Setup Guide                 plug      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          demo   &lt;NA&gt;            Demo            chart-bar      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 filestructure   &lt;NA&gt;  File Structure          folder-open      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8       page500   &lt;NA&gt;       Error 500 exclamation-triangle      </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                      url</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1    /?module=getstarted</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2          /?module=card</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3       /?module=widgets</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4          /?module=demo</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 /?module=filestructure</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6       /?module=page500</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7     /?module=module_id</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4       /?module=aiagent</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      /?module=mcpsetup</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          /?module=demo</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 /?module=filestructure</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8       /?module=page500</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># load master module</span></span></span>
 <span class="r-in"><span><span class="fu">load_module</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $environment</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55e8ab78c7a0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55a361e655c0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $has_module</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
@@ -222,8 +224,8 @@ the function falls back to <code>current_module()</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> function (input, output, session, ...) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> }</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;bytecode: 0x55e8abdd6d00&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55e8abdd8e50&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;bytecode: 0x55a365001720&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x55a3650086a0&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $module$template_path</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
@@ -235,7 +237,7 @@ the function falls back to <code>current_module()</code>.</p>
 <span class="r-in"><span>  request <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>QUERY_STRING <span class="op">=</span> <span class="st">"/?module=module_id"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="va">module_data</span><span class="op">$</span><span class="va">environment</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="kw">if</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">{</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># get module title</span></span></span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="fu">module_title</span><span class="op">(</span><span class="op">)</span></span></span>

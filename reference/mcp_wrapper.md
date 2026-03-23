@@ -1,0 +1,63 @@
+# Wrap an `MCP` Tool Generator Function
+
+Creates a wrapper around a generator function to ensure it returns valid
+Model Context Protocol (`MCP`) tool definitions. The wrapper validates
+input and filters output to contain only `'ellmer::ToolDef'` objects.
+
+## Usage
+
+``` r
+mcp_wrapper(generator)
+```
+
+## Arguments
+
+- generator:
+
+  A function that accepts a \`session\` parameter and returns either a
+  single tool object or a list/vector of such objects; see
+  [`tool`](https://ellmer.tidyverse.org/reference/tool.html).
+
+## Value
+
+A wrapped function with class `'shidashi_mcp_wrapper'` that: - Accepts a
+\`session\` parameter - Calls the generator function with the session -
+Normalizes the output to a list - Filters to keep only valid tool
+objects - Returns a list of tool objects (possibly empty)
+
+## Details
+
+The wrapper performs the following validations: - Ensures \`generator\`
+is a function - Checks that \`generator\` accepts a \`session\`
+parameter
+
+The returned function automatically handles both single tool definitions
+and lists of tools, providing a consistent interface for `MCP` tool
+registration.
+
+## Examples
+
+``` r
+# Define a generator function that returns tool definitions
+my_tool_generator <- function(session) {
+  # Define MCP tools using ellmer package
+
+  tool_rnorm <- tool(
+    function(n, mean = 0, sd = 1) {
+      shiny::updateNumericInput(session, "rnorm", value = rnorm)
+    },
+    description = "Draw numbers from a random normal distribution",
+    arguments = list(
+      n = type_integer("The number of observations. Must be positive"),
+      mean = type_number("The mean value of the distribution."),
+      sd = type_number("The standard deviation of the distribution.")
+    )
+  )
+
+  # or `list(tool_rnorm)`
+  tool_rnorm
+}
+
+# Wrap the generator
+wrapped_generator <- mcp_wrapper(my_tool_generator)
+```

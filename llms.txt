@@ -172,11 +172,22 @@ repository](https://github.com/dipterix/shidashi-templates/).
 - [`info_box()`](https://dipterix.org/shidashi/reference/info_box.md) :
   Generates 'HTML' info box
 
+- [`init_app()`](https://dipterix.org/shidashi/reference/init_app.md) :
+  Initialize a shidashi application
+
 - [`register_session_id()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
   [`register_session_events()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
   [`get_theme()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
   [`get_jsevent()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
   : The 'JavaScript' tunnel
+
+- [`mcp_wrapper()`](https://dipterix.org/shidashi/reference/mcp_wrapper.md)
+  :
+
+  Wrap an `MCP` Tool Generator Function
+
+- [`module_drawer()`](https://dipterix.org/shidashi/reference/module_drawer.md)
+  : Drawer shell for module templates
 
 - [`module_info()`](https://dipterix.org/shidashi/reference/module_info.md)
   [`current_module()`](https://dipterix.org/shidashi/reference/module_info.md)
@@ -198,6 +209,12 @@ repository](https://github.com/dipterix/shidashi-templates/).
 - [`register_global_reactiveValues()`](https://dipterix.org/shidashi/reference/register_global_reactiveValues.md)
   : Register global reactive list
 
+- [`register_input()`](https://dipterix.org/shidashi/reference/register_io.md)
+  [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
+  :
+
+  Register Shiny Inputs and Outputs for `MCP` Access
+
 - [`render()`](https://dipterix.org/shidashi/reference/render.md) :
   Render a 'shidashi' project
 
@@ -209,6 +226,11 @@ repository](https://github.com/dipterix/shidashi-templates/).
 
 - [`show_ui_code()`](https://dipterix.org/shidashi/reference/show_ui_code.md)
   : Used by demo project to show the generating code
+
+- [`skill_wrapper()`](https://dipterix.org/shidashi/reference/skill_wrapper.md)
+  :
+
+  Wrap a Skill Directory as an `MCP` Tool Generator
 
 - [`template_settings`](https://dipterix.org/shidashi/reference/template_settings.md)
   [`template_settings_set()`](https://dipterix.org/shidashi/reference/template_settings.md)

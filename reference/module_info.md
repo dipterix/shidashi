@@ -6,8 +6,8 @@ module. It looks up the `.module_id` variable in the calling environment
 corresponding row from the module table.
 
 `active_module` returns a *reactive* value with information about the
-module that is currently visible in the iframe tab (or the standalone
-module if no iframe manager is present). Unlike `current_module` which
+module that is currently visible in the `iframe` tab (or the standalone
+module if no `iframe` manager is present). Unlike `current_module` which
 is static and always returns the module whose server code is running,
 `active_module` dynamically tracks which module the user is looking at
 from any context.
@@ -144,27 +144,29 @@ the function falls back to `current_module()`.
 ``` r
 library(shiny)
 module_info()
-#>              id group          label                 icon      badge
-#> 1    getstarted  <NA>    Get Started               rocket           
-#> 2          card Cards          Cards               square           
-#> 3       widgets Cards        Widgets         puzzle-piece           
-#> 4          demo  <NA>           Demo            chart-bar           
-#> 5 filestructure  <NA> File Structure          folder-open           
-#> 6       page500  <NA>      Error 500 exclamation-triangle           
-#> 7     module_id  <NA>   Module Label               circle New|bg-red
+#>              id  group           label                 icon badge
+#> 1    getstarted   <NA>     Get Started               rocket      
+#> 2          card  Cards           Cards               square      
+#> 3       widgets  Cards         Widgets         puzzle-piece      
+#> 4       aiagent Agents   AI Agent Demo                robot      
+#> 5      mcpsetup Agents MCP Setup Guide                 plug      
+#> 6          demo   <NA>            Demo            chart-bar      
+#> 7 filestructure   <NA>  File Structure          folder-open      
+#> 8       page500   <NA>       Error 500 exclamation-triangle      
 #>                      url
 #> 1    /?module=getstarted
 #> 2          /?module=card
 #> 3       /?module=widgets
-#> 4          /?module=demo
-#> 5 /?module=filestructure
-#> 6       /?module=page500
-#> 7     /?module=module_id
+#> 4       /?module=aiagent
+#> 5      /?module=mcpsetup
+#> 6          /?module=demo
+#> 7 /?module=filestructure
+#> 8       /?module=page500
 
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x55e8ab78c7a0>
+#> <environment: 0x55a361e655c0>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -183,8 +185,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x55e8abdd6d00>
-#> <environment: 0x55e8abdd8e50>
+#> <bytecode: 0x55a365001720>
+#> <environment: 0x55a3650086a0>
 #> 
 #> $module$template_path
 #> NULL
@@ -196,7 +198,7 @@ module_data <- load_module(
   request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
-if(interactive()){
+if (interactive()){
 
 # get module title
 env$module_title()

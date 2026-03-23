@@ -20,5 +20,5 @@ bslib_dependency(...)
 ## Value
 
 An
-[`htmltools::tagList`](https://rstudio.github.io/htmltools/reference/tagList.html)
+[`tagList`](https://rstudio.github.io/htmltools/reference/tagList.html)
 containing Bootstrap 5 dependencies

@@ -68,7 +68,7 @@ renderClipboard(
 
 ``` r
 clipboardOutput(clip_text = "Hey there")
-#> <div id="clipboardomb92Q9Qeu" class="shidashi-clipboard-output">
+#> <div id="clipboardSwlKLUUEdL" class="shidashi-clipboard-output">
 #>   <button class="clipboard-btn btn btn-default" data-clipboard-text="Hey there" role="button">Copy to clipboard</button>
 #> </div>
 ```
