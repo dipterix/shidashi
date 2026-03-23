@@ -33,6 +33,39 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.7" id="shidashi-017--018">shidashi 0.1.7 &amp; 0.1.8<a class="anchor" aria-label="anchor" href="#shidashi-017--018"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-1-7">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-7"></a></h3>
+<ul><li>Added built-in AI chat-bot panel powered by <code>ellmer</code> and <code>shinychat</code>; supports multiple providers, in-memory conversation history, mode-based tool permissions, token/cost display, and early-stop controls</li>
+<li>Added <code><a href="../reference/init_chat.html">init_chat()</a></code> to create an <code>ellmer</code> <code>Chat</code> object from R options (<code>shidashi.chat_provider</code>, <code>shidashi.chat_model</code>, <code>shidashi.chat_system_prompt</code>, <code>shidashi.chat_base_url</code>)</li>
+<li>Added <code>MCP</code> (Model Context Protocol) proxy server (<code>inst/mcp-proxy/</code>) so external <code>LLM</code> clients can interact with a running Shiny application via <code>MCP</code>
+</li>
+<li>Added <code><a href="../reference/mcp_wrapper.html">mcp_wrapper()</a></code> to register an <code>MCP</code> endpoint for a Shiny module</li>
+<li>Added <code><a href="../reference/register_io.html">register_input()</a></code> / <code><a href="../reference/register_io.html">register_output()</a></code> helpers to expose Shiny inputs and outputs as <code>MCP</code> tool parameters with descriptions</li>
+<li>Added skills system: <code><a href="../reference/skill_wrapper.html">skill_wrapper()</a></code> parses and runs reusable agent skill scripts; skill working directory is resolved relative to the skill folder</li>
+<li>Tools and skills are now category- and permission-aware; module IDs are excluded from tool names for consistency</li>
+<li>Added <code><a href="../reference/module_drawer.html">module_drawer()</a></code>, <code><a href="../reference/drawer.html">drawer_open()</a></code>, <code><a href="../reference/drawer.html">drawer_close()</a></code>, and <code><a href="../reference/drawer.html">drawer_toggle()</a></code> for controlling a slide-in drawer panel</li>
+<li>
+<code><a href="../reference/module_info.html">module_info()</a></code> now returns richer per-module metadata; added <code><a href="../reference/module_info.html">current_module()</a></code> and <code><a href="../reference/module_info.html">active_module()</a></code> helpers for querying the active Shiny module</li>
+<li>Modules support an optional <code>agents.yaml</code> for declaring agent configurations (tools, skills, auto-approve rules)</li>
+<li>
+<code>MCP</code> host can be a remote server; fuzzy module reference is supported when resolving module IDs</li>
+<li>Added demo template modules: <code>aiagent</code>, <code>filestructure</code>, and <code>mcpsetup</code>
+</li>
+<li>Added <code>ellmer</code> content helpers: S7 generic <code>ellmer_as_json()</code> for <code>ContentText</code>, <code>ContentImageInline</code>, <code>ContentImageRemote</code>, and <code>ContentToolResult</code>; and <code>content_to_mcp()</code> for converting chat content to <code>MCP</code> responses</li>
+<li>Chat-bot UI displays token usage and API cost next to each turn</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-1-7">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-7"></a></h3>
+<ul><li>Fixed images not being passed correctly to the agent</li>
+<li>Fixed sidebar start-collapsed behavior</li>
+<li>Fixed bare-bone template initial setup</li>
+<li>Fixed <code>MCP</code> server query-UI tool response</li>
+<li>Fixed permission issue when executing skill scripts</li>
+<li>Applied <code>npm audit fix</code> to bundled <code>JavaScript</code> dependencies</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.6" id="shidashi-016">shidashi 0.1.6<a class="anchor" aria-label="anchor" href="#shidashi-016"></a></h2><p class="text-muted">CRAN release: 2024-02-17</p>
 <ul><li>Load scripts starting with <code>shared-</code> when loading modules</li>
 </ul></div>
