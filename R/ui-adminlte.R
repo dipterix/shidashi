@@ -10,7 +10,7 @@
 #' @return 'HTML' tags
 #' @export
 adminlte_ui <- function(root_path = template_root()){
-  function(req){
+  function(req) {
 
     tryCatch({
       resource <- load_module(root_path = root_path, request = req)
@@ -107,7 +107,7 @@ adminlte_sidebar <- function(root_path = template_root(),
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
     y$shared_id <- shared_id
-    url <- httr::modify_url("?module=", query = y)
+    url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
     order <- x$order
     if(!length(order) || is.na(order)){
       order <- 9999L

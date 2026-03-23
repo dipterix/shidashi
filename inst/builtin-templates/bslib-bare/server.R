@@ -39,7 +39,7 @@ server <- function(input, output, session){
     if (is.null(module_data)) {
       "No module"
     } else {
-      str(module_data)
+      utils::str(module_data)
     }
   })
 }

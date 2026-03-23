@@ -19,16 +19,24 @@
 </nav>
 
 <div class="container-fluid py-3">
-  <div class="row">
-    <div class="col-12">
-      <div class="alert alert-warning">
-        <h4 class="alert-heading">Under Construction</h4>
-        <p>This module is currently under construction. Please check back later.</p>
-      </div>
-    </div>
-  </div>
+
+  {{ ui_app_structure() }}
+  <hr/>
+
+  {{ ui_module_structure() }}
+  <hr/>
+
+  {{ ui_module_template() }}
+  <hr/>
+
+  {{ ui_server_pattern() }}
+  <hr/>
+
+  {{ ui_modules_yaml() }}
+
 </div>
 
+{{ shidashi::module_drawer() }}
 {{ shidashi::back_top_button("rocket") }}
 
 {{ shidashi::include_view("footer.html") }}

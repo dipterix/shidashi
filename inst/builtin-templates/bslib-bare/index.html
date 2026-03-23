@@ -31,11 +31,6 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#" data-shidashi-action="drawer-toggle">
-          <i class="fas fa-cog"></i>
-        </a>
-      </li>
-      <li class="nav-item">
         <a class="nav-link" href="#" data-shidashi-action="iframe-fullscreen">
           <i class="fas fa-expand"></i>
         </a>
@@ -105,12 +100,7 @@
   </div>
   <!-- /.content-wrapper -->
 
-  <!-- Drawer -->
-  <div class="shidashi-drawer">
-    <div class="shidashi-drawer-close-tab"><i class="fas fa-xmark"></i></div>
-    {{ drawer_ui() }}
-  </div>
-  <div class="shidashi-drawer-overlay"></div>
+  <!-- Drawer lives inside each module iframe (see back_top_button()) -->
 
 </div>
 <!-- ./wrapper -->

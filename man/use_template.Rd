@@ -7,7 +7,7 @@
 use_template(
   path,
   user = "dipterix",
-  theme = "AdminLTE3",
+  theme = "bslib",
   repo = "shidashi-templates",
   branch = "main",
   ...
@@ -34,8 +34,9 @@ Download 'shidashi' templates from 'Github'
 }
 \details{
 To publish a 'shidashi' template, create a 'Github' repository
-called \code{'shidashi-templates'}, or fork the \href{https://github.com/dipterix/shidashi-templates}{built-in templates}. The \code{theme} is the sub-folder
-of the template repository.
+called \code{'shidashi-templates'}, or fork the
+\href{https://github.com/dipterix/shidashi-templates}{built-in templates}.
+The \code{theme} is the sub-folder of the template repository.
 
 An easy way to use a template in your project is through the 'RStudio'
 project widget. In the 'RStudio' navigation bar, go to "File" menu,

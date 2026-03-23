@@ -67,9 +67,9 @@ environment (set automatically when a module is loaded), then retrieves
 the corresponding row from the module table.
 
 \code{active_module} returns a \emph{reactive} value with
-information about the module that is currently visible in the iframe tab
-(or the standalone module if no iframe manager is present). Unlike
-\code{current_module} which is static and always returns the module
+information about the module that is currently visible in the \verb{iframe}
+tab (or the standalone module if no \verb{iframe} manager is present).
+Unlike \code{current_module} which is static and always returns the module
 whose server code is running, \code{active_module} dynamically tracks
 which module the user is looking at from any context.
 }
@@ -118,7 +118,7 @@ module_data <- load_module(
   request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
-if(interactive()){
+if (interactive()){
 
 # get module title
 env$module_title()

@@ -1,5 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.vscode$
 node_modules$
 ^LICENSE\.md$
 ^\.github$
@@ -19,4 +20,4 @@ node_modules$
 ^ui\.R$
 ^_rs_job\.R$
 ^CRAN-SUBMISSION$
-^TODO\.md$
+^TODO.*\.md$

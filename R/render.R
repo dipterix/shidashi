@@ -42,6 +42,26 @@ render <- function(
     prelaunch <- substitute(prelaunch)
   }
 
+  # Resolve port: use caller-supplied port= or pick a random one.
+  dots <- list(...)
+  mcp_port <- dots[["port"]]
+  if (is.null(mcp_port)) {
+    mcp_port <- httpuv::randomPort()
+  }
+  dots[["port"]] <- mcp_port
+
+  # Write port record and keep proxy up-to-date in user cache.
+  setup_mcp_proxy(port = mcp_port, overwrite = TRUE, verbose = FALSE)
+
+  # Copy global.R from inst/ so that shinyAppDir sources it at startup.
+  # global.R calls shidashi::init_app() to create per-application state.
+  global_src <- system.file("global.R", package = "shidashi")
+  if (nzchar(global_src)) {
+    file.copy(global_src, file.path(root_path, "global.R"), overwrite = TRUE)
+  }
+
+  # Write template_settings$set into ui.R so shinyAppDir picks up the correct
+  # root_path regardless of working directory or how the app is launched.
   writeLines(
     c(
       sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
@@ -56,30 +76,35 @@ render <- function(
 
     shidashi::template_settings$set('root_path' = root_path)
     eval(prelaunch, envir = new.env(parent = globalenv()))
-    shiny::runApp(appDir = root_path, launch.browser = launch_browser, test.mode = test_mode, ...)
+
+    # Use shinyAppDir so that ui.R / server.R are loaded normally, then
+    # chain the MCP handler in front of Shiny's built-in httpHandler.
+    app <- register_mcp_route(shiny::shinyAppDir(root_path))
+    do.call(shiny::runApp, c(
+      list(appDir = app, launch.browser = launch_browser, test.mode = test_mode),
+      dots
+    ))
   } else {
     script <- file.path(root_path, "_rs_job.R")
-    args <- list(
-      ...,
-      launch.browser = launch_browser,
-      test.mode = test_mode,
-      appDir = root_path
-    )
-    call <- as.call(list(
-      quote(shiny::runApp),
-      ...,
-      launch.browser = launch_browser,
-      test.mode = test_mode,
-      appDir = root_path
+
+    # Build app object in the job script so httpHandler is attached
+    run_call <- as.call(c(
+      list(quote(shiny::runApp)),
+      list(
+        appDir = quote(app),
+        launch.browser = launch_browser,
+        test.mode = test_mode
+      ),
+      dots
     ))
     s <- c(
-      sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
       'options("crayon.enabled" = TRUE)',
       'options("crayon.colors" = 256)\n',
       deparse(prelaunch),
-      '\n'
+      "\n",
+      sprintf("app <- shidashi:::register_mcp_route(shiny::shinyAppDir('%s'))", root_path),
+      deparse(run_call)
     )
-    s <- c(s, deparse(call))
     writeLines(
       con = script,
       s

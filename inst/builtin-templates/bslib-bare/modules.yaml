@@ -1,6 +1,8 @@
 divider:
   Components:
     order: 20
+  AI Agents:
+    order: 40
   Extras:
     order: 50
 
@@ -8,6 +10,10 @@ groups:
   Cards:
     icon: "clone"
     order: 25
+    open: true
+  Agents:
+    icon: "robot"
+    order: 45
     open: true
 
 modules:
@@ -25,6 +31,16 @@ modules:
     icon: "puzzle-piece"
     label: "Widgets"
     group: "Cards"
+  aiagent:
+    order: 46
+    icon: "robot"
+    label: "AI Agent Demo"
+    group: "Agents"
+  mcpsetup:
+    order: 47
+    icon: "plug"
+    label: "MCP Setup Guide"
+    group: "Agents"
   demo:
     order: 51
     icon: "chart-bar"
@@ -37,8 +53,3 @@ modules:
     order: 53
     icon: "exclamation-triangle"
     label: "Error 500"
-  module_id:
-    order: 99
-    icon: "circle"
-    label: "Module Label"
-    badge: New|bg-red

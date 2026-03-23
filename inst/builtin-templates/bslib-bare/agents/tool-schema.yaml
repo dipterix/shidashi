@@ -1,0 +1,31 @@
+# agents/tool-schema.yaml
+#
+# Pre-listed tool schemas for MCP clients that do not support
+# dynamic deferred tools. These schemas are advertised in `tools/list`
+# even before a Shiny session is bound. Calling the tools still
+# requires a bound session.
+#
+# Skills (agents/skills/) are auto-discovered and do NOT need to be
+# listed here.
+#
+# Format follows the MCP tool schema:
+#   tools:
+#     - name: <tool_name>            # without the tool__ prefix
+#       description: <string>
+#       inputSchema:
+#         type: object
+#         properties:
+#           <param>:
+#             type: <string|number|boolean|array|object>
+#             description: <string>
+#         required: [<param>, ...]
+
+tools:
+- name: hello_world
+  description: "Returns a greeting. Used to verify the MCP tunnel works."
+  inputSchema:
+    type: object
+    properties:
+      name:
+        type: string
+        description: "Name to greet (default: 'World')"
