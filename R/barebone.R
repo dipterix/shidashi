@@ -268,7 +268,7 @@ create_barebone_bslib <- function(path){
         "    if (is.null(module_data)) {",
         "      \"No module\"",
         "    } else {",
-        "      str(module_data)",
+        "      utils::str(module_data)",
         "    }",
         "  })",
         "",

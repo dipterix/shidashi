@@ -460,21 +460,25 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
     # Observer: when the browser responds via setInputValue, store the
     # result in query_requests so shiny_query_ui_result can fetch it.
-    shiny::bindEvent(
-      shiny::observe({
-        res <- session$input[["@shiny_query_ui_result@"]]
-        res <- as.list(res)
-        rid <- res$request_id
-        if (length(rid) != 1 || !query_requests$has(rid)) {
-          return()
-        }
-        entry <- query_requests$get(rid)
-        entry$result <- res
-        query_requests$set(rid, entry)
-      }, domain = session),
-      session$input[["@shiny_query_ui_result@"]],
-      ignoreNULL = TRUE, ignoreInit = FALSE
-    )
+    local({
+      shiny::bindEvent(
+        shiny::observe({
+          res <- session$input[["@shiny_query_ui_result@"]]
+          res <- as.list(res)
+          rid <- res$request_id
+          if (length(rid) != 1 || !query_requests$has(rid)) {
+            return()
+          }
+          entry <- query_requests$get(rid)
+          entry$result <- res
+          # str(res)
+          # message(Sys.time() - entry$request_timestamp)
+          query_requests$set(rid, entry)
+        }, domain = session, priority = 101),
+        session$input[["@shiny_query_ui_result@"]],
+        ignoreNULL = TRUE, ignoreInit = FALSE
+      )
+    })
 
     shiny_input_info <- ellmer::tool(
       name = "shiny_input_info",
@@ -632,11 +636,23 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
           input_id = session$ns("@shiny_query_ui_result@")
         ))
 
-        paste0(
-          "Request registered (id: ", request_id, "). ",
-          "Call `tool__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
-          "to retrieve the result."
-        )
+        # Wait for the browser to store the result in the map — up to 10 x 1s.
+        # Doing the wait in the sender avoids the race where the client calls
+        # shiny_query_ui_result before Shiny has flushed the reactive observer.
+        coro::async(function() {
+          for (i in seq_len(10)) {
+            coro::async_sleep(1)
+            if (query_requests$has(request_id) &&
+                !is.null(query_requests$get(request_id)$result)) {
+              break
+            }
+          }
+          paste0(
+            "Request registered (id: ", request_id, "). ",
+            "Call `tool__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
+            "to retrieve the result."
+          )
+        })()
       }
     )
 
@@ -645,9 +661,10 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       description = paste(
         "Fetch the result of a previous `shiny_query_ui` request.",
         "Returns the innerHTML of the matched element, or an inline image",
-        "if the element is a canvas or contains only an <img> tag.",
-        "If the result is not yet available and the request has not timed out,",
-        "wait a moment and try again."
+        "if the element contains <img> or <canvas>.",
+        "An optional text note may be appended with additional context",
+        "(e.g. outerHTML, not-found message, or hidden-element content).",
+        "If the result is not yet ready, wait ~0.5 s and call again."
       ),
       arguments = list(
         request_id = ellmer::type_string(
@@ -656,6 +673,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         )
       ),
       fun = function(request_id) {
+        # 1. Unknown request_id
         if (!query_requests$has(request_id)) {
           stop(
             "Unknown request_id: '", request_id, "'. ",
@@ -667,40 +685,55 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         entry <- query_requests$get(request_id)
         res <- entry$result
 
-        if (is.null(res)) {
-          elapsed <- as.double(
-            difftime(Sys.time(), entry$request_timestamp, units = "secs")
-          )
-          if (elapsed > 5) {
-            query_requests$remove(request_id)
-            stop(
-              "No response from browser for selector '",
-              entry$selector, "' within 5 seconds. ",
-              "The selector is most likely invalid (no matching results)."
+        # 2. Result available — consume and return
+        if (!is.null(res)) {
+          query_requests$remove(request_id)
+          # note is an optional free-text annotation added by newer JS versions
+          # (e.g. outerHTML context, not-found message, hidden-element innerHTML).
+          # Older JS omits it entirely; R does not branch on it — agents interpret it.
+          note <- res$note %||% ""
+
+          # Primary dispatch: image_data present → inline image
+          if (length(res$image_data) == 1 && nzchar(res$image_data)) {
+            mime <- res$image_type %||% "image/png"
+            img <- ellmer::ContentImageInline(type = mime, data = res$image_data)
+            if (nzchar(note)) {
+              return(list(img, ellmer::ContentText(note)))
+            }
+            return(img)
+          }
+
+          # Default: return html string, append note when present
+          html <- res$html %||% ""
+          if (nzchar(note)) {
+            html <- paste(
+              c(html, "\n\n<!-- NOTE: ", note, "-->"),
+              collapse = "\n"
             )
           }
-          # Not timed out yet — tell the AI to retry
-          return(paste0(
-            "Result not yet available (", round(elapsed, 1), "s elapsed). ",
-            "Wait a moment and call `tool__shiny_query_ui_result(request_id = \"",
-            request_id, "\")` again."
-          ))
+          return(html)
         }
 
-        # Result available — consume and clean up
-        html <- res$html %||% ""
-        # If the JS side captured a data-URI image (canvas / <img>)
-        if (length(res$image_data) && nzchar(res$image_data)) {
-          mime <- res$image_type %||% "image/png"
-          html <- ellmer::ContentImageInline(
-            type = mime,
-            data = res$image_data
+        # 3. Not yet available — check age
+        elapsed <- as.double(
+          difftime(Sys.time(), entry$request_timestamp, units = "secs")
+        )
+        if (elapsed > 30) {
+          stop(
+            "No response from browser for selector '",
+            entry$selector, "' within 30 seconds. ",
+            "The selector is most likely invalid (no matching results)."
           )
         }
-
-        query_requests$remove(request_id)
-
-        html
+        # Ask the client to wait briefly and retry
+        coro::async(function() {
+          coro::async_sleep(1)
+          paste0(
+            "Result not yet available (", round(elapsed, 1), "s elapsed). ",
+            "Wait ~0.5 s and call `tool__shiny_query_ui_result(request_id = \"",
+            request_id, "\")` again."
+          )
+        })()
       }
     )
 

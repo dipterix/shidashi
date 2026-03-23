@@ -1634,9 +1634,24 @@ class ShidashiApp {
       if (!el) {
         Shiny.setInputValue(inputId, {
           request_id: requestId,
+          type: 'not_found',
           html: '',
           image_data: '',
-          image_type: ''
+          image_type: '',
+          note: "No element matched selector: '" + selector + "'"
+        }, { priority: 'event' });
+        return;
+      }
+
+      // Check if element is hidden (display:none)
+      if (getComputedStyle(el).display === 'none') {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          type: 'hidden',
+          html: '',
+          image_data: '',
+          image_type: '',
+          note: el.innerHTML
         }, { priority: 'event' });
         return;
       }
@@ -1649,9 +1664,11 @@ class ShidashiApp {
           const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
           Shiny.setInputValue(inputId, {
             request_id: requestId,
+            type: 'image',
             html: '',
             image_data: parts[1] || '',
-            image_type: mime
+            image_type: mime,
+            note: el.innerHTML
           }, { priority: 'event' });
           return;
         }
@@ -1667,9 +1684,11 @@ class ShidashiApp {
           const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
           Shiny.setInputValue(inputId, {
             request_id: requestId,
+            type: 'image',
             html: '',
             image_data: parts[1] || '',
-            image_type: mime
+            image_type: mime,
+            note: el.innerHTML
           }, { priority: 'event' });
           return;
         }
@@ -1684,19 +1703,23 @@ class ShidashiApp {
         const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
         Shiny.setInputValue(inputId, {
           request_id: requestId,
+          type: 'image',
           html: '',
           image_data: parts[1] || '',
-          image_type: mime
+          image_type: mime,
+          note: el.innerHTML
         }, { priority: 'event' });
         return;
       }
 
-      // Default: return innerHTML
+      // Default: return innerHTML with outerHTML as context note
       Shiny.setInputValue(inputId, {
         request_id: requestId,
+        type: 'html',
         html: el.innerHTML,
         image_data: '',
-        image_type: ''
+        image_type: '',
+        note: el.outerHTML
       }, { priority: 'event' });
     });
 

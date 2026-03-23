@@ -153,7 +153,7 @@ server_new_features <- function(input, output, session, ...) {
   # Current module info
   output$current_module_info <- renderPrint({
     info <- current_module()
-    str(info)
+    utils::str(info)
   })
 
   # Drawer controls
