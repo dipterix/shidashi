@@ -13,6 +13,9 @@
 * Added `mcp_wrapper()` to register an `MCP` endpoint for a Shiny module
 * Added `register_input()` / `register_output()` helpers to expose Shiny inputs
   and outputs as `MCP` tool parameters with descriptions
+* `register_output()` is now a server-side function: it assigns the render
+  function, registers the `MCP` output spec, and injects download/pop-out
+  widget icons via `JS` overlay (no UI-side wrapper needed)
 * Added skills system: `skill_wrapper()` parses and runs reusable agent skill
   scripts; skill working directory is resolved relative to the skill folder
 * Tools and skills are now category- and permission-aware; module IDs are excluded

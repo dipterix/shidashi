@@ -234,7 +234,7 @@ conversation_title <- function(turns, max_chars = 50L) {
     max_chars <- 6L
   }
   if (nchar(txt) > max_chars) {
-    txt <- paste0(substr(txt, 1L, max_chars - 3L), "...")
+    txt <- truc_string(x = txt, annot = "", side = "end", max_char = max_chars, collapse = "")
   }
   return(txt)
 }

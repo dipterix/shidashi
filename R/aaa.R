@@ -87,7 +87,7 @@ R_user_dir <- function(package, which = c("data", "config", "cache")) {
 }
 
 set_attr_call <- function(x, call, collapse = "\n", ...) {
-  if(!is.character(call)){
+  if (!is.character(call)){
     call <- deparse(call)
   }
   call <- paste(call, collapse = collapse, ...)
@@ -115,7 +115,7 @@ remove_html_class <- function(target, class){
 #' @return The proposed class for \code{<body>} tag
 #' @export
 guess_body_class <- function(cls){
-  if(missing(cls)){
+  if (missing(cls)){
     cls <- "fancy-scroll-y darm-mode"
   } else {
     cls <- unlist(strsplit(paste(cls, collapse = ' '), " "))
@@ -169,19 +169,24 @@ get_construct_string <- function(x){
 format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
                           width.cutoff = 80L, indent = 2, wrap=TRUE,
                           args.newline = TRUE, blank = FALSE, ...){
-  if(!quoted){
+  if (!quoted) {
     expr <- substitute(expr)
   }
 
-  if(length(expr) !=1 || !is.character(expr)){
+  if (length(expr) !=1 ||
+      !is.character(expr)) {
     expr <- paste(deparse(expr), collapse = "\n")
   }
 
-  if(reformat){
+  if (reformat) {
     expr <- formatR::tidy_source(
-      text = expr, output = FALSE,
-      width.cutoff = width.cutoff, indent = indent, wrap=wrap,
-      args.newline = args.newline, blank = blank,
+      text = expr,
+      output = FALSE,
+      width.cutoff = width.cutoff,
+      indent = indent,
+      wrap = wrap,
+      args.newline = args.newline,
+      blank = blank,
       ...
     )$text.tidy
   }
@@ -198,7 +203,7 @@ html_highlight_code <- function(
   ..., hover = c("overflow-visible-on-hover", "overflow-auto")){
 
   hover <- match.arg(hover)
-  if(!quoted){
+  if (!quoted){
     expr <- substitute(expr)
   }
   expr <- format_text_r(expr = expr, quoted = TRUE,
@@ -260,7 +265,7 @@ show_ui_code <- function(
   )
 
 
-  if(as_card){
+  if (as_card) {
     res <- card(
       title = card_title, class_body = class_body,
       tools = clipboardOutput(
@@ -268,10 +273,63 @@ show_ui_code <- function(
         as_card_tool = TRUE),
       footer = res,
       class_foot = "display-block bg-gray-90 no-padding code-display fill-width",
-      if(code_only){ NULL }else{x}
+      if (code_only) {
+        NULL
+      } else{
+        x
+      }
     )
   }
   res
+}
+
+
+truc_string <- function(x, max_char, annot = "(truncated)", side = c("end", "begin", "both"), collapse = "\n") {
+  side <- match.arg(side)
+
+  # x <- "asdbkawjhrgfbqwierkfbwlairefb"
+  # max_char <- 10
+  # side <- "end"
+  # annot = "(truncated)"
+
+  if (side == "both" && max_char < nchar(annot) + 10) {
+    side <- "end"
+  }
+
+  annot <- switch(
+    side,
+    both = sprintf("|...%s...|", annot),
+    end = sprintf("|...%s", annot),
+    begin = sprintf("%s...|", annot)
+  )
+
+  alen <- nchar(annot)
+
+  max_char <- max(max_char, nchar(annot) + 2)
+
+  x <- trimws(paste(x, collapse = collapse))
+  xlen <- nchar(x)
+  if (xlen <= max_char) {
+    return(x)
+  }
+
+  tlen <- max_char - alen
+
+  switch(
+    side,
+    both = {
+      n_pre <- ceiling(tlen / 2)
+      n_post <- tlen - n_pre
+      sprintf("%s%s%s", substr(x, 1L, n_pre), annot, substr(x, xlen - n_post + 1, xlen))
+    },
+    end = {
+      sprintf("%s%s", substr(x, 1L, tlen), annot)
+    },
+    begin = {
+      sprintf("%s%s", annot, substr(x, xlen - tlen + 1L, xlen))
+    }
+  )
+
 }
 
 

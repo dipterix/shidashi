@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Standalone Viewer</title>
+
+  {{ shidashi::include_view("header.html") }}
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    .shidashi-standalone-viewer {
+      width: 100vw;
+      height: 100vh;
+    }
+    .shidashi-standalone-viewer .shiny-plot-output {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="shidashi-standalone-viewer">
+  {{ viewer_output() }}
+</div>
+
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

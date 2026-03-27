@@ -189,11 +189,7 @@ ui_demo_details <- function(){
         body_main = flip_box(
           front = div(
             class = "fill-width height-450 min-height-450 resize-vertical",
-            shidashi::register_output(
-              plotOutput(ns("iris_plot"), height = "100%"),
-              outputId = "iris_plot",
-              description = "Scatter plot of iris, thresholded by input `iris_threshold`"
-            )
+            plotOutput(ns("iris_plot"), height = "100%")
           ),
           back = tableOutput(ns("iris_plot_data"))
         ),
@@ -302,22 +298,27 @@ server_demo <- function(input, output, session, ...){
     )
   }
 
-  output$iris_plot <- renderPlot({
-    data(iris)
-    theme <- shidashi::get_theme(event_data)
-    ggtheme <- generate_ggtheme(theme)
+  shidashi::register_output(
+    renderPlot({
+      data(iris)
+      theme <- shidashi::get_theme(event_data)
+      ggtheme <- generate_ggtheme(theme)
 
-    iris <- iris[iris$Petal.Width > input$iris_threshold, ]
+      iris <- iris[iris$Petal.Width > input$iris_threshold, ]
 
-    validate(
-      need(nrow(iris) > 0, "No data point selected")
-    )
+      validate(
+        need(nrow(iris) > 0, "No data point selected")
+      )
 
-    ggplot(data=iris) +
-      aes(x=Sepal.Length, y=Petal.Length, color=Species) +
-      geom_point() +
-      geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
-  })
+      ggplot(data=iris) +
+        aes(x=Sepal.Length, y=Petal.Length, color=Species) +
+        geom_point() +
+        geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
+    }),
+    outputId = "iris_plot",
+    description = "Scatter plot of iris, thresholded by input `iris_threshold`",
+    download_type = "image"
+  )
 
   run_analysis <- function(){
     show_notification(

@@ -41,6 +41,11 @@ modules:
     icon: "plug"
     label: "MCP Setup Guide"
     group: "Agents"
+  output_widgets:
+    order: 28
+    icon: "external-link-alt"
+    label: "Output Widgets"
+    group: "Cards"
   demo:
     order: 51
     icon: "chart-bar"
@@ -57,3 +62,6 @@ modules:
     order: 54
     icon: "wave-square"
     label: "Stream Viz"
+  standalone_viewer:
+    hidden: yes
+    order: 99

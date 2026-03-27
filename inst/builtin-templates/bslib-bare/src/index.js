@@ -1560,6 +1560,17 @@ class ShidashiApp {
       }
     });
 
+    // params: { inputId, value, priority }
+    this.shinyHandler('set_shiny_input', (params) => {
+      if (params.inputId && window.Shiny) {
+        const opts = {};
+        if (params.priority === 'event') {
+          opts.priority = 'event';
+        }
+        window.Shiny.setInputValue(params.inputId, params.value, opts);
+      }
+    });
+
     // --- Drawer handlers ---
 
     this.shinyHandler('drawer_open', (params) => {
@@ -1598,6 +1609,65 @@ class ShidashiApp {
           this._reportActiveModule(this._activeModuleId);
         }
       }
+    });
+
+    // --- Output widget overlay (download/popout icons) ---
+
+    this.shinyHandler('register_output_widgets', (params) => {
+      // params: { outputId, widgets: ["download","popout"], download_type, token }
+      const outputId = params.outputId;
+      if (!outputId) return;
+
+      const outputEl = document.getElementById(outputId);
+      if (!outputEl) return;
+
+      const parent = outputEl.parentElement;
+      if (!parent) return;
+
+      // Prevent double-initialization
+      if (parent.classList.contains('shidashi-output-widget-wrapper')) return;
+
+      // Make the parent position-relative so the absolutely-positioned
+      // widget overlay is anchored correctly. The container is inserted
+      // as a sibling *before* the shiny output element so Shiny's
+      // render cycle (which clears the output element) won't destroy it.
+      parent.classList.add('position-relative', 'shidashi-output-widget-wrapper');
+
+      const container = document.createElement('div');
+      container.className = 'shidashi-output-widget-container';
+
+      const widgets = params.widgets || [];
+
+      if (widgets.includes('download')) {
+        const downloadBtn = document.createElement('a');
+        downloadBtn.className = 'shidashi-output-widget-icon';
+        downloadBtn.title = 'Download';
+        downloadBtn.href = '#';
+        downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>';
+        downloadBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (window.Shiny) {
+            Shiny.setInputValue(outputId + '__download_trigger', Date.now(), { priority: 'event' });
+          }
+        });
+        container.appendChild(downloadBtn);
+      }
+
+      if (widgets.includes('popout')) {
+        const popoutBtn = document.createElement('a');
+        popoutBtn.className = 'shidashi-output-widget-icon';
+        popoutBtn.title = 'Open in new window';
+        popoutBtn.href = '#';
+        popoutBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg>';
+        popoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const token = params.token || '';
+          window.open('?module=standalone_viewer&outputId=' + encodeURIComponent(outputId) + '&token=' + encodeURIComponent(token));
+        });
+        container.appendChild(popoutBtn);
+      }
+
+      parent.insertBefore(container, outputEl);
     });
 
     // --- Chatbot status bar handler ---
