@@ -165,7 +165,7 @@ register_global_reactiveValues <- function(name, session = shiny::getDefaultReac
 register_session_id <- function(
   session = shiny::getDefaultReactiveDomain(),
   shared_id = NULL,
-  shared_inputs = NA){
+  shared_inputs = NA) {
 
   # DIPSAUS DEBUG START
   # session <- shiny:::MockShinySession$new()
@@ -173,22 +173,26 @@ register_session_id <- function(
   # shared_inputs <- NA
 
   # Get stored session information
-  if( !is.environment(session$userData$shidashi) ) {
+  if (!is.environment(session$userData$shidashi)) {
     session$userData$shidashi <- new.env(parent = emptyenv())
   }
 
-  if(length(shared_id)){
-    if(grepl("[^a-z0-9_]", shared_id)){
-      stop("session `shared_id` must only contain letters (lower-case), digits, and/or '_'.")
+  if (length(shared_id)) {
+    if (grepl("[^a-z0-9_]", shared_id)) {
+      stop(
+        "session `shared_id` must only contain letters (lower-case), digits, and/or '_'."
+      )
     }
   } else {
     shared_id <- session$userData$shidashi$shared_id
-    if(length(shared_id) != 1 || !is.character(shared_id)){
+    if (length(shared_id) != 1 || !is.character(shared_id)) {
       # get from session
-      query_list <- shiny::parseQueryString(shiny::isolate(session$clientData$url_search))
+      query_list <- shiny::parseQueryString(shiny::isolate(
+        session$clientData$url_search
+      ))
       shared_id <- query_list$shared_id
       shared_id <- tolower(shared_id)
-      if(!length(shared_id) || grepl("[^a-z0-9_]", shared_id)){
+      if (!length(shared_id) || grepl("[^a-z0-9_]", shared_id)) {
         shared_id <- rand_string(length = 26)
         shared_id <- tolower(shared_id)
       }
@@ -206,30 +210,34 @@ register_session_id <- function(
   }
 
   broadcast_observer <- session$userData$shidashi$broadcast_observer
-  if( is.null(broadcast_observer) ) {
-    broadcast_observer <- shiny::observe({
-      inputs <- shiny::reactiveValuesToList(session$input)
-      nms <- names(inputs)
+  if (is.null(broadcast_observer)) {
+    broadcast_observer <- shiny::observe(
+      {
+        inputs <- shiny::reactiveValuesToList(session$input)
+        nms <- names(inputs)
 
-      sel <- !startsWith(nms, "@")
-      if(length(sel) && any(sel)){
-        nms <- nms[sel]
-        inputs <- inputs[sel]
-        names(inputs) <- session$ns(nms)
-        sig <- session$cache$get("shidashi_input_signature", NULL)
-        sig2 <- digest::digest(inputs)
-        if(!identical(sig2, sig)){
-          session$cache$set("shidashi_input_signature", sig2)
-          message <- list(
-            shared_id = shared_id,
-            private_id = private_id,
-            inputs = inputs
-          )
-          session$sendCustomMessage("shidashi.cache_session_input", message)
+        sel <- !startsWith(nms, "@")
+        if (length(sel) && any(sel)) {
+          nms <- nms[sel]
+          inputs <- inputs[sel]
+          names(inputs) <- session$ns(nms)
+          sig <- session$cache$get("shidashi_input_signature", NULL)
+          sig2 <- digest::digest(inputs)
+          if (!identical(sig2, sig)) {
+            session$cache$set("shidashi_input_signature", sig2)
+            message <- list(
+              shared_id = shared_id,
+              private_id = private_id,
+              inputs = inputs
+            )
+            session$sendCustomMessage("shidashi.cache_session_input", message)
+          }
         }
-
-      }
-    }, domain = session, priority = -100000, suspended = TRUE)
+      },
+      domain = session,
+      priority = -100000,
+      suspended = TRUE
+    )
     session$userData$shidashi$broadcast_observer <- broadcast_observer
   }
 

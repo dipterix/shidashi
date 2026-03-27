@@ -1,0 +1,15 @@
+{
+  "name": "stream-viz-src",
+  "version": "0.1.0",
+  "private": true,
+  "description": "esbuild build for the StreamViz htmlwidget library",
+  "scripts": {
+    "build": "node esbuild.config.mjs"
+  },
+  "dependencies": {
+    "d3": "^7.9.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

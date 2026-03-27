@@ -9,6 +9,7 @@ if (FALSE) {
 
 server <- function(input, output, session){
 
+  shidashi::stream_init(session)
   shared_data <- shidashi::register_session_id(session)
   shared_data$enable_broadcast()
   shared_data$enable_sync()

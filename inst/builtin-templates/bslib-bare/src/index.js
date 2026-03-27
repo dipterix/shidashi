@@ -825,6 +825,62 @@ class ShidashiApp {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // ---------- Stream fetch ----------
+
+  /**
+   * Fetch a binary stream file written by R's stream_to_js() with no cache.
+   *
+   * Wire format: [ endianFlag: 1 byte ] [ headerLen: 4 bytes uint32 ] [ header: JSON ] [ body ]
+   *   endianFlag: 0x01 = little-endian
+   *   header JSON contains at minimum: { data_type: "raw"|"json"|"int32"|"float32"|"float64" }
+   *
+   * @param {string} id - Stream identifier (matches the id used in R's stream_path())
+   * @returns {Promise<{type: string, header: object, data: ArrayBuffer|object|Int32Array|Float32Array|Float64Array}>}
+   */
+  async fetchStreamData(id) {
+    const url = 'stream/' + encodeURIComponent(id) + '.bin?_t=' + Date.now();
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error('fetchStreamData: HTTP ' + response.status + ' for stream id "' + id + '"');
+    }
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength < 5) {
+      throw new Error('fetchStreamData: response too short (' + buffer.byteLength + ' bytes) for stream id "' + id + '"');
+    }
+    const view = new DataView(buffer);
+    const littleEndian = view.getUint8(0) === 0x01;
+    const headerLen = view.getUint32(1, littleEndian);
+    if (buffer.byteLength < 5 + headerLen) {
+      throw new Error('fetchStreamData: truncated header for stream id "' + id + '"');
+    }
+    const headerBytes = new Uint8Array(buffer, 5, headerLen);
+    const header = JSON.parse(new TextDecoder().decode(headerBytes));
+    const dataType = header.data_type;
+    // body must be copied out of the shared buffer so typed array constructors work on aligned memory
+    const bodyBuffer = buffer.slice(5 + headerLen);
+    let data;
+    switch (dataType) {
+      case 'raw':
+        data = bodyBuffer;
+        break;
+      case 'json':
+        data = JSON.parse(new TextDecoder().decode(bodyBuffer));
+        break;
+      case 'int32':
+        data = new Int32Array(bodyBuffer);
+        break;
+      case 'float32':
+        data = new Float32Array(bodyBuffer);
+        break;
+      case 'float64':
+        data = new Float64Array(bodyBuffer);
+        break;
+      default:
+        throw new Error('fetchStreamData: unknown data_type "' + dataType + '" for stream id "' + id + '"');
+    }
+    return { type: dataType, header, data };
+  }
+
   /**
    * Capture a <canvas> element as a data URL.
    * Handles WebGL canvases whose drawing buffer may have been cleared

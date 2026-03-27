@@ -51,7 +51,8 @@ register_session_mcp <- function(session) {
       namespace          = namespace,
       url                = shiny::isolate(session$clientData$url_search),
       registered_at      = Sys.time(),
-      tools              = structure(list(), names = character(0L))
+      tools              = structure(list(), names = character(0L)),
+      output_renderers   = fastmap::fastmap()
     )
     message("Registered session token: ", token)
   } else {

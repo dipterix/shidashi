@@ -53,3 +53,7 @@ modules:
     order: 53
     icon: "exclamation-triangle"
     label: "Error 500"
+  stream_viz:
+    order: 54
+    icon: "wave-square"
+    label: "Stream Viz"
