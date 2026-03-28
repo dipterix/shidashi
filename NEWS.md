@@ -1,3 +1,38 @@
+# shidashi 0.1.9
+
+## New Features
+
+* Added `stream_viz` `htmlwidgets` widget for real-time multi-channel signal
+  viewing; binary stream files are produced by `stream_to_js()` and fetched
+  by the browser via `fetchStreamData()`
+* Added streaming helpers: `stream_init()` sets up per-session stream
+  directories with automatic cleanup; `stream_path()` returns the
+  token-qualified file path; `stream_file_id()` builds the
+  `{token}_{ns(id)}` identifier used by both R and `JS`
+* Added `stream_to_js()` for writing binary envelope files (supports `raw`,
+  `json`, `int32`, `float32`, `float64` body types) and `read_stream_vis()`
+  for reading them back in R
+* Added `streamVizOutput()` / `renderStreamViz()` / `updateStreamViz()`
+  Shiny bindings for the `stream_viz` widget
+* `register_output()` is now a server-side function: it assigns the render
+  function, registers the `MCP` output spec, and injects download/pop-out
+  widget icons via `JS` overlay (no UI-side wrapper needed)
+* Added output widget overlay system: registered outputs gain hover-visible
+  download and pop-out icons injected entirely by `JS`; download modal
+  supports `image`, `htmlwidget`, `threeBrain`, `data`, and `stream_viz` types
+* Added `server_standalone_viewer()` — a hidden module that re-renders a
+  parent session's output in a standalone browser tab (pop-out window),
+  forwarding inputs back to the original module session
+* Added `_captureSVG()` helper in `JS` to rasterise `SVG` elements (e.g.
+  `D3` output) to `PNG` data URLs for the query-UI tool
+* Added `shidashi.set_shiny_input` `JS` message handler for programmatic
+  cross-session input forwarding
+* Added `shidashi.register_output_widgets` `JS` message handler that injects
+  the download/pop-out overlay icons on registered outputs
+* Added demo template modules: `output_widgets` and `stream_viz`; added
+  hidden `standalone_viewer` module
+* Added `htmlwidgets` to `Imports`
+
 # shidashi 0.1.7 & 0.1.8
 
 ## New Features
@@ -13,9 +48,6 @@
 * Added `mcp_wrapper()` to register an `MCP` endpoint for a Shiny module
 * Added `register_input()` / `register_output()` helpers to expose Shiny inputs
   and outputs as `MCP` tool parameters with descriptions
-* `register_output()` is now a server-side function: it assigns the render
-  function, registers the `MCP` output spec, and injects download/pop-out
-  widget icons via `JS` overlay (no UI-side wrapper needed)
 * Added skills system: `skill_wrapper()` parses and runs reusable agent skill
   scripts; skill working directory is resolved relative to the skill folder
 * Tools and skills are now category- and permission-aware; module IDs are excluded
