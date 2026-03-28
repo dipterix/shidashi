@@ -2,7 +2,7 @@
 % Please edit documentation in R/stream-viz.R
 \name{streamVizOutput}
 \alias{streamVizOutput}
-\title{Output placeholder for a stream\_viz widget}
+\title{Output placeholder for a streaming visualization widget}
 \usage{
 streamVizOutput(outputId, width = "100\%", height = "400px")
 }

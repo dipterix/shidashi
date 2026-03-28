@@ -74,6 +74,7 @@ server_standalone_viewer <- function(input, output, session, ...) {
 
   # Get output options from the stored renderers
   output_opts <- list()
+  renderer <- NULL
   if (!is.null(entry$output_renderers)) {
     renderer <- entry$output_renderers$get(bare_id)
     if (is.list(renderer)) {
@@ -105,6 +106,12 @@ server_standalone_viewer <- function(input, output, session, ...) {
     # Assign the original render function at root scope
     # (matches the namespaced ID embedded in the UI element)
     root_session$output[[full_outputId]] <- render_function
+
+    # stream_viz outputs are handled automatically: the render expression
+    # captures session from its lexical scope, so stream_file_id() computes
+    # the correct token-qualified path to the parent's binary file.  The
+    # streaming flag in the widget's x list triggers startStreaming() in
+    # renderValue on the JS side — no custom message needed.
 
   })
 

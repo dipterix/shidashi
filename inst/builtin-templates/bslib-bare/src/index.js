@@ -939,6 +939,51 @@ class ShidashiApp {
     }
   }
 
+  /**
+   * Capture an <svg> element as a PNG data URL (async).
+   * Serialises the SVG, draws it onto an offscreen canvas via Image,
+   * and resolves with the PNG data URL. Returns a Promise.
+   * Resolves to null if capture fails.
+   */
+  _captureSVG(svgEl) {
+    return new Promise((resolve) => {
+      try {
+        const clone = svgEl.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        const w = svgEl.clientWidth  || parseInt(svgEl.getAttribute('width'))  || 400;
+        const h = svgEl.clientHeight || parseInt(svgEl.getAttribute('height')) || 300;
+        clone.setAttribute('width', w);
+        clone.setAttribute('height', h);
+
+        const svgString = new XMLSerializer().serializeToString(clone);
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = w * scale;
+            canvas.height = h * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  }
+
   // ---------- Card tool click delegation ----------
 
   _bindCardTools() {
@@ -1624,21 +1669,30 @@ class ShidashiApp {
       const parent = outputEl.parentElement;
       if (!parent) return;
 
-      // Prevent double-initialization
-      if (parent.classList.contains('shidashi-output-widget-wrapper')) return;
+      let container;
 
-      // Make the parent position-relative so the absolutely-positioned
-      // widget overlay is anchored correctly. The container is inserted
-      // as a sibling *before* the shiny output element so Shiny's
-      // render cycle (which clears the output element) won't destroy it.
-      parent.classList.add('position-relative', 'shidashi-output-widget-wrapper');
+      if (parent.classList.contains('shidashi-output-widget-wrapper')) {
+        // Widget was pre-initialized (e.g. by stream-viz _createControls).
+        // Find the existing container rather than creating a new one.
+        container = parent.querySelector('.shidashi-output-widget-container');
+      }
 
-      const container = document.createElement('div');
-      container.className = 'shidashi-output-widget-container';
+      if (!container) {
+        // Make the parent position-relative so the absolutely-positioned
+        // widget overlay is anchored correctly. The container is inserted
+        // as a sibling *before* the shiny output element so Shiny's
+        // render cycle (which clears the output element) won't destroy it.
+        parent.classList.add('position-relative', 'shidashi-output-widget-wrapper');
+
+        container = document.createElement('div');
+        container.className = 'shidashi-output-widget-container';
+        parent.insertBefore(container, outputEl);
+      }
 
       const widgets = params.widgets || [];
 
-      if (widgets.includes('download')) {
+      // Dedup guard: only add icons that don't already exist in the container
+      if (widgets.includes('download') && !container.querySelector('.shidashi-output-widget-icon[title="Download"]')) {
         const downloadBtn = document.createElement('a');
         downloadBtn.className = 'shidashi-output-widget-icon';
         downloadBtn.title = 'Download';
@@ -1653,7 +1707,7 @@ class ShidashiApp {
         container.appendChild(downloadBtn);
       }
 
-      if (widgets.includes('popout')) {
+      if (widgets.includes('popout') && !container.querySelector('.shidashi-output-widget-icon[title="Open in new window"]')) {
         const popoutBtn = document.createElement('a');
         popoutBtn.className = 'shidashi-output-widget-icon';
         popoutBtn.title = 'Open in new window';
@@ -1666,8 +1720,6 @@ class ShidashiApp {
         });
         container.appendChild(popoutBtn);
       }
-
-      parent.insertBefore(container, outputEl);
     });
 
     // --- Chatbot status bar handler ---
@@ -1819,6 +1871,36 @@ class ShidashiApp {
           return;
         }
         // fall through
+      }
+
+      // Check for SVG element (e.g. stream-viz D3 output) — rasterise to PNG
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        this._captureSVG(svgEl).then((dataUrl) => {
+          if (dataUrl) {
+            const parts = dataUrl.split(',');
+            const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+            Shiny.setInputValue(inputId, {
+              request_id: requestId,
+              type: 'image',
+              html: '',
+              image_data: parts[1] || '',
+              image_type: mime,
+              note: ''
+            }, { priority: 'event' });
+          } else {
+            // SVG rasterisation failed — fall back to innerHTML
+            Shiny.setInputValue(inputId, {
+              request_id: requestId,
+              type: 'html',
+              html: el.innerHTML,
+              image_data: '',
+              image_type: '',
+              note: el.outerHTML
+            }, { priority: 'event' });
+          }
+        });
+        return;
       }
 
       const img = el.querySelector('img[src^="data:"]');

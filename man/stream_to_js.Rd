@@ -2,7 +2,7 @@
 % Please edit documentation in R/stream.R
 \name{stream_to_js}
 \alias{stream_to_js}
-\title{Write data to a shidashi stream binary file}
+\title{Write data to a \pkg{shidashi} stream binary file}
 \usage{
 stream_to_js(
   abspath,
@@ -16,7 +16,7 @@ stream_to_js(
 file.  Use \code{\link{stream_path}(id)} to obtain a path under the
 app's \code{www/stream/} directory.}
 
-\item{data}{The data to serialise.  See Details for how each \code{type}
+\item{data}{The data to serialize.  See Details for how each \code{type}
 interprets this argument.}
 
 \item{type}{Character scalar. One of \code{"raw"}, \code{"json"},
@@ -29,7 +29,7 @@ expose to the JavaScript caller via \code{result.header}.}
 Invisibly returns \code{abspath}.
 }
 \description{
-Serialises \code{data} together with a JSON header into the binary
+Serializes \code{data} together with a JSON header into the binary
 envelope expected by the JavaScript \code{window.shidashi.fetchStreamData(id)}
 method.
 }
@@ -46,7 +46,7 @@ plus any extra fields passed via \code{...}.
 \describe{
   \item{\code{"raw"}}{Passed through verbatim; \code{data} must be a
     \code{raw} vector or will be coerced via \code{as.raw()}.}
-  \item{\code{"json"}}{\code{data} is serialised with
+  \item{\code{"json"}}{\code{data} is serialized with
     \code{jsonlite::toJSON(auto_unbox = TRUE)}.}
   \item{\code{"int32"}}{\code{data} is coerced to integer and written as
     4-byte little-endian signed integers.}

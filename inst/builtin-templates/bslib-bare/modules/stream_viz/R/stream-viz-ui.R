@@ -51,10 +51,12 @@ ui_stream_viz_controls <- function() {
 ui_stream_viz_plot <- function() {
   shidashi::card(
     title = "Signal Viewer",
+    resizable = TRUE,
     tools = list(
       shidashi::card_tool(widget = "collapse"),
       shidashi::card_tool(widget = "maximize")
     ),
-    shidashi::streamVizOutput(ns("viz_signal"), height = "500px")
+
+    shidashi::streamVizOutput(ns("viz_signal"), height = "100%")
   )
 }

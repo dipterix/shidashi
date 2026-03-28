@@ -25,7 +25,8 @@ register_output(
   ...,
   output_opts = list(),
   download_function = NULL,
-  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data"),
+  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data",
+    "stream_viz"),
   extensions = NULL,
   session = shiny::getDefaultReactiveDomain()
 )
@@ -94,7 +95,7 @@ register metadata.  It evaluates \code{expr} and returns the UI element.
 \code{register_output()} is a server-side function that registers a
 render function call (e.g. \code{renderPlot(\{...\})}), assigns it to
 \code{session$output}, registers the \verb{MCP} output spec, and sets
-up download/popout widget handlers.  The UI overlay icons are injected
+up download-widget handlers.  The UI overlay icons are injected
 entirely by \verb{JS}.
 }
 \examples{

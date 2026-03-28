@@ -1,4 +1,4 @@
-#' Initialise the shidashi stream directory for a Shiny session
+#' Initialize the shidashi stream directory for a Shiny session
 #'
 #' Call once in the server function to set up the directory that
 #' \code{\link{stream_path}} and \code{\link{stream_to_js}} will write to.
@@ -66,9 +66,9 @@ stream_path <- function(id, session = shiny::getDefaultReactiveDomain()) {
   invisible(file.path(stream_dir, paste0(token, "_", nsid, ".bin")))
 }
 
-#' Write data to a shidashi stream binary file
+#' Write data to a \pkg{shidashi} stream binary file
 #'
-#' Serialises \code{data} together with a JSON header into the binary
+#' Serializes \code{data} together with a JSON header into the binary
 #' envelope expected by the JavaScript \code{window.shidashi.fetchStreamData(id)}
 #' method.
 #'
@@ -84,7 +84,7 @@ stream_path <- function(id, session = shiny::getDefaultReactiveDomain()) {
 #' \describe{
 #'   \item{\code{"raw"}}{Passed through verbatim; \code{data} must be a
 #'     \code{raw} vector or will be coerced via \code{as.raw()}.}
-#'   \item{\code{"json"}}{\code{data} is serialised with
+#'   \item{\code{"json"}}{\code{data} is serialized with
 #'     \code{jsonlite::toJSON(auto_unbox = TRUE)}.}
 #'   \item{\code{"int32"}}{\code{data} is coerced to integer and written as
 #'     4-byte little-endian signed integers.}
@@ -97,7 +97,7 @@ stream_path <- function(id, session = shiny::getDefaultReactiveDomain()) {
 #' @param abspath Character scalar. Absolute path to the target \code{.bin}
 #'   file.  Use \code{\link{stream_path}(id)} to obtain a path under the
 #'   app's \code{www/stream/} directory.
-#' @param data The data to serialise.  See Details for how each \code{type}
+#' @param data The data to serialize.  See Details for how each \code{type}
 #'   interprets this argument.
 #' @param type Character scalar. One of \code{"raw"}, \code{"json"},
 #'   \code{"int32"}, \code{"float32"}, or \code{"float64"}.
@@ -114,6 +114,10 @@ stream_to_js <- function(abspath, data,
   # Build header JSON
   extra <- list(...)
   header_list <- c(list(data_type = type), extra)
+  # Compute a signature so the JS side can skip redundant renders
+  signature <- digest::digest(header_list, algo = "xxhash32")
+  header_list$timestamp <- as.numeric(Sys.time()) * 1000  # epoch ms
+  header_list$signature <- signature
   header_json <- jsonlite::toJSON(header_list, auto_unbox = TRUE)
   header_bytes <- charToRaw(header_json)
 
@@ -151,4 +155,58 @@ stream_to_js <- function(abspath, data,
   writeBin(body_bytes, con)
 
   invisible(abspath)
+}
+
+
+#' Read a shidashi stream binary file
+#'
+#' Reads the binary envelope written by \code{\link{stream_to_js}} and
+#' returns the header and decoded body as a list.
+#'
+#' @param path Character scalar. Absolute path to a \code{.bin} file
+#'   produced by \code{\link{stream_to_js}}.
+#' @return A list with components:
+#'   \describe{
+#'     \item{\code{header}}{Named list parsed from the JSON header
+#'       (contains \code{data_type}, \code{signature}, \code{timestamp},
+#'       and any extra fields).}
+#'     \item{\code{data}}{Decoded body: a \code{raw} vector for
+#'       \code{"raw"}, an R object for \code{"json"}, or a numeric/integer
+#'       vector for \code{"int32"}, \code{"float32"}, \code{"float64"}.}
+#'   }
+#' @seealso \code{\link{stream_to_js}}, \code{\link{stream_path}}
+#' @export
+read_stream_vis <- function(path) {
+  con <- file(path, "rb")
+  on.exit(close(con), add = TRUE)
+
+  # endianFlag (1 byte)
+  endian_flag <- readBin(con, what = "raw", n = 1L)
+  endian <- if (identical(endian_flag, as.raw(0x01L))) "little" else "big"
+
+  # headerLen (uint32)
+  header_len <- readBin(con, what = "integer", n = 1L, size = 4L, endian = endian)
+
+  # header JSON bytes
+  header_raw <- readBin(con, what = "raw", n = header_len)
+  header <- jsonlite::fromJSON(rawToChar(header_raw), simplifyVector = TRUE)
+
+  # body: remaining bytes
+  body_raw <- readBin(con, what = "raw", n = file.info(path)$size)
+
+  data_type <- header$data_type %||% "raw"
+  data <- switch(
+    data_type,
+    raw = body_raw,
+    json = jsonlite::fromJSON(rawToChar(body_raw), simplifyVector = TRUE),
+    int32 = readBin(body_raw, what = "integer", n = length(body_raw) %/% 4L,
+                    size = 4L, endian = endian),
+    float32 = readBin(body_raw, what = "double", n = length(body_raw) %/% 4L,
+                      size = 4L, endian = endian),
+    float64 = readBin(body_raw, what = "double", n = length(body_raw) %/% 8L,
+                      size = 8L, endian = endian),
+    body_raw
+  )
+
+  list(header = header, data = data)
 }

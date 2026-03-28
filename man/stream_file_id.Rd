@@ -4,12 +4,17 @@
 \alias{stream_file_id}
 \title{Build the token-qualified stream file identifier}
 \usage{
-stream_file_id(id, session = shiny::getDefaultReactiveDomain())
+stream_file_id(id, session = shiny::getDefaultReactiveDomain(), token = NULL)
 }
 \arguments{
 \item{id}{Character scalar. The base stream identifier (no path separators).}
 
 \item{session}{Shiny session object. Defaults to the active reactive domain.}
+
+\item{token}{Character scalar or \code{NULL}.  When \code{NULL} (default)
+the session's own token is used.  Override with a parent session token
+so that a standalone viewer (child session) can address the parent's
+binary stream file.}
 }
 \value{
 Character scalar: \code{"{token}_{id}"}.

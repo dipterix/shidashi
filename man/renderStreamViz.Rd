@@ -2,7 +2,7 @@
 % Please edit documentation in R/stream-viz.R
 \name{renderStreamViz}
 \alias{renderStreamViz}
-\title{Render a stream\_viz widget}
+\title{Render a streaming widget}
 \usage{
 renderStreamViz(expr, env = parent.frame(), quoted = FALSE)
 }

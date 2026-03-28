@@ -935,6 +935,17 @@ register_output_widgets <- function(
               label = "Download"
             )
           ),
+          "stream_viz" = shiny::tagList(
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
           # fallback
           shiny::tagList(
             shiny::downloadButton(
@@ -967,6 +978,7 @@ register_output_widgets <- function(
           "image" = paste0(fname, ".pdf"),
           "threeBrain" = paste0(fname, ".html"),
           "htmlwidget" = paste0(fname, ".html"),
+          "stream_viz" = paste0(fname, ".bin"),
           paste0(fname, ".csv")
         )
       },
@@ -1023,6 +1035,12 @@ register_output_widgets <- function(
             if (is.function(download_function)) {
               download_function(file)
             }
+          },
+          "stream_viz" = {
+            bin_path <- stream_path(outputId, session)
+            if (file.exists(bin_path)) {
+              file.copy(bin_path, file, overwrite = TRUE)
+            }
           }
         )
 
@@ -1047,7 +1065,8 @@ register_output_widgets <- function(
       render_expr = render_expr,
       render_env = render_env,
       output_opts = output_opts,
-      extensions = extensions
+      extensions = extensions,
+      download_type = download_type
     ))
   }
 
@@ -1066,7 +1085,7 @@ register_output_widgets <- function(
 #' \code{register_output()} is a server-side function that registers a
 #' render function call (e.g. \code{renderPlot(\{...\})}), assigns it to
 #' \code{session$output}, registers the \verb{MCP} output spec, and sets
-#' up download/popout widget handlers.  The UI overlay icons are injected
+#' up download-widget handlers.  The UI overlay icons are injected
 #' entirely by \verb{JS}.
 #'
 #' @param expr For \code{register_input}: a call expression that creates
@@ -1177,7 +1196,7 @@ register_output <- function(
   ...,
   output_opts = list(),
   download_function = NULL,
-  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data"),
+  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data", "stream_viz"),
   extensions = NULL,
   session = shiny::getDefaultReactiveDomain()
 ) {

@@ -2,7 +2,7 @@
 % Please edit documentation in R/stream.R
 \name{stream_init}
 \alias{stream_init}
-\title{Initialise the shidashi stream directory for a Shiny session}
+\title{Initialize the shidashi stream directory for a Shiny session}
 \usage{
 stream_init(session = shiny::getDefaultReactiveDomain())
 }
