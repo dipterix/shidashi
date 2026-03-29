@@ -321,21 +321,40 @@ chatbot_server <- function(input, output, session,
           if (!is_token_valid(local_data$get("callback_token"))) {
             return(invisible(NULL))
           }
-          tryCatch({
-            # if (!is.null(result@request) && endsWith(result@request@name, "shiny_query_ui")) {
-            #   return(invisible(NULL))
-            # }
-            if (
-              S7::S7_inherits(result@value, ellmer::ContentImage)
-            ) {
-              img_type <- result@value@type
-              img_data <- result@value@data
-              result <- sprintf("<img src='data:%s;base64,%s' style='max-width:100%%' />", img_type, img_data)
-            }
-            shinychat::chat_append(id = id, session = session, result)
-          }, error = function(e) {
-            print(result)
-            warning(e)
+          if (length(result@error)) {
+            try({
+              shinychat::chat_append(id = id, session = session, result)
+            }, silent = TRUE)
+            return()
+          }
+
+          if (is.list(result@value)) {
+            value_list <- result@value
+          } else {
+            value_list <- list(result@value)
+          }
+          lapply(value_list, function(value) {
+            tryCatch({
+              if (
+                S7::S7_inherits(value, ellmer::ContentImage)
+              ) {
+                img_type <- value@type
+                img_data <- value@data
+                value <- sprintf("<img src='data:%s;base64,%s' style='max-width:100%%' />",
+                                 img_type, img_data)
+                shinychat::chat_append(id = id, session = session, value)
+              } else {
+                result@value <- value
+                shinychat::chat_append(id = id, session = session, result)
+              }
+            }, error = function(e) {
+              # print(result)
+              shinychat::chat_append(
+                id = id,
+                session = session,
+                "<p><span style='font-size: x-small; font-style: italic;'>(Tool request result omitted)</span></p>"
+              )
+            })
           })
           return()
         })
