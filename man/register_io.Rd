@@ -27,7 +27,7 @@ register_output(
   download_function = NULL,
   download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data",
     "stream_viz"),
-  extensions = NULL,
+  extension = NULL,
   session = shiny::getDefaultReactiveDomain()
 )
 }
@@ -72,7 +72,7 @@ and writes the download content.}
 \item{download_type}{character string.  One of \code{"image"},
 \code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.}
 
-\item{extensions}{character vector of allowed file extensions for
+\item{extension}{character vector of allowed file extension for
 download, or \code{NULL}.}
 
 \item{session}{the \code{shiny} session object.  For

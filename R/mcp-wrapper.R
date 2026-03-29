@@ -861,7 +861,7 @@ register_output_widgets <- function(
   download_type = "image",
   download_function = NULL,
   output_opts = list(),
-  extensions = NULL,
+  extension = NULL,
   description = "",
   session = shiny::getDefaultReactiveDomain()
 ) {
@@ -997,7 +997,15 @@ register_output_widgets <- function(
           "threeBrain" = paste0(fname, ".html"),
           "htmlwidget" = paste0(fname, ".html"),
           "stream_viz" = paste0(fname, ".bin"),
-          paste0(fname, ".csv")
+          {
+            if (length(extension)) {
+              extension <- gsub("^[\\.]{0,}", ".", extension)
+            } else {
+              extension <- ""
+            }
+            paste0(fname, extension)
+          }
+
         )
       },
       content = function(file) {
@@ -1083,7 +1091,7 @@ register_output_widgets <- function(
       render_expr = render_expr,
       render_env = render_env,
       output_opts = output_opts,
-      extensions = extensions,
+      extension = extension,
       download_type = download_type
     ))
   }
@@ -1134,7 +1142,7 @@ register_output_widgets <- function(
 #'   and writes the download content.
 #' @param download_type character string.  One of \code{"image"},
 #'   \code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.
-#' @param extensions character vector of allowed file extensions for
+#' @param extension character vector of allowed file extension for
 #'   download, or \code{NULL}.
 #' @param session the \code{shiny} session object.  For
 #'   \code{register_output}, defaults to
@@ -1215,7 +1223,7 @@ register_output <- function(
   output_opts = list(),
   download_function = NULL,
   download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data", "stream_viz"),
-  extensions = NULL,
+  extension = NULL,
   session = shiny::getDefaultReactiveDomain()
 ) {
 
@@ -1258,7 +1266,7 @@ register_output <- function(
     download_type = download_type,
     download_function = download_function,
     output_opts = output_opts,
-    extensions = extensions,
+    extension = extension,
     description = description,
     session = session
   )
