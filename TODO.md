@@ -1,486 +1,202 @@
-# shidashi Migration Plan: AdminLTE3 → bslib (Bootstrap 5)
+# TODO: `register_output` Refactor Plan
 
 ## Goal
 
-Replace AdminLTE3 dependency with bslib + custom components. Preserve all 22 public interfaces (16 R functions + 6 JS message handlers) used by ravedash and rave-pipelines.
+Refactor `register_output()` from a UI-side wrapper into a **server-side** function that:
 
-## Design Decisions
+1. Assigns render functions to `session$output`
+2. Registers MCP output specs
+3. Sets up download/popout widget handlers (via an internal helper `register_output_widgets`)
+4. The UI overlay (download/popout icons) is done **entirely via JS** — no R-side UI wrapper function needed
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Dashboard shell | `bslib::page_fillable()` + custom sidebar | More flexibility to replicate current layout |
-| Iframe management | Custom lightweight JS | Removes largest AdminLTE dependency |
-| JS build system | esbuild | Simpler config, faster builds than webpack |
-| Bootstrap loading | `suppressDependencies("bootstrap")` + vendor BS5 | Avoids runtime bslib version coupling |
-| Legacy template | Keep AdminLTE3-bare available | Non-breaking for existing deployments |
-| Function signatures | Preserve exactly | ravedash/rave-pipelines must work without code changes |
-| Dark mode class | Keep `.dark-mode` on `<body>` | ravedash uses `add_class`/`remove_class` with CSS selectors that depend on it |
+## Current State
 
-## Interfaces to Preserve (ravedash surface area)
+- `register_output(expr, outputId, description, quoted, env)` — UI-side; `expr` is a call like `plotOutput(ns("x"))`. Evaluates it and registers MCP spec. ([R/mcp-wrapper.R](R/mcp-wrapper.R) ~L898)
+- `register_output_spec` closure inside `mcp_wrapper_input_output()` — stores spec in `output_specs` fastmap, evals the UI expr. ([R/mcp-wrapper.R](R/mcp-wrapper.R) ~L351)
+- `.register_output` binding injected into module env via `mcp_wrapper_input_output()` return value. ([R/modules.R](R/modules.R) ~L271)
+- Demo module calls `register_output(plotOutput(ns("iris_plot"), ...), ...)` in UI function.
 
-### R Functions (16)
+## New Design
 
-| # | Function | Category |
-|---|----------|----------|
-| 1 | `render()` | App launcher |
-| 2 | `adminlte_ui()` | UI generator |
-| 3 | `template_settings$set()` | Configuration |
-| 4 | `show_notification()` | Notifications |
-| 5 | `clear_notifications()` | Notifications |
-| 6 | `card()` | UI components |
-| 7 | `card_tool()` | UI components |
-| 8 | `card_tabset()` | UI components |
-| 9 | `flex_container()` | Layout |
-| 10 | `flex_item()` | Layout |
-| 11 | `as_icon()` | Utilities |
-| 12 | `add_class()` | DOM manipulation |
-| 13 | `remove_class()` | DOM manipulation |
-| 14 | `register_session_id()` | Session management |
-| 15 | `register_session_events()` | Session management |
-| 16 | `get_theme()` | Theming |
+### New `register_output` Signature (exported)
 
-### JS Message Handlers (6)
-
-| # | Handler | Purpose |
-|---|---------|---------|
-| 17 | `shidashi.set_current_module` | Set active module |
-| 18 | `shidashi.shutdown_session` | Shutdown |
-| 19 | `shidashi.open_iframe_tab` | Switch module tab |
-| 20 | `shidashi.set_html` | Set element innerHTML |
-| 21 | `shidashi.add_class` | Add CSS class |
-| 22 | `shidashi.remove_class` | Remove CSS class |
-
----
-
-## Phase 1 — New Template: `inst/builtin-templates/bslib-bare/`
-
-### 1.1 Create template scaffold
-
-Create `inst/builtin-templates/bslib-bare/` with this structure:
-
-```
-bslib-bare/
-  index.html              # Main shell (shiny::htmlTemplate)
-  modules.yaml            # Copy from AdminLTE3-bare
-  views/
-    header.html           # BS5 deps + shidashi.js/css
-    footer.html           # Register shidashi on shiny:connected
-    404.html              # Error page (BS5 classes)
-    500.html              # Error page (BS5 classes)
-    card.html             # Card component view
-    card2.html            # Card2 (direct-chat) view
-    card-tabset.html      # Tabset card view
-    info-box.html         # Info box view
-    accordion-item.html   # Accordion item view
-    menu-item.html        # Sidebar nav item view
-    menu-item-dropdown.html # Sidebar group view
-    preview.html          # Standalone preview wrapper
-  www/
-    shidashi/
-      js/index.js         # Built output (26KB)
-      css/shidashi.css    # Built output (28KB)
-    bootstrap/
-      js/bootstrap.bundle.min.js  # Vendored BS5 (80KB)
-  src/                    # esbuild source
-    index.js              # Entry point — ShidashiApp class
-    iframe-manager.js     # Custom iframe tab manager
-    sidebar.js            # Sidebar toggle/search/treeview
-    shidashi.scss         # Styles (BS5 variables, no deprecation warnings)
-  modules/                # Empty scaffold
-  package.json            # esbuild + bootstrap 5 + sass
-  esbuild.config.mjs      # Build config
+```r
+register_output(
+  expr,           # e.g. renderPlot({...}) — a render function call, server-side
+  outputId,       # character: the output ID (unnamespaced)
+  description = "", # served as both mcp description for outputs and download widget title
+  quoted = FALSE,
+  env = parent.frame(),
+  ...,
+  output_opts = list(),     # extra options for the output (width, height defaults, etc.)
+  download_function = NULL, # custom download handler; NULL = auto-detect from download_type
+  download_type = "image",    # "image", "threeBrain", "data", "no-download"
+  extensions = NULL,        # allowed file extensions for download
+  session = shiny::getDefaultReactiveDomain()
+)
 ```
 
-- [x] Create directory structure
-- [x] Copy `modules.yaml` from AdminLTE3-bare
-
-### 1.2 Write `index.html`
-
-Replace AdminLTE3 shell with custom BS5 markup:
-
-- Replace `data-widget="pushmenu"` → `data-shidashi-toggle="sidebar"`
-- Replace `<aside class="main-sidebar sidebar-dark-primary">` → `<nav class="shidashi-sidebar">`
-- Replace `<div class="content-wrapper iframe-mode" data-widget="iframe">` → `<div class="shidashi-content" data-shidashi-widget="iframe-manager">`
-- Keep `{{ shidashi::include_view("header.html") }}`, `{{ shidashi::adminlte_sidebar(...) }}`, `{{ shidashi::include_view("footer.html") }}` template expressions
-- Use BS5 utility classes (`ms-auto` not `ml-auto`, `data-bs-toggle` not `data-toggle`)
-
-- [x] Write index.html
-
-### 1.3 Write view templates
-
-- [x] `views/header.html` — `suppressDependencies("bootstrap")` + load vendored BS5 bundle + shidashi.js + shidashi.css
-- [x] `views/footer.html` — register shidashi on `shiny:connected` (remove jQuery dependency for init)
-- [x] `views/404.html` — update to BS5 classes (`float-sm-end` not `float-sm-right`)
-- [x] `views/500.html` — update to BS5 classes
-- [x] `views/card.html` — update `collapsed-card` → `shidashi-collapsed`, `data-shidashi-card-action`
-- [x] `views/card2.html` — update direct-chat markup for BS5, `data-shidashi-action="chat-toggle"`
-- [x] `views/card-tabset.html` — `data-bs-toggle="tab"`
-- [x] `views/info-box.html` — no AdminLTE dependency, kept as-is
-- [x] `views/accordion-item.html` — `data-bs-toggle="collapse"`, `data-bs-parent`
-- [x] `views/menu-item.html` — updated nav classes for custom sidebar
-- [x] `views/menu-item-dropdown.html` — updated for BS5 collapse
-- [x] `views/preview.html` — updated body class and layout
-
----
-
-## Phase 2 — Rewrite `shidashi.js` with esbuild
-
-### 2.1 Set up build system
-
-- [x] Create `package.json` with `esbuild` (^0.27.2), `bootstrap` (^5.3.3), `sass` (^1.80.0), `esbuild-sass-plugin` (^3.6.0)
-- [x] Create `esbuild.config.mjs` bundling `src/index.js` → `www/shidashi/js/index.js` and `src/shidashi.scss` → `www/shidashi/css/shidashi.css`
-
-### 2.2 Write `src/iframe-manager.js`
-
-Custom replacement for AdminLTE3's `$.fn.IFrame` plugin:
-
-- Manages tab bar (`<ul class="shidashi-tab-bar">`) and iframe container (`<div class="shidashi-iframe-container">`)
-- Methods: `openTab(url, title)`, `closeTab(id)`, `closeAllTabs()`, `closeOtherTabs()`, `activateTab(id)`, `scrollTabBar(direction)`, `fullscreen()`
-- Each tab creates a hidden `<iframe>` shown/hidden on activation (not destroyed) for state preservation
-- Must support `shidashi.open_iframe_tab` message handler (used by ravedash `switch_module()`)
-
-- [x] Implement iframe-manager.js
-
-### 2.3 Write `src/sidebar.js`
-
-Custom sidebar manager:
-
-- Toggle open/close with CSS transition
-- Highlight active item based on current iframe URL
-- `data-shidashi-toggle="sidebar"` trigger
-- Collapsible groups using BS5 `Collapse` API
-- Search filter (replaces AdminLTE's `data-widget="sidebar-search"`)
-
-- [x] Implement sidebar.js
-
-### 2.4 Rewrite `src/index.js` — the `shidashi` class
-
-Preserve ALL existing Shiny message handlers. Replace AdminLTE3 jQuery plugin calls:
-
-| AdminLTE3 Plugin | Replacement |
-|-----------------|-------------|
-| `.CardWidget("collapse"/"expand"/"maximize"/"minimize"/"remove")` | Custom CSS class toggles + BS5 Collapse |
-| `.DirectChat("toggle")` | Custom CSS class toggle |
-| `.Toasts('create', ...)` | BS5 Toast component |
-| `.IFrame(...)` | Delegate to `iframe-manager.js` |
-| OverlayScrollbars v1 (jQuery) | OverlayScrollbars v2 (vanilla) or CSS `scrollbar-width: thin` |
-
-Preserve:
-- `Shiny.OutputBinding` for `progressOutputBinding` and `clipboardOutputBinding`
-- `localStorage`-based session sync mechanism
-- Theme management with `.dark-mode` body class
-
-- [x] Implement shidashi class with all message handlers
-- [x] Implement custom card widget operations
-- [x] Implement toast notifications via BS5
-- [x] Implement output bindings (progress, clipboard)
-- [x] Implement session sync (localStorage broadcast)
-- [x] Implement theme management (dark/light toggle)
-
-### 2.5 Write `src/shidashi.scss`
-
-Port from AdminLTE3 variables to BS5:
-
-- Replace AdminLTE3 color variables (`$blue`, `$gray-dark`) with BS5 CSS custom properties (`--bs-primary`, etc.)
-- Replace `sidebar-dark-primary`/`sidebar-light-primary` → `shidashi-sidebar--dark`/`shidashi-sidebar--light`
-- Keep `.dark-mode` body class for backward compat
-- Port iframe-mode dimensions, flip-box, progress bar, back-to-top, theme-switch styles
-- Add sidebar + iframe-manager layout styles
-
-- [x] Port SCSS to BS5 variables (using `@use` modules, no deprecation warnings)
-- [x] Add sidebar layout styles
-- [x] Add iframe-manager styles
-
-### 2.6 Build and verify
-
-- [x] Run `npm install && npm run build` — clean build, zero warnings
-- [x] Verify `www/shidashi/js/index.js` (26KB) and `www/shidashi/css/shidashi.css` (28KB) produced
-
----
-
-## Phase 3 — Update R Source Files
-
-### 3.1 `R/ui-adminlte.R` — `adminlte_ui()` and `adminlte_sidebar()`
-
-- Keep function signatures identical
-- `adminlte_sidebar()`: update output markup to use BS5-compatible classes and `data-bs-*` attributes
-- View templates (menu-item.html, menu-item-dropdown.html) handle the actual HTML changes
-- `adminlte_ui()` dispatches to the correct template based on `template_root()`
-
-- [x] `adminlte_sidebar()` — template-agnostic, works with both templates
-- [x] `adminlte_ui()` — template-agnostic, verified with bslib-bare
-
-### 3.2 `R/card.R` — `card()`, `card2()`, operate functions
-
-- Keep all function signatures identical
-- Update generated HTML class references for BS5 compatibility
-- HTML changes are mostly in view templates (Phase 1.3)
-
-- [x] Card-related R code uses BS5 class names (changes in view templates)
-
-### 3.3 `R/card-tabset.R` — `card_tabset()` and operate functions
-
-- Keep function signatures identical
-- Update tab markup: `data-toggle="tab"` → `data-bs-toggle="tab"` (generated in R, not view template)
-- `nav-tabs` class name stays the same (works in BS5)
-
-- [x] Updated `card_tabset()`: `data-bs-toggle="tab"`, `ms-auto`
-
-### 3.4 `R/card-tool.R` — `card_tool()`
-
-- Keep signature identical
-- Update `data-card-widget` → `data-shidashi-card-action`
-- Keep Font Awesome 5 icons
-
-- [x] Updated `card_tool()`: `data-shidashi-card-action`
-
-### 3.5 `R/accordion.R` — `accordion()`, `accordion_item()`
-
-- Keep function signatures identical
-- HTML changes handled by accordion-item.html view template (Phase 1.3)
-- Verify `accordion_operate()` JS message name stays `shidashi.accordion`
-
-- [x] Accordion R code compatible — delegates to view templates
-
-### 3.6 `R/info-box.R` — `info_box()`, `flip_box()`
-
-- Keep function signatures identical
-- `info-box` is custom CSS, no AdminLTE dependency
-- `flip_box` uses custom CSS animations
-
-- [x] info-box/flip-box compatible — `data-bs-toggle` updated
-
-### 3.7 `R/notification.R` — `show_notification()`, `clear_notifications()`
-
-- Keep function signatures identical
-- R side sends `shidashi.show_notification` message — keep same message name
-- JS side change (AdminLTE Toasts → BS5 Toast) handled in Phase 2
-
-- [x] Notification R code compatible — pure message-based
-
-### 3.8 `R/widgets.R` — `flex_container()`, `flex_item()`, `back_top_button()`, `add_class()`, `remove_class()`
-
-- `flex_container/flex_item`: inline styles, no AdminLTE dependency — keep as-is
-- `add_class/remove_class`: framework-agnostic — keep as-is
-- `back_top_button()`: update `data-toggle="dropdown"` → `data-bs-toggle="dropdown"`
-
-- [x] Updated `back_top_button()`: `data-bs-toggle`, `visually-hidden`, `dropdown-menu-end`
-
-### 3.9 `R/menu-item.R` — `as_icon()`, `as_badge()`
-
-- `as_icon()`: generates `<i class="fas fa-...">` — keep as-is (FA works with BS5)
-- `as_badge()`: update `badge badge-danger` → `badge bg-danger` (BS5 badge classes)
-
-- [x] `as_badge()` — user-provided class strings, no changes needed (backward compatible)
-
-### 3.10 `R/barebone.R` — `create_barebone()`
-
-- Default to copying `bslib-bare` template instead of `AdminLTE3-bare`
-- Update generated `R/common.R`:
-  - Remove AdminLTE-specific body classes (`sidebar-mini`, `layout-fixed`, `navbar-iframe-hidden`)
-  - Add bslib-compatible equivalents
-- Generated `server.R` is template-agnostic — no change needed
-
-- [x] Added `create_barebone_bslib()` internal function for new template
-- [x] `create_barebone()` kept for AdminLTE3 backward compat
-- [x] Generated `R/common.R` updated for bslib template
-
-### 3.11 `R/render.R` — `render()`
-
-- Keep signature identical
-- Writes `ui.R` containing `shidashi::adminlte_ui()` — no change needed
-
-- [x] `render()` compatible — template-agnostic
-
-### 3.12 `R/settings.R`
-
-- Add setting for template type (default `"bslib-bare"`)
-
-- [x] `template_root()` prefers `bslib-bare` → `AdminLTE3` → `AdminLTE3-bare`
-
-### 3.13 No changes needed
-
-These files have no AdminLTE dependencies:
-
-- `R/progress.R` — custom Shiny output binding
-- `R/clipboard.R` — custom Shiny output binding
-- `R/shared-session.R` — localStorage-based sync, framework-agnostic
-- `R/aaa.R` — utility functions
-- `R/zzz.R` — package hooks
-- `R/utils.R` — internal utilities
-
-### 3.14 `DESCRIPTION`
-
-- [x] Added `bslib (>= 0.5.0)` to Suggests (not Imports — BS5 is vendored)
-- [ ] Consider replacing `httr` with `shiny::parseQueryString()` (httr is only used for URL parsing)
-
-### 3.15 `NAMESPACE`
-
-- [ ] Run `devtools::document()` to regenerate after all R changes (no new exports added)
-
----
-
-## Phase 4 — Testing & Compatibility
-
-### 4.1 New template smoke test
-
-- [ ] `create_barebone(tempdir())` → `render()` — dashboard loads
-- [ ] Sidebar renders with correct module links
-- [ ] Clicking sidebar item opens module in iframe
-- [ ] Iframe tab bar works (open, close, switch, close-all, close-others)
-- [ ] Dark/light theme toggle works
-- [ ] Theme propagates across iframes via `register_session_events()` / `get_theme()`
-- [ ] `register_session_id()` cross-iframe input sync works
-
-### 4.2 Widget verification
-
-- [ ] `card()` renders, collapse/expand/maximize works
-- [ ] `card2()` renders, front/back toggle works
-- [ ] `card_tabset()` renders, tab insert/remove/activate works
-- [ ] `accordion()` / `accordion_item()` renders, collapse works
-- [ ] `info_box()` renders correctly
-- [ ] `flip_box()` renders, flip animation works
-- [ ] `show_notification()` / `clear_notifications()` works (BS5 Toast)
-- [ ] `progressOutput()` / `renderProgress()` works
-- [ ] `clipboardOutput()` / `renderClipboard()` works
-- [ ] `flex_container()` / `flex_item()` layout works
-
-### 4.3 Backward compatibility
-
-- [ ] AdminLTE3-bare template still works when explicitly selected
-- [ ] Existing projects using AdminLTE3-bare continue to function
-
-### 4.4 ravedash integration
-
-- [ ] Install updated shidashi, run ravedash
-- [ ] Verify all 16 R function interfaces work
-- [ ] Verify all 6 JS message handlers work
-- [ ] `switch_module()` (uses `shidashi.open_iframe_tab`) works
-- [ ] `set_card_badge()` (uses `shidashi.set_html`, `shidashi.add_class`, `shidashi.remove_class`) works
-
-### 4.5 Package checks
-
-- [ ] `devtools::check()` — no new NOTEs/WARNINGs/ERRORs
-- [ ] Visual comparison of key widgets between old and new templates
-
----
-
-## Phase 5 — rave-pipelines Compatibility & Polish
-
-These items ensure bslib-bare matches the features used by rave-pipelines.
-
-### 5.1 Module groups & ordering in `modules.yaml`
-
-The R infrastructure (`module_info()`, `adminlte_sidebar()`, `menu_item_dropdown()`) already supports:
-- `groups:` section with `icon`, `badge`, `order`, `open` per group
-- `divider:` section with `order` per divider (renders as `nav-header nav-divider`)
-- Module-level `group:` assignments
-
-The bslib-bare `modules.yaml` only uses a flat list. Add demo groups/dividers to showcase the feature.
-
-**Bug fix**: `sidebar.js` queries `.shidashi-sidebar-nav` but the template has `.shidashi-nav` inside `.shidashi-sidebar-content`. Fix the selector to match the actual DOM.
-
-- [x] Fix `sidebar.js` `_navContainer` selector: `.shidashi-sidebar-nav` → `.shidashi-sidebar-content`
-- [x] Add `groups:` and `divider:` sections to `modules.yaml`
-
-### 5.2 Sidebar dark theme under light mode
-
-rave-pipelines defaults to a dark sidebar even under light body mode. The current implementation conditionally applies `shidashi-sidebar--dark`/`--light` in `index.html`, and JS toggles `sidebar-dark`/`sidebar-light`.
-
-Ensure the sidebar stays dark-themed when the body is in light mode (default rave-pipelines behavior), while still respecting explicit user overrides.
-
-- [x] SCSS: Ensure dark sidebar styles are the default, `sidebar-light` is opt-in
-- [x] JS: Only toggle sidebar theme classes when explicitly requested
-
-### 5.3 Navbar items for rave-action testing
-
-rave-pipelines module-ui.html files include navbar items like:
-```html
-<a href="#" class="nav-link rave-button" rave-action='{"type": "toggle_loader"}'>
-  <i class="fas fa-database"></i> Load data
-</a>
+**Key**: `expr` is now something like `renderPlot({...})` — a render function call used on the server side. The parameter name stays `expr` for compatibility with the existing closure pattern.
+
+### How It Works
+
+1. **Substitute `expr`** if `!quoted`, same as before.
+2. ~~**Evaluate `expr`** in `env` → this yields the render function object (e.g., the result of `renderPlot({...})`).~~ (see step 6)
+3. **`find_expr(expr)`**: Parse the render function call (e.g. `renderPlot({plot(iris)})`) to extract the `expr` argument. This is needed so 
+  - see 4 below
+  - the download handler can re-evaluate the plotting expression into a graphics device.
+4. **Register MCP spec**: Call `.register_output` (the closure from `mcp_wrapper_input_output`) if available; pass `expr` and `quoted=TRUE` to store the expression so AI agents know the implementation. However, do not evaluate the `expr` in register_output_spec - it simply records the implementation
+5. **Call `register_output_widgets()`** (internal helper) to set up download handler, popout handler, and send output metadata to the JS side.
+6. **Assign** evaluate `expr` in `env` to obtain `render_function`, then `session$output[[outputId]] <- render_function` — standard Shiny server-side output assignment.
+
+### `register_output_widgets()` — Internal Server-Side Helper (NOT exported)
+
+This is the core implementation function. It is called by `register_output()` and handles:
+
+- Previously **`find_expr(expr)`** have already parsed the render function call (e.g. `renderPlot({plot(iris)})`) to extract the `expr` argument (e.g. `{plot(iris)}`). The expr is passed to register_output_widgets(expr, ...): This is needed so the download handler can re-evaluate the plotting expression into a graphics device.
+- **Download handler**: Based on `download_type`:
+  - `"image"`: Re-evaluate `expr` inside `png()`/`pdf()`/`svg()` device; use `downloadHandler`. Modal asks for width (30cm default), height (from current aspect ratio, rounded to 0.1cm), filename (outputId + timestamp)
+  - `"threeBrain"`: Call `asNamespace("threeBrain")$save_brain()`. Modal asks for filename and title (default "RAVE Viewer")
+  - `"data"`: Use `download_function` provided by user. Modal asks for filename only
+  - `"no-download"`: Skip download setup entirely
+- **Send output metadata to JS**: Send a custom message to the client declaring this `outputId` as a registered output with its widget capabilities (download, popout). JS uses this to inject overlay icons. The icons are displayed with absolute positions and are placed at top-left
+- **Store parsed render info**: Keep `render_expr` and `render_env` for standalone viewer use later. This can be stored in the registry (`globals_mcp_session_registry()`), into `output_renderers` entry along with the `output_opts` and `extensions` wrapped in a list
+
+### `register_output_spec` Closure Update
+
+Remove `eval` from `register_output_spec` inside `mcp_wrapper_input_output()` (~L369):
+
+```r
+register_output_spec <- function(expr, outputId, description = "", quoted = FALSE, env = parent.frame()) {
+  ... 
+  output_specs$set(outputId, item)
+
+  return(invisible(item))
+}
 ```
 
-These are specific to module iframes and handled by ravedash, not shidashi. No changes needed in the main template — ravedash adds these in its own module-ui.html templates.
+This lets `register_output()` call `.register_output(expr, outputId, description, ...)` without evaluating `expr`.
 
-- [x] No action needed — rave-button navbar items are module-level, not template-level
+### JS-Side UI Overlay
 
-### 5.4 Navbar message broadcasting to sub-windows (rave-action)
+Instead of ravedash's R-side `output_gadget_container()` (ravedash), the widget overlay icons are injected entirely by JS:
 
-rave-pipelines' `class-shidashi.js` handles `.rave-button` clicks inside module iframes by parsing `rave-action` JSON and calling `Shiny.setInputValue("@rave_action@", ...)`. This is implemented in ravedash, not shidashi.
+1. `register_output()` sends a Shiny custom message (e.g. `shidashi.register_output_widgets`) to the client with:
+   - `outputId` (namespaced via `session$ns(outoutId)`)
+   - `widgets`: list of enabled widgets (`"download"`, `"popout"`)
+   - `download_type`
+2. JS handler in `index.js` receives this message and:
+   - Finds the output container element (by Shiny's output binding ID)
+   - Wraps it with `position: absolute` wrapper div (class `shidashi-output-widget-wrapper`) positioned absolute top-left
+   - Injects overlay icons (download, popout) into the container
+   - Download icon click → sets Shiny input `{ns(outputId)}__download_trigger` which triggers the server-side download modal
+   - Call `Shiny.bindAll` on the container to register the shiny-reactive events
+   - Register popout icon js event: click → `window.open()` to standalone viewer URL
 
-shidashi's role is to support `broadcastEvent()` and cross-iframe communication. The current `broadcastEvent()` in `index.js` already fires a `CustomEvent` and sends to Shiny. Add `notifyIframes()` to broadcast events to all managed iframes.
+**Advantages over R-side UI wrapper**:
+- No need for a separate UI function call
+- Works with any output, including those generated dynamically
+- Module authors only call `register_output()` in server — no paired UI registration needed
+- Keeps UI code clean: just `plotOutput(ns("x"))` in UI
 
-- [x] Add `notifyIframes(type, message)` method to IFrameManager
-- [x] Wire up `broadcastEvent()` to also notify iframes
+### SCSS Styles Needed
 
-### 5.5 Super thin scrollbar support
+In `inst/builtin-templates/bslib-bare/src/shidashi.scss`:
+- `.shidashi-output-widget-wrapper`: `position: relative`
+- `.shidashi-output-widget-container`: `position: absolute; top: 0.25rem; left: 0.25rem; z-index: 10; display: flex; gap: 0.15rem; opacity: 0.5; transition: opacity 0.2s`
+- `.shidashi-output-widget-wrapper:hover .shidashi-output-widget-container`: `opacity: 1`
+- `.shidashi-output-widget-icon`: subtle button styling, dark-mode support
 
-AdminLTE3 uses webkit scrollbar pseudo-elements for 0.5rem thin scrollbars on hover. The current SCSS already has `scrollbar-width: thin`. Add webkit `::-webkit-scrollbar` styles and show-on-hover behavior for the sidebar.
+## Phases
 
-- [x] Add webkit scrollbar styles (`::-webkit-scrollbar`, `::-webkit-scrollbar-thumb`)
-- [x] Sidebar: hide scrollbar by default, show thin on hover
+### Phase 1: R — `register_output_spec` closure + `find_expr` + `register_output_widgets`
 
-### 5.6 Brand icon location fix
+**Files**: [R/mcp-wrapper.R](R/mcp-wrapper.R)
 
-Ensure `shidashi-brand-link` vertical centering and spacing matches AdminLTE3's `.brand-link` padding. Current implementation uses `height: $navbar-height` + `padding: 0 1rem` which may not vertically center the logo/text.
+1. **`register_output_spec` closure** (~L351): Remove `eval(expr, envir = env)`. Store `deparse1(expr)` in spec `type` column (like `register_input_spec` does). Return `invisible(item)`.
+2. **`find_expr(call)`**: Local helper function (not exported). Takes a quoted render call (e.g. `renderPlot({plot(iris)})`), uses `match.call()` against the render function to extract the `expr` argument and `env`/`envir` argument. Must handle `::` prefix (e.g. `shiny::renderPlot(...)`) by resolving via `getExportedValue()`. Returns `list(expr = <inner_expr>, env = <env_or_NULL>)`.
+3. **`register_output_widgets()`**: Internal helper (not exported). Signature: `register_output_widgets(render_expr, render_env, outputId, download_type, download_function, output_opts, extensions, description, session)`. Does:
+   - Download handler setup based on `download_type` (`"image"` → graphics device re-eval; `"threeBrain"` → `asNamespace("threeBrain")$save_brain()`; `"data"` → user-supplied `download_function`; `"no-download"` → skip)
+   - `shiny::bindEvent(shiny::observe({...(show modal)}), input[[paste0(outputId, "__download_trigger")]], ignoreNULL = TRUE, ignoreInit = TRUE)` → show download modal with fields depending on `download_type`:
+     - `"image"`: width (numericInput, default 30 cm), height (numericInput, default based on current image aspect ratio rounded to 0.1 cm), filename (textInput, default `outputId_timestamp`)
+     - `"threeBrain"`: filename (textInput), title (textInput, default "RAVE Viewer") — passed to `threeBrain::save_brain()`
+     - `"data"`: filename (textInput) only
+   - `session$output[[paste0(outputId, "__download")]] <- downloadHandler(...)` for the actual download
+   - Send `session$sendCustomMessage("shidashi.register_output_widgets", ...)` with `outputId` (namespaced), enabled widgets, `download_type`
+   - Store render info in `mcp_get_shiny_entry(session$token)$output_renderers$set(outputId, list(render_expr, render_env, output_opts, extensions))` <- FIXME: namedlist
 
-- [x] Fix brand link padding and vertical centering
+### Phase 2: R — Rewrite exported `register_output()`
 
----
+**Files**: [R/mcp-wrapper.R](R/mcp-wrapper.R)
 
-## Phase 6 — Merge Generic Improvements from rave-pipelines bslib-migration
+1. **New signature**: `register_output(expr, outputId, description, quoted, env, ..., output_opts, download_function, download_type, extensions, session)`
+2. **Body**:
+   a. `if (!quoted) expr <- substitute(expr)`
+   b. `parsed <- find_expr(expr)` — extract inner expr (with `renderXX` stripped) and env
+   c. Look up `.register_output` impl via `get0()` (same pattern as current). If found, call `.register_output(expr = expr, outputId = outputId, description = description, quoted = TRUE, env = env)` — records raw call in MCP spec, does NOT eval (see phase 1)
+   d. `register_output_widgets(render_expr = parsed$expr, render_env = parsed$env %||% env, outputId = outputId, download_type = download_type, download_function = download_function, output_opts = output_opts, extensions = extensions, description = description, session = session)`
+   e. `render_function <- eval(expr, envir = env)` — evaluate the full `renderPlot({...})` call
+   f. `session$output[[outputId]] <- render_function`
+3. **Documentation**: Update `@rdname register_io` roxygen — new params, new examples showing server-side usage
+4. **Fallback when `.register_output` not found**: Still eval `expr` and assign to `session$output` (works outside shidashi module env, just no MCP spec or widgets)
 
-Back-port non-RAVE-specific improvements discovered during rave-pipelines integration.
-Source: `rave-ieeg/rave-pipelines` branch `bslib-migration`.
+### Phase 3: JS — Widget Overlay Handler
 
-### 6.1 SCSS — Structural & Component Fixes
+**Files**: [inst/builtin-templates/bslib-bare/src/index.js](inst/builtin-templates/bslib-bare/src/index.js)
 
-- [ ] **p1.1** Drawer: Add `.shidashi-drawer` off-canvas panel styles (right-side slide-in, dark-mode variant, 320px width, transitions)
-- [ ] **p1.2** Resize handles: Add `.resize-horizontal` and `card-body.resize-vertical` overflow rules
-- [ ] **p1.3** Card collapsed footer: `.card.shidashi-collapsed > .card-footer` should be soft-hidden
-- [ ] **p1.4** Card maximize transition: Add smooth transition to `.shidashi-maximized`
-- [ ] **p1.5** Soft-hidden fix: `.soft-hidden` needs `opacity: 0; visibility: hidden; pointer-events: none` in addition to `height: 0`
-- [ ] **p1.6** IRS slider overrides: Range slider styles (`.irs--shiny .irs-bar`, `.irs-from`, `.irs-to`, etc.)
-- [ ] **p1.7** Navbar-hidden: `body.shidashi-navbar-hidden` rules (hide header, adjust content top)
-- [ ] **p1.8** Col-xs-12: BS3 compat shim `.col-xs-12 { width: 100% }`
-- [ ] **p1.9** Hljs dark-mode: `body.dark-mode pre code.hljs` background override
-- [ ] **p1.10** Back-to-top rename: `.back-to-top` → `.shidashi-back-to-top` (avoid adblocker rules)
-- [ ] **p1.11** Group-input-box: `.group-input-box` padding/margins for grouped inputs
-- [ ] **p1.12** Form widths: `select.form-control`, `.form-group`, `form` max-width constraints
-- [ ] **p1.13** Card-header form-group: Zero out bottom margin inside card headers
-- [ ] **p1.14** Toasts z-index: `#shidashi-toast-container` z-index 1090
+1. Add `Shiny.addCustomMessageHandler("shidashi.register_output_widgets", ...)` 
+2. Handler receives `{outputId, widgets, download_type}`. Finds the output container by `id` attribute matching `outputId`
+3. Adds `shidashi-output-widget-wrapper` class to the output's parent (sets `position: relative`)
+   - return and do nothing if the wrapper already exists to prevent unnecessary double-initialization
+4. Creates overlay div (`shidashi-output-widget-container`) positioned absolute top-left, inserts icon elements:
+   - Download icon: `<a>` with download icon, on click → `Shiny.setInputValue(outputId + "__download_trigger", Date.now(), {priority: "event"})`
+   - Popout icon: `<a>` with external-link icon, on click → `window.open()` (placeholder URL until Phase 6)
+5. Call `Shiny.bindAll` on `shidashi-output-widget-wrapper` element
 
-### 6.2 JavaScript — New Handlers & Methods
+### Phase 4: SCSS — Widget Overlay Styles + Build
 
-- [ ] **p2.1** Drawer methods: `drawerOpen()`, `drawerClose()`, `drawerToggle()` with `broadcastEvent('drawer.open'/'drawer.close')`
-- [ ] **p2.2** Resize handles: Init `mousedown`/`mousemove`/`mouseup` for horizontal resize
-- [ ] **p2.3** Card icon helpers: `_updateCardIcon2()` for card2 collapse icons
-- [ ] **p2.4** cardwidget data-title lookup: Query `.card[data-title]` when no inputId provided
-- [ ] **p2.5** Accordion handler: `shidashi.accordion` message handler
-- [ ] **p2.6** hide/show header handlers: `shidashi.hide_header` / `shidashi.show_header`
-- [ ] **p2.7** open_url handler: `shidashi.open_url` → `window.open()`
-- [ ] **p2.8** shidashi-button handler: `[data-shidashi-action="shidashi-button"]` click delegation → `@shidashi_event@` Shiny input
-- [ ] **p2.9** Back-to-top init: Update `_initBackToTop()` selector to `.shidashi-back-to-top`
-- [ ] **p2.10** shown.bs.tab: Report active tab title via `broadcastEvent('tabset.activated')`
+**Files**: [inst/builtin-templates/bslib-bare/src/shidashi.scss](inst/builtin-templates/bslib-bare/src/shidashi.scss)
 
-### 6.3 HTML Templates
+1. `.shidashi-output-widget-wrapper` — `position: relative`
+2. `.shidashi-output-widget-container` — `position: absolute; top: 0.25rem; left: 0.25rem; z-index: 10; display: flex; gap: 0.15rem; opacity: 0.5; transition: opacity 0.2s`
+3. `.shidashi-output-widget-wrapper:hover .shidashi-output-widget-container` — `opacity: 1`
+4. `.shidashi-output-widget-icon` — subtle button styling (small, semi-transparent bg), dark-mode support
+5. Run `npm run build`
 
-- [ ] **p3.1** Drawer in index.html: Add drawer toggle `<li>` in right navbar, add `{{ drawer_ui() }}` placeholder
-- [ ] **p3.2** Footer cleanup: Remove dead `<script>` from `views/footer.html`
-- [ ] **p3.3** Card view hardening: Add `get0()` guards in `card.html` and `card2.html`
-- [ ] **p3.4** Accordion view: Verify `combine_class()` and `aria-expanded` correctness in `accordion-item.html`
+### Phase 5: Demo Module Update
 
-### 6.4 R Functions
+**Files**: `inst/builtin-templates/bslib-bare/modules/demo/`
 
-- [ ] **p4.1** Drawer R functions: `drawer_open()`, `drawer_close()`, `drawer_toggle()` in new `R/drawer.R`
-- [ ] **p4.2** Drawer UI placeholder: `drawer_ui()` function in `inst/builtin-templates/bslib-bare/R/common.R`
-- [ ] **p4.3** Header visibility: `hide_header()`, `show_header()` in `R/widgets.R`
-- [ ] **p4.4** Open URL: `open_url()` in `R/widgets.R`
-- [ ] **p4.5** Back-to-top rename: Update `back_top_button()` CSS class in `R/widgets.R`
-- [ ] **p4.6** NAMESPACE: Export new functions via roxygen2
+1. **UI** (`R/demo-ui.R`): Remove the old `register_output(plotOutput(ns("iris_plot"), ...), ...)` call. Replace with plain `plotOutput(ns("iris_plot"), height = "100%")`
+2. **Server** (`server.R`): Add `shidashi::register_output(renderPlot({...}), outputId = "iris_plot", download_type = "image", description = "Iris scatter plot")`
+3. Verify: widget overlay icons appear on hover, download works
 
-### 6.5 Build & Verify
+### Phase 6: Standalone Viewer — Hidden Module + Server-Side Logic (follow-up)
 
-- [ ] **p5.1** Run `npm run build` — clean compile
-- [ ] **p5.2** Smoke-test `create_barebone_bslib()` → `render()`
+**Files**: [R/mcp-wrapper.R](R/mcp-wrapper.R) or new [R/standalone-viewer.R](R/standalone-viewer.R), [R/barebone.R](R/barebone.R), [inst/builtin-templates/bslib-bare/src/index.js](inst/builtin-templates/bslib-bare/src/index.js)
+
+Standalone viewer is a **hidden module** (`standalone_viewer`) generated by `create_barebone_bslib()`. It uses Shiny's server-side session so it has access to reactive domains, output bindings, and the full Shiny lifecycle.
+
+1. **`standalone_viewer(outputId, token, session)`**: Server-side function (exported or internal). Uses `mcp_get_shiny_entry(token)` to look up the originating module session, retrieves render info via `entry$output_renderers$get(outputId)`, gets the render function via `module_session$getOutput(ns(outputId))`, re-assigns under `shiny::withReactiveDomain(module_session, { ... })` into the viewer session's output
+2. **Hidden module**: Create `modules/standalone_viewer/` with UI (single full-viewport output container) and server (calls `standalone_viewer()`). Mark as `hidden: yes` in `modules.yaml` so it doesn't appear in sidebar
+3. **Wire popout JS**: Update the popout icon click handler to navigate to the standalone viewer module URL: `window.open("?module=standalone_viewer&outputId=" + outputId + "&token=" + token)`
+4. **Update `create_barebone_bslib()`** in [R/barebone.R](R/barebone.R): Generate the `standalone_viewer` hidden module directory and files, add entry to `modules.yaml`
+5. **Token exposure**: Include `session$token` in the `shidashi.register_output_widgets` custom message so JS has it for the popout URL
+
+### Phase 7: DESCRIPTION + Downstream Compatibility
+
+1. ~~Add `threeBrain` to Suggests in DESCRIPTION~~ (user will add manually)
+2. Add NEWS.md entry announcing `register_output()` as a new feature: server-side output registration with download/popout widget support
+3. Run `devtools::check()`
+
+## Resolved Questions
+
+1. **Download modal**: Shiny modal (`showModal`). Round-trip is necessary since there could be reactive configurations in the future. Modal fields vary by `download_type` — see Phase 1 for details.
+
+2. **Backward compatibility**: NOT a breaking change. `register_output()` is already used server-side in rave-pipelines. We are clarifying usage: server-only, no fallback needed.
+
+3. **`find_expr` with `::` prefix**: Yes, handle `shiny::renderPlot(...)` by resolving through `getExportedValue()`.
+
+4. **Module name**: `standalone_viewer` (no special prefix) — rave-pipelines already uses this name.
+
+5. **threeBrain in Suggests**: User adds manually. Code uses `asNamespace("threeBrain")` for access.

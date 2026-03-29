@@ -116,11 +116,7 @@ ui_live_demo <- function() {
         title = "Output",
         tools = list(card_tool(widget = "maximize")),
         class_body = "min-height-400",
-        shidashi::register_output(
-          outputId = "live_scatter",
-          description = "Scatter plot controlled by live_npoints, live_color, and live_title",
-          expr = plotOutput(ns("live_scatter"), height = "350px")
-        )
+        plotOutput(ns("live_scatter"), height = "350px")
       )
     )
   )
@@ -305,25 +301,29 @@ script: scripts/run.R
 server_aiagent <- function(input, output, session, ...) {
   event_data <- register_session_events(session)
 
-  output$live_scatter <- renderPlot({
-    theme <- shidashi::get_theme(event_data)
-    n <- input$live_npoints %||% 100
-    col <- input$live_color %||% "steelblue"
-    title <- input$live_title %||% "Scatter Plot"
+  shidashi::register_output(
+    renderPlot({
+      theme <- shidashi::get_theme(event_data)
+      n <- input$live_npoints %||% 100
+      col <- input$live_color %||% "steelblue"
+      title <- input$live_title %||% "Scatter Plot"
 
-    set.seed(42)
-    x <- rnorm(n)
-    y <- x + rnorm(n, sd = 0.5)
+      set.seed(42)
+      x <- rnorm(n)
+      y <- x + rnorm(n, sd = 0.5)
 
-    par(
-      bg = theme$background, fg = theme$foreground,
-      col.main = theme$foreground,
-      col.axis = theme$foreground,
-      col.lab = theme$foreground
-    )
-    plot(x, y, pch = 19, col = col, main = title,
-         xlab = "X", ylab = "Y")
-  })
+      par(
+        bg = theme$background, fg = theme$foreground,
+        col.main = theme$foreground,
+        col.axis = theme$foreground,
+        col.lab = theme$foreground
+      )
+      plot(x, y, pch = 19, col = col, main = title,
+           xlab = "X", ylab = "Y")
+    }),
+    outputId = "live_scatter",
+    description = "Scatter plot controlled by live_npoints, live_color, and live_title"
+  )
 }
 
 

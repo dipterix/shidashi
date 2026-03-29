@@ -163,7 +163,7 @@ export class StreamViz {
     if (!parent) return;
 
     // Set up the wrapper/container structure identical to register_output_widgets
-    parent.classList.add('position-relative', 'shidashi-output-widget-wrapper');
+    parent.classList.add('shidashi-output-widget-wrapper');
 
     // Reuse existing container if register_output_widgets already created one
     let container = parent.querySelector('.shidashi-output-widget-container');

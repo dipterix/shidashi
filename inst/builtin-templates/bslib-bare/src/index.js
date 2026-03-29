@@ -1682,7 +1682,7 @@ class ShidashiApp {
         // widget overlay is anchored correctly. The container is inserted
         // as a sibling *before* the shiny output element so Shiny's
         // render cycle (which clears the output element) won't destroy it.
-        parent.classList.add('position-relative', 'shidashi-output-widget-wrapper');
+        parent.classList.add('shidashi-output-widget-wrapper');
 
         container = document.createElement('div');
         container.className = 'shidashi-output-widget-container';

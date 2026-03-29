@@ -802,20 +802,38 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
 }
 
-find_expr <- function(call) {
+find_expr <- function(call, env) {
   if (!is.call(call)) {
-    warning("find_expr needs a function call, got:\n", deparse1(call))
+    stop("find_expr needs a function call, got:\n", deparse1(call))
     return(NULL)
   }
   fn_symbol <- call[[1L]]
   # Resolve the actual function object
   fn <- NULL
+
+  if (
+    identical(fn_symbol, quote(shiny::bindEvent)) ||
+    identical(fn_symbol, quote(bindEvent))
+  ) {
+    call <- match.call(definition = shiny::bindEvent, call = call)
+    call <- call$x
+    fn_symbol <- call[[1L]]
+  }
+
   if (is.call(fn_symbol) && identical(fn_symbol[[1L]], quote(`::`))) {
     # pkg::fun(...) form
     pkg <- as.character(fn_symbol[[2L]])
     fun_name <- as.character(fn_symbol[[3L]])
     ns <- asNamespace(pkg)
     fn <- ns[[fun_name]]
+  } else {
+    # try to get the function
+    tryCatch(
+      {
+        fn <- eval(fn_symbol, envir = new.env(parent = env))
+      },
+      error = function(e) {}
+    )
   }
 
   if (is.function(fn)) {
@@ -1212,7 +1230,7 @@ register_output <- function(
   }
 
   # Parse the render call to extract the inner expr
-  parsed_expr <- find_expr(expr)
+  parsed_expr <- find_expr(expr, env)
 
   # Register MCP output spec (records the call, does NOT eval)
   register_output_impl <- get0(
