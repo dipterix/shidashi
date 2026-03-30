@@ -330,18 +330,42 @@ chatbot_server <- function(input, output, session,
 
           if (is.list(result@value)) {
             value_list <- result@value
+            unwrap <- FALSE
           } else {
             value_list <- list(result@value)
+            unwrap <- TRUE
           }
+
+          value_list <- lapply(value_list, function(value) {
+            if (
+              S7::S7_inherits(value, ellmer::ContentImage)
+            ) {
+              img_type <- value@type
+              img_data <- value@data
+              value <- sprintf(
+                "<img src='data:%s;base64,%s' style='max-width:100%%' />",
+                img_type, img_data)
+              class(value) <- "html"
+            }
+            value
+          })
+
+          if (unwrap) {
+            result@value <- value_list[[1]]
+          } else {
+            result@value <- value_list
+          }
+
+          # Try to append the entire result
+          try({
+            shinychat::chat_append(id = id, session = session, result)
+            return()
+          }, silent = TRUE)
+
+          # Ultimate fallback
           lapply(value_list, function(value) {
             tryCatch({
-              if (
-                S7::S7_inherits(value, ellmer::ContentImage)
-              ) {
-                img_type <- value@type
-                img_data <- value@data
-                value <- sprintf("<img src='data:%s;base64,%s' style='max-width:100%%' />",
-                                 img_type, img_data)
+              if (inherits(value, "html")) {
                 shinychat::chat_append(id = id, session = session, value)
               } else {
                 result@value <- value
@@ -352,7 +376,10 @@ chatbot_server <- function(input, output, session,
               shinychat::chat_append(
                 id = id,
                 session = session,
-                "<p><span style='font-size: x-small; font-style: italic;'>(Tool request result omitted)</span></p>"
+                paste0(
+                  "<p><span style='font-size: x-small; font-style: italic;'>",
+                  "(Tool request result omitted)</span></p>"
+                )
               )
             })
           })

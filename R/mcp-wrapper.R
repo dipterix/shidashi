@@ -499,7 +499,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       ),
       fun = function(inputIds = character()) {
         inputIds <- unlist(inputIds)
-        inputIds <- inputIds[!is.na(inputIds)]
+        inputIds <- inputIds[!is.na(inputIds) & nzchar(inputIds)]
         if (length(inputIds) > 0) {
           items <- input_specs$mget(inputIds)
         } else {
@@ -533,7 +533,9 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         "The value will be sent to the corresponding shiny update function",
         "(e.g. updateTextInput, updateSelectInput, updateNumericInput).",
         "Call `shiny_input_info()` first to discover available input IDs,",
-        "their types, current values, and whether they are writable."
+        "their types, current values, and whether they are writable.",
+        "After changing the inputs, always call `shiny_input_info` again",
+        "to verify the changes."
       ),
       arguments = list(
         inputId = ellmer::type_string(
@@ -594,6 +596,9 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         ))
 
         eval(expr)
+
+        # Wait for Shiny to update
+        Sys.sleep(0.1)
 
         return(invisible(list(
           updated = TRUE,

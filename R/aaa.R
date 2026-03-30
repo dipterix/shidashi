@@ -338,3 +338,85 @@ truc_string <- function(x, max_char, annot = "(truncated)", side = c("end", "beg
 drop_null <- function(x) {
   as.list(x[!vapply(x, is.null, FALSE)])
 }
+
+#' @name html_class
+#' @title Combine, add, or remove 'HTML' classes
+#' @description Combine 'HTML' classes to produce nice, clean 'HTML' class
+#' string via \code{combine_html_class}, or to remove a class via
+#' \code{remove_html_class}
+#' @param ... one or more characters, classes to combine; duplicated classes
+#' will be removed
+#' @param target characters, class list
+#' @param class one or more characters, classes to be removed from \code{target}
+#' @return A character string of new 'HTML' class
+#' @examples
+#'
+#' # Combine classes "a b c d e"
+#' combine_html_class("a", "b  a", c("c", " d", "b"), list("e ", "a"))
+#'
+#' # Remove class
+#' remove_html_class("a b   c  e", c("b", "c "))
+#'
+#' @export
+combine_html_class <- function(...) {
+  s <- paste(c(...), collapse = " ", sep = " ")
+  s <- unlist(strsplit(s, " "))
+  s <- unique(s)
+  s <- s[!s %in% '']
+  paste(s, collapse = " ")
+}
+
+#' @rdname html_class
+#' @export
+remove_html_class <- function(target, class) {
+  if (!length(target)) {
+    return("")
+  }
+  s <- unlist(strsplit(target, " "))
+  s <- unique(s)
+  class <- unlist(strsplit(class, " "))
+  s <- s[!s %in% c('', class)]
+  paste(s, collapse = " ")
+}
+
+#' Escape HTML strings
+#' @description Escape HTML strings so that they will be displayed
+#' 'as-is' in websites.
+#' @param s characters
+#' @param space whether to also escape white space, default is true.
+#' @return An R string
+#' @examples
+#'
+#' html_asis("<a><----> <b>")
+#'
+#' @export
+html_asis <- function(s, space = TRUE) {
+  if (space) {
+    pattern <- "&|<|>| |\t" # or "&|<|>|'|\"|\r|\n"
+    specials <- list(
+      "&" = "&amp;",
+      "<" = "&lt;",
+      ">" = "&gt;",
+      # "'" = "&#39;",
+      # '"' = "&quot;",
+      # "\r" = "&#13;",
+      # "\n" = "&#10;",
+      " " = "&nbsp;",
+      "\t" = "&nbsp;&nbsp;&nbsp;&nbsp;"
+    )
+  } else {
+    pattern <- "&|<|>|"
+    specials <- list("&" = "&amp;", "<" = "&lt;", ">" = "&gt;")
+  }
+
+  s <- enc2utf8(as.character(s))
+  if (any(grepl(pattern, s, useBytes = TRUE))) {
+    for (chr in names(specials)) {
+      s <- gsub(chr, specials[[chr]], s, fixed = TRUE, useBytes = TRUE)
+    }
+  }
+  Encoding(s) <- "UTF-8"
+  shiny::HTML(s)
+}
+
+
