@@ -29,7 +29,7 @@ server_standalone_viewer <- function(input, output, session, ...) {
   }
 
   # Look up the parent session's entry by token
-  entry <- mcp_get_shiny_entry(url_token)
+  entry <- get_session_entry(url_token)
   if (is.null(entry)) {
     output$viewer_content <- shiny::renderUI({
       shiny::h3("Session not found. The parent session may have closed.")

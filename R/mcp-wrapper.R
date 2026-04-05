@@ -1090,7 +1090,7 @@ register_output_widgets <- function(
   ))
 
   # --- Store render info in session registry ---
-  entry <- mcp_get_shiny_entry(session$token)
+  entry <- get_session_entry(session$token)
   if (!is.null(entry)) {
     entry$output_renderers$set(outputId, list(
       render_expr = render_expr,

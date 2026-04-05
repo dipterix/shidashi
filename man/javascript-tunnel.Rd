@@ -16,10 +16,10 @@ register_session_id(
 
 register_session_events(session = shiny::getDefaultReactiveDomain())
 
-get_theme(event_data, session = shiny::getDefaultReactiveDomain())
+get_theme(event_data = NULL, session = shiny::getDefaultReactiveDomain())
 
 get_jsevent(
-  event_data,
+  event_data = NULL,
   type,
   default = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -88,7 +88,7 @@ server <- function(input, output, session){
 
   # get_theme should be called within reactive context
   output$plot <- renderPlot({
-    theme <- get_theme(event_data)
+    theme <- shidashi::get_theme(event_data)
     mar(bg = theme$background, fg = theme$foreground)
     plot(1:10)
   })

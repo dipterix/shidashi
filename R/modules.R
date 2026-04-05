@@ -325,8 +325,8 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         body(server_function) <- bquote({
           local({
             shidashi <- asNamespace("shidashi")
-            shidashi$register_session_mcp(session = session)
-            registry <- shidashi$globals_mcp_session_registry()
+            shidashi$register_session(session = session)
+            registry <- shidashi$globals_session_registry()
             entry <- registry$get(session$token)
 
             # Build MCP tools

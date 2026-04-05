@@ -67,6 +67,11 @@ modules:
     icon: "wave-square"
     label: "Stream Viz"
     group: "Widgets"
+  session_events:
+    order: 32
+    icon: "broadcast-tower"
+    label: "Session Events"
+    group: "Widgets"
   standalone_viewer:
     hidden: yes
     order: 99

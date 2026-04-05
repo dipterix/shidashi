@@ -1,13 +1,13 @@
 sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 
   # shared_id <- session$cache$get("shidashi_shared_id")
-  shared_id <- session$userData$shidashi$shared_id
+  shared_id <- globals_get_shared_id(session)
 
-  # private_id <- session$cache$get("shidashi_private_id")
-  private_id <- session$userData$shidashi$private_id
+  # private_id replaced by session$token — no separate random ID needed
+  private_id <- session$token
 
-  if(length(shared_id) != 1 || length(private_id) != 1 ||
-     !is.character(shared_id) || !is.character(private_id)){
+  if (length(shared_id) != 1 ||
+     !is.character(shared_id)) {
     stop("Invalid session IDs, run `register_session_id()` first to register.")
   }
 
@@ -125,7 +125,7 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 #'
 #'   # get_theme should be called within reactive context
 #'   output$plot <- renderPlot({
-#'     theme <- get_theme(event_data)
+#'     theme <- shidashi::get_theme(event_data)
 #'     mar(bg = theme$background, fg = theme$foreground)
 #'     plot(1:10)
 #'   })
@@ -133,30 +133,6 @@ sync_inputs <- function(session = shiny::getDefaultReactiveDomain()) {
 #' }
 #'
 NULL
-
-#' @title Register global reactive list
-#' @description Creates or get reactive value list that is shared within the same
-#' shiny session
-#' @param name character, the key of the list
-#' @param session shiny session
-#' @return A shiny \code{\link[shiny]{reactiveValues}} object
-#' @export
-register_global_reactiveValues <- function(name, session = shiny::getDefaultReactiveDomain()){
-  if(is.null(session)){
-    return(shiny::reactiveValues())
-  }
-  root_session <- session$rootScope()
-  if( is.null(root_session$userData$shidashi$global_reactiveValues) ) {
-    root_session$userData$shidashi$global_reactiveValues <- fastmap::fastmap()
-  }
-  value_list <- root_session$userData$shidashi$global_reactiveValues
-  event_data <- value_list$get( key = name, missing = NULL )
-  if(!shiny::is.reactivevalues(event_data)){
-    event_data <- shiny::reactiveValues()
-    value_list$set( key = name, value = event_data )
-  }
-  event_data
-}
 
 
 
@@ -177,37 +153,27 @@ register_session_id <- function(
     session$userData$shidashi <- new.env(parent = emptyenv())
   }
 
+  # Ensure session is in the global registry (idempotent)
+  register_session(session)
+
   if (length(shared_id)) {
+    # Explicit shared_id provided — validate and update registry entry
     if (grepl("[^a-z0-9_]", shared_id)) {
       stop(
         "session `shared_id` must only contain letters (lower-case), digits, and/or '_'."
       )
     }
+    registry <- globals_session_registry()
+    reg_entry <- registry$get(session$token)
+    reg_entry$shared_id <- shared_id
+    registry$set(session$token, reg_entry)
   } else {
-    shared_id <- session$userData$shidashi$shared_id
-    if (length(shared_id) != 1 || !is.character(shared_id)) {
-      # get from session
-      query_list <- shiny::parseQueryString(shiny::isolate(
-        session$clientData$url_search
-      ))
-      shared_id <- query_list$shared_id
-      shared_id <- tolower(shared_id)
-      if (!length(shared_id) || grepl("[^a-z0-9_]", shared_id)) {
-        shared_id <- rand_string(length = 26)
-        shared_id <- tolower(shared_id)
-      }
-    }
+    # Read shared_id from the registry (already resolved by register_session)
+    shared_id <- globals_get_shared_id(session)
   }
-  session$userData$shidashi$shared_id <- shared_id
 
-  if(is.null(session$userData$shidashi$private_id)) {
-    is_registerd <- FALSE
-    private_id <- rand_string(length = 8)
-    session$userData$shidashi$private_id <- private_id
-  } else {
-    is_registerd <- TRUE
-    private_id <- session$userData$shidashi$private_id
-  }
+  # private_id replaced by session$token — unique per session
+  private_id <- session$token
 
   broadcast_observer <- session$userData$shidashi$broadcast_observer
   if (is.null(broadcast_observer)) {
@@ -268,7 +234,7 @@ register_session_id <- function(
 
   # ----- For backward compatibility -----------------------------------
   session$cache$set("shidashi_shared_id", shared_id)
-  session$cache$set("shidashi_private_id", private_id)
+  session$cache$set("shidashi_private_id", session$token)
   session$cache$set("shidashi_broadcast_handler", broadcast_observer)
 
   res
@@ -276,39 +242,22 @@ register_session_id <- function(
 
 #' @rdname javascript-tunnel
 #' @export
-register_session_events <- function(session = shiny::getDefaultReactiveDomain()){
+register_session_events <- function(session = shiny::getDefaultReactiveDomain()) {
   if (is.environment(session)) {
     root_session <- session$rootScope()
-
-    # event_data <- root_session$cache$get("shidashi_event_data", NULL)
-    if (!is.environment(root_session$userData$shidashi)) {
-      root_session$userData$shidashi <- new.env(parent = emptyenv())
+    token <- root_session$token
+    entry <- get_session_entry(token)
+    if (is.null(entry)) {
+      # register_session creates the entry AND the event_handler observer
+      register_session(session)
+      entry <- get_session_entry(token)
     }
-    event_data <- root_session$userData$shidashi$event_data
-    if (!shiny::is.reactivevalues(event_data)) {
-      event_data <- shiny::reactiveValues()
-      root_session$userData$shidashi$event_data <- event_data
-    }
+    event_data <- entry$events
 
-    # observer <- root_session$cache$get("shidashi_event_handler", NULL)
-    observer <- root_session$userData$shidashi$event_handler
-
-    if (is.null(observer)) {
-      observer <- shiny::observeEvent({
-        root_session$input[["@shidashi_event@"]]
-      }, {
-        event <- root_session$input[["@shidashi_event@"]]
-        if (is.list(event) && length(event$type) == 1 && is.character(event$type) ) {
-          event_data[[event$type]] <- event$message
-        }
-      }, domain = root_session)
-
-      session$sendCustomMessage("shidashi.get_theme", list())
-      root_session$userData$shidashi$event_handler <- observer
-    }
-
+    # event_handler observer is created by register_session(); just read it
+    # backward compatible
     root_session$cache$set("shidashi_event_data", event_data)
-    root_session$cache$set("shidashi_event_handler", observer)
+    root_session$cache$set("shidashi_event_handler", entry$handlers$event_handler)
 
   } else {
     event_data <- list()
@@ -319,29 +268,12 @@ register_session_events <- function(session = shiny::getDefaultReactiveDomain())
 
 #' @rdname javascript-tunnel
 #' @export
-get_theme <- function(event_data, session = shiny::getDefaultReactiveDomain()){
-  get_jsevent(event_data, "theme.changed", list(
+get_theme <- function(event_data = NULL, session = shiny::getDefaultReactiveDomain()){
+  get_event("theme.changed", session = session, default = list(
     theme = "light",
     background = "#FFFFFF",
     foreground = "#000000"
-  ), session = session)
-}
-
-#' @rdname javascript-tunnel
-#' @export
-get_jsevent <- function(event_data, type, default = NULL,
-                        session = shiny::getDefaultReactiveDomain()){
-  if (shiny::is.reactivevalues(event_data)) {
-    shiny::withReactiveDomain(domain = session, {
-      if (is.list(event_data[[type]])) {
-        return(event_data[[type]])
-      } else {
-        return(default)
-      }
-    })
-  } else {
-    return(default)
-  }
+  ), event_data = event_data)
 }
 
 
