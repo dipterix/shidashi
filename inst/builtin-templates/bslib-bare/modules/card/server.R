@@ -6,9 +6,9 @@ library(shidashi)
 #' * R/
 #' * modules/<ID>/R
 #' You can run the following script to debug
-if(FALSE) {
-  source('inst/template/R/interface.R')
-  source('inst/template/modules/test/R/aaa.R')
+if (FALSE) {
+  source("inst/template/R/interface.R")
+  source("inst/template/modules/test/R/aaa.R")
   session <- shiny::MockShinySession$new()
 }
 
@@ -45,11 +45,11 @@ server <- function(input, output, session, ...) {
   output$card2_plot <- renderPlot({
     npoints <- input$card2_plot_npts
     title <- input$card2_plot_title
-    if (!length(title) || title == '') {
+    if (!length(title) || title == "") {
       title <- "Normal Q-Q Plot"
     }
     qqnorm(rnorm(npoints), main = title)
-    abline(a = 0, b = 1, col = 'orange3', lty = 2)
+    abline(a = 0, b = 1, col = "orange3", lty = 2)
   })
 
   observeEvent(input$add_card, {
@@ -110,6 +110,41 @@ server <- function(input, output, session, ...) {
   })
   observeEvent(input$card_control_3_minimize, {
     card_operate("card_control_3", method = "minimize")
+  })
+
+  # --- card_badge demo ---
+
+  observeEvent(input$badge_set_refresh, {
+    set_card_badge(
+      id = "badge_status_demo",
+      text = "Refresh needed",
+      add_class = "bg-yellow",
+      remove_class = "bg-success",
+      session = session
+    )
+  })
+
+  observeEvent(input$badge_set_ready, {
+    set_card_badge(
+      id = "badge_status_demo",
+      text = "Up-to-date",
+      add_class = "bg-success",
+      remove_class = "bg-yellow",
+      session = session
+    )
+  })
+
+  observeEvent(input$badge_enable_recalculate, {
+    enable_recalculate_badge(session = session)
+  })
+
+  observeEvent(input$badge_disable_recalculate, {
+    disable_recalculate_badge(session = session)
+  })
+
+  observeEvent(get_event("run_analysis"), {
+    show_notification("Run-analysis flag triggered")
+    disable_recalculate_badge(session = session)
   })
 
 }

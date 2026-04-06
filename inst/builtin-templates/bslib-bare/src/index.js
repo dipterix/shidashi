@@ -214,6 +214,7 @@ class ShidashiApp {
     this._dummy.dispatchEvent(event);
     this.ensureShiny(() => {
       if (typeof this._shiny.onInputChange !== 'function') return;
+      // console.log(event);
       this._shiny.onInputChange('@shidashi_event@', {
         type: type,
         message: message,
@@ -1226,6 +1227,11 @@ class ShidashiApp {
       const shidashiBtn = evt.target.closest('[data-shidashi-action="shidashi-button"]');
       if (shidashiBtn) {
         evt.preventDefault();
+
+        if ( shidashiBtn.classList.contains("disabled") ) {
+          return;
+        }
+
         const eventData = {};
         // Collect data-shidashi-* attributes as event payload
         for (const attr of shidashiBtn.attributes) {
@@ -1235,7 +1241,12 @@ class ShidashiApp {
           }
         }
         eventData.id = shidashiBtn.id || '';
-        this.broadcastEvent('button.click', eventData);
+        eventData.type = eventData.type || 'button.click';
+
+        if (eventData.dynamic === "true") {
+          eventData.message = Date.now();
+        }
+        this.broadcastEvent(eventData.type, eventData);
         return;
       }
     });

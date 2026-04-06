@@ -10,7 +10,12 @@
 \usage{
 card_badge(text = NULL, class = NULL, ...)
 
-card_recalculate_badge(text = "Recalculate needed", class = NULL, ...)
+card_recalculate_badge(
+  text = "Recalculate needed",
+  class = NULL,
+  event_name = "run_analysis",
+  ...
+)
 
 enable_recalculate_badge(text = "Recalculate needed", ...)
 
@@ -34,6 +39,8 @@ to be changed}
 
 \item{...}{additional 'HTML' tag attributes}
 
+\item{event_name}{name of the event to trigger}
+
 \item{id}{the badge 'HTML' ID to be changed, will be enclosed with
 session namespace \code{session$ns(id)} automatically.}
 
@@ -54,15 +61,15 @@ card_badge("Ready", class = "bg-green shidashi-output-status")
 # server
 server <- function(input, output, session) {
 
-  safe_observe({
+  shiny::observe({
 
     # ... check if the inputs have changed
 
     set_card_badge(
       class = "shidashi-output-status",
       text = "Refresh needed",
-      add_class = "bg-yellow",
-      remove_class = "bg-green"
+      add_class = "bg-warning",
+      remove_class = "bg-success disabled"
     )
 
   })
