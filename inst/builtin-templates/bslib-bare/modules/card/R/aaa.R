@@ -2,7 +2,7 @@ library(shiny)
 library(shidashi)
 
 card_with_code <- function(expr, env = parent.frame(),
-                           class = "height-50", width.cutoff = 25L){
+                           class = "height-50", width.cutoff = 25L) {
   expr <- substitute(expr)
   x <- eval(expr, envir = env)
 

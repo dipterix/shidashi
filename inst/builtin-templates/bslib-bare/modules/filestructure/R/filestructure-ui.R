@@ -213,11 +213,11 @@ server <- function(input, output, session, ...) {
           tags$code(
             class = "r",
 'server_mymodule <- function(input, output, session, ...) {
-  # Register for theme changes
-  event_data <- shidashi::register_session_events(session)
+  # Register session for event bus and theme changes
+  shidashi::register_session(session)
 
   output$my_plot <- renderPlot({
-    theme <- shidashi::get_theme(event_data)
+    theme <- shidashi::get_theme()
     par(bg = theme$background, fg = theme$foreground)
     plot(1:10, main = input$title)
   })

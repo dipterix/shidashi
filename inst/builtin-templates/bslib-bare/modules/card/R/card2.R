@@ -1,5 +1,5 @@
 
-ui_card2 <- function(){
+ui_card2 <- function() {
 
   card_ui <- card2(
     title = "Card2 Example",
@@ -50,7 +50,7 @@ ui_card2 <- function(){
               output$card2_plot <- renderPlot({
                 npoints <- input$card2_plot_npts
                 title <- input$card2_plot_title
-                if(!length(title) || title == ''){
+                if (!length(title) || title == '') {
                   title <- "Normal Q-Q Plot"
                 }
                 qqnorm(rnorm(npoints), main = title)

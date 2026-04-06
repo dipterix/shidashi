@@ -17,9 +17,9 @@
 #' @export
 clipboardOutput <- function(
   outputId = rand_string(prefix = "clipboard"), message = "Copy to clipboard",
-  clip_text = "", class = NULL, as_card_tool = FALSE){
+  clip_text = "", class = NULL, as_card_tool = FALSE) {
 
-  if(as_card_tool){
+  if (as_card_tool) {
     card_tool(
       class = combine_class('clipboard-btn', "shidashi-clipboard-output", class),
       icon = "copy",
@@ -50,10 +50,10 @@ renderClipboard <- function(expr, env=parent.frame(), quoted=FALSE, outputArgs =
   func <- shiny::installExprFunction(expr, "func", env, quoted, label = "renderClipboard")
   shiny::createRenderFunction(func, function(value, session, name, ...) {
 
-    if(!is.character(value)) {
+    if (!is.character(value)) {
       value <- deparse(value)
     }
-    if(length(value) > 1){
+    if (length(value) > 1) {
       value <- paste(value, collapse = "\n")
     }
     value

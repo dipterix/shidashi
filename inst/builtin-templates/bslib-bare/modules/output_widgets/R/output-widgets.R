@@ -18,11 +18,11 @@ ui_base_plot <- function() {
 }
 
 server_base_plot <- function(input, output, session, ...) {
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
 
   register_output(
     renderPlot({
-      theme <- shidashi::get_theme(event_data)
+      theme <- shidashi::get_theme()
       par(
         bg = theme$background, fg = theme$foreground,
         col.lab = theme$foreground, col.main = theme$foreground,
@@ -66,11 +66,11 @@ ui_ggplot_brush <- function() {
 }
 
 server_ggplot_brush <- function(input, output, session, ...) {
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
 
   register_output(
     renderPlot({
-      theme <- shidashi::get_theme(event_data)
+      theme <- shidashi::get_theme()
       ggtheme <- ggplot2::theme(
         panel.background = ggplot2::element_rect(
           fill = theme$background, color = theme$background),

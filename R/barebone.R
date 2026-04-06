@@ -1,4 +1,4 @@
-create_barebone <- function(path){
+create_barebone <- function(path) {
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   src <- system.file("builtin-templates", "AdminLTE3-bare", package = "shidashi")
   fs <- list.files(src, full.names = TRUE, recursive = FALSE, all.files = FALSE,
@@ -21,9 +21,8 @@ create_barebone <- function(path){
         "",
         "server <- function(input, output, session) {",
         "",
-        "  shared_data <- shidashi::register_session_id(session)",
-        "  shared_data$enable_broadcast()",
-        "  shared_data$enable_sync()",
+        "  shidashi::enable_input_broadcast(session)",
+        "  shidashi::enable_input_sync(session)",
         "",
         "  # Load and dispatch module server on navigation",
         "  shiny::observeEvent(session$clientData$url_search, {",
@@ -58,18 +57,18 @@ create_barebone <- function(path){
     writeLines(
       c(
         "library(shiny)",
-        "page_title <- function(complete = TRUE){",
-        "  if(complete){",
+        "page_title <- function(complete = TRUE) {",
+        "  if (complete) {",
         "    \"Shiny Dashboard Template - Barebone\"",
         "  } else {",
         "    \"ShiDashi\"",
         "  }",
         "}",
-        "page_logo <- function(size = c(\"normal\", \"small\", \"large\")){",
+        "page_logo <- function(size = c(\"normal\", \"small\", \"large\")) {",
         "  # Relative path to your logo icon in www/",
         "  \"shidashi/img/icon.png\"",
         "}",
-        "page_loader <- function(){",
+        "page_loader <- function() {",
         "  # if no loader is needed, then return NULL",
         "  shiny::div(",
         "    class = \"preloader flex-column justify-content-center align-items-center\",",
@@ -80,7 +79,7 @@ create_barebone <- function(path){
         "    )",
         "  )",
         "}",
-        "body_class <- function(){",
+        "body_class <- function() {",
         "  c(",
         "    #--- Fix the navigation banner ---",
         "    #\"layout-navbar-fixed\",",
@@ -108,7 +107,7 @@ create_barebone <- function(path){
         "",
         "  )",
         "}",
-        "nav_class <- function(){",
+        "nav_class <- function() {",
         "  c(",
         "    \"main-header\",",
         "    \"navbar\",",
@@ -118,7 +117,7 @@ create_barebone <- function(path){
         "  )",
         "}",
         "",
-        "module_breadcrumb <- function(){}"
+        "module_breadcrumb <- function() {}"
       ),
       con = file.path(path, 'R', 'common.R'))
   }
@@ -130,7 +129,7 @@ create_barebone <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "ui <- function(){",
+        "ui <- function() {",
         "  fluidPage(",
         "    fluidRow(",
         "      column(",
@@ -142,11 +141,11 @@ create_barebone <- function(path){
         "  )",
         "}",
         "",
-        "server_module_id <- function(input, output, session, ...){",
-        "  event_data <- register_session_events(session)",
+        "server_module_id <- function(input, output, session, ...) {",
+        "  shidashi::register_session(session)",
         "",
         "  output$plot <- renderPlot({",
-        "    theme <- shidashi::get_theme(event_data)",
+        "    theme <- shidashi::get_theme()",
         "    set.seed(1)",
         "    par(",
         "      bg = theme$background, fg = theme$foreground,",
@@ -169,7 +168,7 @@ create_barebone <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "server <- function(input, output, session, ...){",
+        "server <- function(input, output, session, ...) {",
         "  server_module_id(input, output, session, ...)",
         "}"
       ),
@@ -211,10 +210,10 @@ create_barebone <- function(path){
 }
 
 
-create_barebone_bslib <- function(path){
+create_barebone_bslib <- function(path) {
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   src <- system.file("builtin-templates", "bslib-bare", package = "shidashi")
-  if(!nchar(src) || !dir.exists(src)){
+  if (!nchar(src) || !dir.exists(src)) {
     stop("Cannot find bslib-bare template. Please update the `shidashi` package.")
   }
   fs <- list.files(src, full.names = TRUE, recursive = FALSE, all.files = FALSE,
@@ -237,9 +236,8 @@ create_barebone_bslib <- function(path){
         "",
         "server <- function(input, output, session) {",
         "",
-        "  shared_data <- shidashi::register_session_id(session)",
-        "  shared_data$enable_broadcast()",
-        "  shared_data$enable_sync()",
+        "  shidashi::enable_input_broadcast(session)",
+        "  shidashi::enable_input_sync(session)",
         "",
         "  # Load and dispatch module server on navigation",
         "  shiny::observeEvent(session$clientData$url_search, {",
@@ -339,7 +337,7 @@ create_barebone_bslib <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "ui <- function(){",
+        "ui <- function() {",
         "  fluidPage(",
         "    fluidRow(",
         "      column(",
@@ -351,11 +349,11 @@ create_barebone_bslib <- function(path){
         "  )",
         "}",
         "",
-        "server_module_id <- function(input, output, session, ...){",
-        "  event_data <- register_session_events(session)",
+        "server_module_id <- function(input, output, session, ...) {",
+        "  shidashi::register_session(session)",
         "",
         "  output$plot <- renderPlot({",
-        "    theme <- shidashi::get_theme(event_data)",
+        "    theme <- shidashi::get_theme()",
         "    set.seed(1)",
         "    par(",
         "      bg = theme$background, fg = theme$foreground,",
@@ -378,7 +376,7 @@ create_barebone_bslib <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "server <- function(input, output, session, ...){",
+        "server <- function(input, output, session, ...) {",
         "  server_module_id(input, output, session, ...)",
         "}"
       ),

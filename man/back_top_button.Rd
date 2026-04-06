@@ -36,7 +36,7 @@ When \code{open_drawer = TRUE}, an additional button is rendered
 that fires a \code{"button.click"} shidashi-event with
 \code{type = "open_drawer"}.
 Module server code (or \code{\link{chatbot_server}}) can observe
-this event via \code{\link{register_session_events}} and call
+this event via \code{\link{get_event}} and call
 \code{\link{drawer_open}} / \code{shiny::renderUI} to fill the
 drawer with content.
 }

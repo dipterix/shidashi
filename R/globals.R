@@ -134,7 +134,56 @@ globals_session_registry <- function() {
 # Register a Shiny session in the session registry: session MUST be namedspaced
 # instead of the root scope session, otherwise the namespace/module_id will
 # be invalid
-# Internal
+
+
+#' @name register_session
+#' @title The 'JavaScript' tunnel
+#' @param session shiny reactive domain
+#' @param once logical; if \code{TRUE}, run the handler once then suspend
+#' @return \code{register_session} registers the session in the global registry
+#' and returns invisibly.
+#' \code{enable_input_broadcast} and \code{enable_input_sync} opt the session
+#' into cross-tab input sharing and return invisibly.
+#' \code{get_theme} returns a list of theme, foreground, and background color.
+#' \code{get_event} returns the last value fired for \code{key}, or
+#' \code{default} if none.
+#'
+#' @details Call \code{register_session} at the top of a module server function
+#' to register the session in the global registry. This sets up the reactive
+#' event bus and resolves the \code{shared_id} from the URL query string
+#' (\code{?shared_id=...}) or generates a random one.
+#'
+#' \code{enable_input_broadcast} and \code{enable_input_sync} opt the session
+#' into cross-tab input sharing. Sessions with the same \code{shared_id}
+#' (same browser, same URL) synchronise their inputs.
+#'
+#' \code{get_theme} and \code{get_event} auto-register the session if needed
+#' and must be called inside a reactive context
+#' (\code{\link[shiny]{observe}}, \code{\link[shiny]{observeEvent}},
+#' \code{\link[shiny]{reactive}}, render functions).
+#'
+#' @examples
+#'
+#' # shiny server function
+#'
+#' library(shiny)
+#' server <- function(input, output, session) {
+#'   shidashi::register_session(session)
+#'
+#'   # opt-in to cross-tab input sync (suspended by default)
+#'   shidashi::enable_input_broadcast(session)
+#'   shidashi::enable_input_sync(session)
+#'
+#'   # get_theme must be called within a reactive context
+#'   output$plot <- renderPlot({
+#'     theme <- shidashi::get_theme()
+#'     par(bg = theme$background, fg = theme$foreground)
+#'     plot(1:10)
+#'   })
+#'
+#' }
+#'
+#' @export
 register_session <- function(session) {
   token <- session$token
 
@@ -183,6 +232,7 @@ register_session <- function(session) {
       output_renderers   = fastmap::fastmap(),
       shared_id          = shared_id,
       events             = shiny::reactiveValues(),
+      inputs             = shiny::reactiveValues(),
       handlers           = list()
     )
     message("Registered session token: ", token)
@@ -190,6 +240,7 @@ register_session <- function(session) {
     entry$shiny_session <- session
     entry$url <- shiny::isolate(session$clientData$url_search)
     entry$namespace <- namespace
+    return(invisible(token))
   }
 
   if (is.null(entry$handlers$event_handler)) {
@@ -209,6 +260,77 @@ register_session <- function(session) {
     )
 
     session$sendCustomMessage("shidashi.get_theme", list())
+  }
+
+  # broadcast_handler — stored in session's registry entry handlers
+  if (is.null(entry$handlers$broadcast_handler)) {
+    entry$handlers$broadcast_handler <- shiny::observe(
+      {
+        inputs <- shiny::reactiveValuesToList(session$input)
+        nms <- names(inputs)
+
+        sel <- !startsWith(nms, "@")
+        nms <- nms[sel]
+        if (length(nms) > 0) {
+          inputs <- inputs[sel]
+          names(inputs) <- session$ns(nms)
+        }
+        sig <- session$cache$get("shidashi_input_signature", NULL)
+        sig2 <- digest::digest(inputs)
+        if (!identical(sig2, sig)) {
+          session$cache$set("shidashi_input_signature", sig2)
+          message <- list(
+            shared_id = entry$shared_id,
+            private_id = session$token,
+            inputs = inputs
+          )
+          session$sendCustomMessage("shidashi.cache_session_input", message)
+        }
+      }, 
+      domain = session,
+      priority = -100000,
+      suspended = TRUE
+    )
+  }
+
+  if (is.null(entry$handlers$input_sync_handler)) {
+    root_session <- session$rootScope()
+    entry$handlers$input_sync_handler <- shiny::bindEvent(
+      shiny::observe({
+        try(
+          silent = TRUE,
+          {
+            message <- jsonlite::fromJSON(root_session$input[["@shidashi@"]])
+
+            # Sync from other sessions so ignore if the
+            # message source if self
+            if (identical(message$last_edit, session$token)) {
+              return()
+            }
+
+            input_names <- shiny::isolate({
+              names(root_session$input)
+            })
+
+            input_names <- input_names[!startsWith(input_names, "@")]
+            input_names <- input_names[input_names %in% names(message$inputs)]
+            if (!length(input_names)) {
+              return()
+            }
+
+            lapply(input_names, function(nm) {
+              v <- message$inputs[[nm]]
+              v2 <- shiny::isolate(root_session$input[[nm]])
+              if (!identical(v, v2)) {
+                entry$inputs[[nm]] <- v
+              }
+            })
+          }
+        )
+      }, suspended = TRUE, domain = root_session, priority = -100000),
+      root_session$input[["@shidashi@"]],
+      ignoreNULL = TRUE, ignoreInit = TRUE
+    )
   }
 
   registry$set(token, entry)
@@ -235,7 +357,9 @@ register_session <- function(session) {
 
 # Remove a Shiny session from the session registry
 # @param session A Shiny session object
-# @keywords internal
+
+#' @rdname register_session
+#' @export 
 unregister_session <- function(session) {
   token <- session$token
   if (is.null(token) || !nzchar(token)) return(invisible(NULL))
@@ -250,6 +374,18 @@ unregister_session <- function(session) {
         entry$handlers$event_handler$destroy()
       }, error = function(e) {})
       entry$handlers$event_handler <- NULL
+
+      tryCatch({
+        entry$handlers$input_sync_handler$suspend()
+        entry$handlers$input_sync_handler$destroy()
+      }, error = function(e) {})
+      entry$handlers$input_sync_handler <- NULL
+
+      tryCatch({
+        entry$handlers$broadcast_handler$suspend()
+        entry$handlers$broadcast_handler$destroy()
+      }, error = function(e) {})
+      entry$handlers$broadcast_handler <- NULL
 
       registry$remove(token)
       message("Unregistered session token: ", token)
@@ -356,7 +492,6 @@ globals_get_sessions_by_shared_id <- function(shared_id) {
 #'   sessions sharing the same \code{shared_id}
 #' @param default value to return when the event has not been fired yet
 #'   (used by \code{get_event} only)
-#'
 #' @return \code{fire_event} returns \code{NULL} invisibly.
 #'   \code{get_event} returns the last value fired for \code{key}, or
 #'   \code{default} if none.
@@ -418,23 +553,19 @@ fire_event <- function(
 get_event <- function(
   key,
   session = shiny::getDefaultReactiveDomain(),
-  default = NULL,
-  event_data = NULL
+  default = NULL
 ) {
   if (is.null(session)) {
     # Not running in shiny server, return default
     return(default)
   }
-  if (is.null(event_data)) {
-    token <- session$token
+  token <- session$token
+  entry <- get_session_entry(token)
+  if (is.null(entry)) {
+    register_session(session)
     entry <- get_session_entry(token)
-    if (is.null(entry)) {
-      register_session(session)
-      entry <- get_session_entry(token)
-    }
-    event_data <- entry$events
   }
-  event_data[[key]] %||% default
+  entry$events[[key]] %||% default
 }
 
 
@@ -651,3 +782,78 @@ globals_new_chat <- function(module_id, session = shiny::getDefaultReactiveDomai
   chat
 
 }
+
+
+
+
+
+
+#' @rdname register_session
+#' @export
+get_theme <- function(
+  session = shiny::getDefaultReactiveDomain()
+) {
+  get_event(
+    "theme.changed",
+    session = session,
+    default = list(
+      theme = "light",
+      background = "#FFFFFF",
+      foreground = "#000000"
+    )
+  )
+}
+
+#' @rdname register_session
+#' @export
+enable_input_broadcast <- function(
+  session = shiny::getDefaultReactiveDomain(),
+  once = FALSE
+) {
+  register_session(session)
+  entry <- get_session_entry(session$token)
+  if (once) {
+    entry$handlers$broadcast_handler$run()
+  } else {
+    entry$handlers$broadcast_handler$resume()
+  }
+  invisible()
+}
+
+#' @rdname register_session
+#' @export
+disable_input_broadcast <- function(
+  session = shiny::getDefaultReactiveDomain()
+) {
+  entry <- get_session_entry(session$token)
+  if (!is.null(entry)) {
+    entry$handlers$broadcast_handler$suspend()
+  }
+  invisible()
+}
+
+#' @rdname register_session
+#' @export
+enable_input_sync <- function(session = shiny::getDefaultReactiveDomain(),
+                              once = FALSE) {
+  register_session(session)
+  entry <- get_session_entry(session$token)
+  if (once) {
+    entry$handlers$input_sync_handler$run()
+  } else {
+    entry$handlers$input_sync_handler$resume()
+  }
+  invisible()
+}
+
+#' @rdname register_session
+#' @export
+disable_input_sync <- function(session = shiny::getDefaultReactiveDomain()) {
+  entry <- get_session_entry(session$token)
+  if (!is.null(entry)) {
+    entry$handlers$input_sync_handler$suspend()
+  }
+  invisible()
+}
+
+

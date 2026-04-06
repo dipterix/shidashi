@@ -50,7 +50,7 @@
 #'   request = list(QUERY_STRING = "/?module=module_id"))
 #' env <- module_data$environment
 #'
-#' if (interactive()){
+#' if (interactive()) {
 #'
 #' # get module title
 #' env$module_title()
@@ -65,7 +65,7 @@
 #'
 #' @export
 module_info <- function(root_path = template_root(),
-                        settings_file = "modules.yaml"){
+                        settings_file = "modules.yaml") {
   settings <- yaml::read_yaml(file.path(root_path, settings_file))
   # settings <- yaml::read_yaml('modules.yaml')
   groups <- names(settings$groups)
@@ -77,7 +77,7 @@ module_info <- function(root_path = template_root(),
   groups <- unique(groups)
   group_level <- factor(groups, levels = groups, ordered = TRUE)
 
-  module_tbl <- do.call('rbind', lapply(modules_ids, function(mid){
+  module_tbl <- do.call('rbind', lapply(modules_ids, function(mid) {
     x <- modules[[mid]]
     y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
     y$module <- mid
@@ -204,7 +204,7 @@ active_module <- function(
 }
 
 
-load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()){
+load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()) {
   if (length(module_id) > 1) {
     stop("length of `module_id` must not exceed one.")
   }
@@ -219,7 +219,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
   module_info <- list(
     id = module_id,
-    server = function(input, output, session, ...){},
+    server = function(input, output, session, ...) {},
     template_path = NULL
   )
 
@@ -258,7 +258,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       re$has_module <- TRUE
       env$ns <- shiny::NS(module_id)
       env$.module_id <- module_id
-      env$module_title <- function(){
+      env$module_title <- function() {
         modules <- module_info()
         modules$label[modules$id == module_id]
       }
@@ -378,7 +378,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 load_module <- function(
   root_path = template_root(),
   request = list(QUERY_STRING = "/"),
-  env = parent.frame()){
+  env = parent.frame()) {
 
   force(env)
   query_str <- request$QUERY_STRING

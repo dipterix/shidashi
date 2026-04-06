@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-server <- function(input, output, session, ...){
+server <- function(input, output, session, ...) {
 
   server_notification(input, output, session, ...)
   server_progress(input, output, session, ...)

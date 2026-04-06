@@ -6,18 +6,18 @@ library(shidashi)
 #' * R/
 #' * modules/<ID>/R
 #' You can run the following script to debug
-if(FALSE){
+if(FALSE) {
   source('inst/template/R/interface.R')
   source('inst/template/modules/test/R/aaa.R')
   session <- shiny::MockShinySession$new()
 }
 
 #' Defines the module server
-server <- function(input, output, session, ...){
+server <- function(input, output, session, ...) {
 
   output$infobox_progress <- renderProgress({
     val <- input$infobox_make_progress %% 5
-    if(val == 2){
+    if (val == 2) {
       stop("Click again")
     }
     list(
@@ -45,7 +45,7 @@ server <- function(input, output, session, ...){
   output$card2_plot <- renderPlot({
     npoints <- input$card2_plot_npts
     title <- input$card2_plot_title
-    if(!length(title) || title == ''){
+    if (!length(title) || title == '') {
       title <- "Normal Q-Q Plot"
     }
     qqnorm(rnorm(npoints), main = title)
@@ -53,7 +53,7 @@ server <- function(input, output, session, ...){
   })
 
   observeEvent(input$add_card, {
-    if(input$add_card %% 2) {
+    if (input$add_card %% 2) {
       card_tabset_insert(
         inputId = "card_tabset_expand_demo",
         title = "More...", active = TRUE,

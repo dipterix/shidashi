@@ -10,8 +10,7 @@ ui_session_info <- function() {
     h3("Session Registry", class = "shidashi-anchor mt-0"),
     p(
       class = "inline-all",
-      tags$code("register_session()"), " (called automatically by ",
-      tags$code("register_session_id()"), ") stores each Shiny module session ",
+      tags$code("register_session(session)"), " stores each Shiny module session ",
       "in a global registry keyed by ", tags$code("session$token"), ". ",
       "The registry entry holds the ", tags$code("shared_id"), " (resolved from ",
       "the URL query string or auto-generated), the session object itself, ",
@@ -45,7 +44,7 @@ ui_session_info <- function() {
       column(
         width = 6L,
         card(
-          title = "register_session_id() — shared_id resolution",
+          title = "register_session() — shared_id resolution",
           class_body = "min-height-200",
           tools = list(
             card_tool(widget = "collapse")
@@ -53,21 +52,20 @@ ui_session_info <- function() {
           body_main = div(
             p(
               class = "inline-all",
-              tags$code("register_session_id()"), " now reads ",
-              tags$code("shared_id"), " directly from the session registry ",
-              "instead of ", tags$code("session$userData$shidashi$shared_id"), ". ",
-              "An explicit ", tags$code("shared_id"), " argument (e.g. passed via ",
-              "URL query ", tags$code("?shared_id=my_id"), ") overrides the default ",
-              "and is written back to the registry entry."
+              tags$code("register_session(session)"), " reads ",
+              tags$code("shared_id"), " directly from the URL query string ",
+              "(\u0060?shared_id=my_id\u0060) or generates a random string. ",
+              "It is stored in the session registry entry and accessible via ",
+              tags$code("shidashi:::get_session_entry(session$token)$shared_id"), "."
             ),
             html_highlight_code(
               {
                 # In module server:
-                shared_data <- shidashi::register_session_id(session)
+                shidashi::register_session(session)
                 # shared_id is resolved from:
                 #   1. ?shared_id= query param (URL)
                 #   2. auto-generated random string
-                # It is stored in the session registry entry, not userData.
+                # It is stored in the session registry entry.
                 shidashi::fire_event("demo.ping", list(ts = Sys.time()))
               },
               width.cutoff = 30L, hover = "overflow-auto"
@@ -230,7 +228,7 @@ ui_global_events <- function() {
 
 server_session_events <- function(input, output, session, ...) {
 
-  shared_data <- register_session_id(session = session)
+  shidashi::register_session(session)
 
   # Keep a local log of events (not reactive — just a character vector in a
   # reactiveVal so we can append to it)
@@ -284,8 +282,8 @@ server_session_events <- function(input, output, session, ...) {
   # ---- Section 2: local events -------------------------------------------
 
   output$shared_id_display <- renderText({
-    # Use backward-compat cache written by register_session_id()
-    session$cache$get("shidashi_shared_id", missing = "(unknown)")
+    entry <- shidashi:::get_session_entry(session$token)
+    if (is.null(entry)) "(unknown)" else entry$shared_id
   })
 
   observeEvent(input$fire_local, {
@@ -339,10 +337,10 @@ server_session_events <- function(input, output, session, ...) {
   })
 
   # React to the global.ping event arriving on this session
-  event_data <- register_session_events(session = session)
+  shidashi::register_session(session)
 
   observe({
-    evt <- get_event("global.ping", session = session, event_data = event_data)
+    evt <- get_event("global.ping", session = session)
     if (is.null(evt)) return()
     line <- sprintf("[%s] from_tab=%s | \"%s\"",
                     format(evt$ts %||% Sys.time(), "%H:%M:%S"),

@@ -45,7 +45,7 @@ Render a 'shidashi' project
 
 template_root()
 
-if(interactive()){
+if(interactive()) {
   render()
 }
 

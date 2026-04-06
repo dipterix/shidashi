@@ -1,7 +1,7 @@
 
 infobox_with_code <- function(x, title = "",
                               class = "height-100",
-                              class_body = "padding-5 bg-gray-70"){
+                              class_body = "padding-5 bg-gray-70") {
   shiny::div(
     class = "fill-width position-relative",
     shiny::span(

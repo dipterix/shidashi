@@ -118,7 +118,7 @@ module_data <- load_module(
   request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
-if (interactive()){
+if (interactive()) {
 
 # get module title
 env$module_title()

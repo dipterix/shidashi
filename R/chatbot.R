@@ -233,8 +233,8 @@ chatbot_server <- function(input, output, session,
     return(invisible(NULL))
   }
 
-  # Observe shidashi button events
-  event_data <- register_session_events(session)
+  # Register session for event bus (theme, button events, etc.)
+  shidashi::register_session(session)
 
   # Module ID from the calling moduleServer namespace
   module_id <- session$ns(NULL)

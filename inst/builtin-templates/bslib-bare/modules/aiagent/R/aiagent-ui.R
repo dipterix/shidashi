@@ -299,11 +299,11 @@ script: scripts/run.R
 # ===========================================================================
 
 server_aiagent <- function(input, output, session, ...) {
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
 
   shidashi::register_output(
     renderPlot({
-      theme <- shidashi::get_theme(event_data)
+      theme <- shidashi::get_theme()
       n <- input$live_npoints %||% 100
       col <- input$live_color %||% "steelblue"
       title <- input$live_title %||% "Scatter Plot"
@@ -333,11 +333,9 @@ server_aiagent <- function(input, output, session, ...) {
 
 trigger_refresh <- shidashi::mcp_wrapper(
   function(session) {
-    ns <- session$ns
-    shared_data <- shidashi::register_session_id(session)
     ellmer::tool(
       fun = function() {
-        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        shidashi::fire_event(session$ns("refresh"), Sys.time(), session = session)
         "Refresh triggered."
       },
       name = "trigger_refresh",

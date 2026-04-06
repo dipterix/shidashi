@@ -87,7 +87,7 @@ R_user_dir <- function(package, which = c("data", "config", "cache")) {
 }
 
 set_attr_call <- function(x, call, collapse = "\n", ...) {
-  if (!is.character(call)){
+  if (!is.character(call)) {
     call <- deparse(call)
   }
   call <- paste(call, collapse = collapse, ...)
@@ -95,14 +95,14 @@ set_attr_call <- function(x, call, collapse = "\n", ...) {
   x
 }
 
-combine_class <- function(...){
+combine_class <- function(...) {
   s <- paste(c(...), collapse = " ", sep = " ")
   s <- unlist(strsplit(s, " "))
   s <- unique(s)
   s <- s[!s %in% '']
   paste(s, collapse = " ")
 }
-remove_html_class <- function(target, class){
+remove_html_class <- function(target, class) {
   if (!length(target)) { return("") }
   s <- unlist(strsplit(target, " "))
   s <- unique(s)
@@ -114,8 +114,8 @@ remove_html_class <- function(target, class){
 #' @param cls the class string of the \code{<body>} tag in \code{'index.html'}
 #' @return The proposed class for \code{<body>} tag
 #' @export
-guess_body_class <- function(cls){
-  if (missing(cls)){
+guess_body_class <- function(cls) {
+  if (missing(cls)) {
     cls <- "fancy-scroll-y darm-mode"
   } else {
     cls <- unlist(strsplit(paste(cls, collapse = ' '), " "))
@@ -136,7 +136,7 @@ guess_body_class <- function(cls){
 #' get_construct_string(x)
 #'
 #' @export
-get_construct_string <- function(x){
+get_construct_string <- function(x) {
   attr(x, "shidashi.code")
 }
 
@@ -168,7 +168,7 @@ get_construct_string <- function(x){
 #' @export
 format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
                           width.cutoff = 80L, indent = 2, wrap=TRUE,
-                          args.newline = TRUE, blank = FALSE, ...){
+                          args.newline = TRUE, blank = FALSE, ...) {
   if (!quoted) {
     expr <- substitute(expr)
   }
@@ -200,10 +200,10 @@ html_highlight_code <- function(
   reformat = TRUE, copy_on_click = TRUE,
   width.cutoff = 80L, indent = 2, wrap=TRUE,
   args.newline = TRUE, blank = FALSE,
-  ..., hover = c("overflow-visible-on-hover", "overflow-auto")){
+  ..., hover = c("overflow-visible-on-hover", "overflow-auto")) {
 
   hover <- match.arg(hover)
-  if (!quoted){
+  if (!quoted) {
     expr <- substitute(expr)
   }
   expr <- format_text_r(expr = expr, quoted = TRUE,

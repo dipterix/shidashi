@@ -1,6 +1,8 @@
 # Plan: Unified Session Registry with Event Bus
 
-## TL;DR
+> **Status — DONE (2026-04-05):** All phases of this plan are implemented.
+> `register_session_id()` and `register_session_events()` have been removed.
+> See the **"Refactor: Remove register_session_id/register_session_events"** section below.
 
 Rename `register_session_mcp` → `register_session`, unify the MCP session registry into a general session registry, extend entries with `shared_id` + `events` fields, move generic session helpers to `globals.R`, and add event bus helpers. Later phases rewire `register_global_reactiveValues` and wire event dispatch.
 
@@ -83,3 +85,44 @@ This is safe because `register_session()` runs first (injected at top of module 
 - `private_id` replaced by `session$token` — no need to store separately (Phase 3)
 - `input_reactives`, `input_sync_handler`, `broadcast_observer`, `event_data`, `event_handler` stay in `session$userData$shidashi$*` for now
 - All renamed functions are internal — no backward-compat aliases needed
+
+---
+
+# Refactor: Remove `register_session_id` / `register_session_events`
+
+**Status — DONE (2026-04-05)**
+
+`register_session_id()` and `register_session_events()` have been removed. All callers
+updated to use the unified `register_session()` + individual helpers.
+
+## Replacement Map
+
+| Old | New |
+|-----|-----|
+| `shared_data <- register_session_id(session)` + `.enable_broadcast()` + `.enable_sync()` | `shidashi::enable_input_broadcast(session)` + `shidashi::enable_input_sync(session)` |
+| `event_data <- register_session_events(session)` + `get_theme(event_data)` | `shidashi::register_session(session)` + `get_theme()` (no arg) |
+| `get_event(key, …, event_data=event_data)` | `get_event(key, session=session)` |
+| `shared_data$reactives[[ns("x")]] <- val` (MCP tool) | `shidashi::fire_event(session$ns("x"), val, session=session)` |
+| `observeEvent(shared_data$reactives[[ns("x")]], {…})` | `observeEvent(shidashi::get_event(session$ns("x"), session=session), {…})` |
+
+## Files Changed
+
+- `R/globals.R` — added `#' @export` to `register_session()`
+- `R/shared-session.R` — updated `@name javascript-tunnel` roxygen docs
+- `R/chatbot.R` — removed `event_data` assignment
+- `R/widgets.R` — updated doc cross-reference
+- `R/barebone.R` — updated all 4 template strings (AdminLTE3 + bslib, server + module-ui)
+- `inst/builtin-templates/bslib-bare/server.R` — removed `shared_data`, use `enable_input_broadcast/sync`
+- `inst/builtin-templates/bslib-bare/modules/demo/R/demo-ui.R` — server, observer, MCP wrapper
+- `inst/builtin-templates/bslib-bare/modules/aiagent/R/aiagent-ui.R` — server + MCP wrapper
+- `inst/builtin-templates/bslib-bare/modules/filestructure/R/filestructure-ui.R` — doc string
+- `inst/builtin-templates/bslib-bare/modules/session_events/R/session-events.R` — UI text + server
+- `inst/builtin-templates/bslib-bare/modules/getstarted/R/demo-ui.R` — removed unused event_data
+- `inst/builtin-templates/bslib-bare/modules/output_widgets/R/output-widgets.R` — 2 server functions
+- `.github/copilot-instructions.md` — updated interface list
+
+## External Impact
+
+- **ravedash** (`register_rave_session()`): will throw immediately — update to call `shidashi::register_session()` + `shidashi::enable_input_broadcast()` + `shidashi::enable_input_sync()` as needed
+- **rave-pipelines** (`server.R`): will throw immediately — replace `shared_data <- shidashi::register_session_id(session)` with `shidashi::enable_input_broadcast(session)` + `shidashi::enable_input_sync(session)`
+

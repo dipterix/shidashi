@@ -4,7 +4,7 @@ library(ggplot2)
 library(ggExtra)
 library(plyr)
 
-ui_demo_summary <- function(){
+ui_demo_summary <- function() {
   fluidRow(
     column(
       width = 3L,
@@ -44,7 +44,7 @@ ui_demo_summary <- function(){
   )
 }
 
-ui_demo_monthly <- function(){
+ui_demo_monthly <- function() {
   fluidRow(
     column(
       width = 9L,
@@ -179,7 +179,7 @@ ui_demo_monthly <- function(){
   )
 }
 
-ui_demo_details <- function(){
+ui_demo_details <- function() {
   fluidRow(
     column(
       width = 4L,
@@ -229,14 +229,13 @@ ui_demo_details <- function(){
   )
 }
 
-server_demo <- function(input, output, session, ...){
+server_demo <- function(input, output, session, ...) {
 
-  shared_data <- shidashi::register_session_id(session)
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
   local_data <- reactiveValues()
 
   output$sales_report <- renderPlot({
-    theme <- shidashi::get_theme(event_data)
+    theme <- shidashi::get_theme()
     par(bg = theme$background, fg = theme$foreground,
         col.lab = theme$foreground, col.main = theme$foreground,
         col.axis = theme$foreground,
@@ -281,7 +280,7 @@ server_demo <- function(input, output, session, ...){
     title = element_text(color = theme$foreground),
     text = element_text(color = theme$foreground),
     line = element_line(color = theme$foreground),
-    ...){
+    ...) {
     ggplot2::theme(
       panel.background = panel.background,
       plot.background = plot.background,
@@ -301,7 +300,7 @@ server_demo <- function(input, output, session, ...){
   shidashi::register_output(
     renderPlot({
       data(iris)
-      theme <- shidashi::get_theme(event_data)
+      theme <- shidashi::get_theme()
       ggtheme <- generate_ggtheme(theme)
 
       iris <- iris[iris$Petal.Width > input$iris_threshold, ]
@@ -320,7 +319,7 @@ server_demo <- function(input, output, session, ...){
     download_type = "image"
   )
 
-  run_analysis <- function(){
+  run_analysis <- function() {
     show_notification(
       title = "Generating analysis...",
       subtitle = "This might take a while",
@@ -333,7 +332,7 @@ server_demo <- function(input, output, session, ...){
     on.exit({ clear_notifications() })
 
     progress <- shiny_progress("", max = 10, outputId = "data_gen_pro")
-    for(i in 1:10){
+    for(i in 1:10) {
       progress$inc(sprintf("step %s", i), message = ifelse(
         i > 5, "Analyze data", "Loading data"
       ))
@@ -353,21 +352,19 @@ server_demo <- function(input, output, session, ...){
     run_analysis()
   })
 
-  observeEvent(shared_data$reactives[[ns("refresh")]], {
-    if(shared_data$reactives[[ns("refresh")]] > 0){
-      run_analysis()
-    }
+  observeEvent(shidashi::get_event(session$ns("refresh"), session = session), {
+    run_analysis()
   })
 
   output$distibution_plot <- renderPlot({
     validate(
       need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
     )
-    theme <- shidashi::get_theme(event_data)
+    theme <- shidashi::get_theme()
 
     data <- local_data$data
 
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x){
+    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
       data.frame(
         name = x$name[[1]],
         num = nrow(x)
@@ -397,7 +394,7 @@ server_demo <- function(input, output, session, ...){
     )
     data <- local_data$data
 
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x){
+    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
       data.frame(
         name = x$name[[1]],
         num = nrow(x)
@@ -417,15 +414,9 @@ server_demo <- function(input, output, session, ...){
 trigger_refresh <- shidashi::mcp_wrapper(
   function(session) {
 
-    # Capture the session's namespace function
-    ns <- session$ns
-
-    shared_data <- shidashi::register_session_id(session)
-
-
     ellmer::tool(
       fun = function() {
-        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        shidashi::fire_event(session$ns("refresh"), Sys.time(), session = session)
         "Refresh triggered successfully. The analysis is being regenerated."
       },
       name = "trigger_refresh",

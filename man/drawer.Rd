@@ -24,7 +24,7 @@ Send messages to the client to open, close, or toggle the
 off-canvas drawer panel on the right side of the dashboard.
 }
 \examples{
-server <- function(input, output, session){
+server <- function(input, output, session) {
   # Open the drawer
   drawer_open()
 

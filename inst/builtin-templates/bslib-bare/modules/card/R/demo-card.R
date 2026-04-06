@@ -1,5 +1,5 @@
 
-verbatim <- function(code){
+verbatim <- function(code) {
   tags$code(
     class = 'clipboard-btn shidashi-clipboard-output',
     'data-clipboard-text' = code,
@@ -7,7 +7,7 @@ verbatim <- function(code){
     code)
 }
 
-ui_card_controls <- function(){
+ui_card_controls <- function() {
 
   tagList(
     column(

@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-ui_render <- function(){
+ui_render <- function() {
   column(
     width = 12L,
     h2("Render your first project", class = "shidashi-anchor"),
@@ -44,6 +44,5 @@ shidashi::render(host = \'127.0.0.1\', port = 8310L)'
   )
 }
 
-server_demo <- function(input, output, session, ...){
-  event_data <- register_session_events(session)
+server_demo <- function(input, output, session, ...) {
 }

@@ -35,10 +35,10 @@
 #' in this case, \code{inputId} must be specified.}
 #' }
 #' @export
-card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "flip", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE, ...){
+card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "collapse", "remove", "flip", "refresh", "link", "custom"), icon, class = "", href = "#", target = "_blank", start_collapsed = FALSE, ...) {
   widget <- match.arg(widget)
 
-  if(missing(icon)){
+  if (missing(icon)) {
     icon <- switch (
       widget,
       maximize = as_icon("expand"),
@@ -55,17 +55,17 @@ card_tool <- function(inputId = NULL, title = NULL, widget = c("maximize", "coll
     icon <- as_icon(icon)
   }
 
-  if(length(inputId) == 1){
+  if (length(inputId) == 1) {
     class <- combine_class("btn btn-tool action-button", class)
   } else {
     class <- combine_class("btn btn-tool", class)
   }
 
-  if( widget == "custom" ){
+  if ( widget == "custom" ) {
     widget <- NULL
   }
 
-  if(startsWith(href, "#")){
+  if (startsWith(href, "#")) {
     target <- "_self"
   }
 

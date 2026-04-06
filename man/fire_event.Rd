@@ -12,12 +12,7 @@ fire_event(
   global = FALSE
 )
 
-get_event(
-  key,
-  session = shiny::getDefaultReactiveDomain(),
-  default = NULL,
-  event_data = NULL
-)
+get_event(key, session = shiny::getDefaultReactiveDomain(), default = NULL)
 }
 \arguments{
 \item{key}{a single character string identifying the event type}

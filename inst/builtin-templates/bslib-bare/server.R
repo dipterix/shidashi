@@ -7,12 +7,11 @@ if (FALSE) {
   )
 }
 
-server <- function(input, output, session){
+server <- function(input, output, session) {
 
   shidashi::stream_init(session)
-  shared_data <- shidashi::register_session_id(session)
-  shared_data$enable_broadcast()
-  shared_data$enable_sync()
+  shidashi::enable_input_broadcast(session)
+  shidashi::enable_input_sync(session)
 
   # Load and dispatch module server on navigation (register first)
   shiny::observeEvent(session$clientData$url_search, {

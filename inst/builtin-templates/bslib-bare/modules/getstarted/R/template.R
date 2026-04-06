@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-ui_use_template <- function(){
+ui_use_template <- function() {
   column(
     width = 12,
     h2("Start with a default template", class = "shidashi-anchor"),
