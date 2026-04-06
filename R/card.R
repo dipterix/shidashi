@@ -115,7 +115,7 @@ card <- function(
   call <- match.call()
   body <- shiny::tagList(...)
 
-  template_path <- file.path(root_path, 'views', 'card.html')
+  template_path <- file.path(root_path, "views", "card.html")
 
   if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
@@ -129,7 +129,7 @@ card <- function(
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
   if (length(tools)) {
@@ -145,9 +145,9 @@ card <- function(
     if (grepl("[\"']", inputId)) {
       stop("`card` ID cannot contain quotation marks.")
     }
-    card_id <- sprintf(" id='%s'", inputId)
+    card_id <- sprintf(" id=\"%s\"", inputId)
   } else {
-    card_id <- ''
+    card_id <- ""
   }
 
   if (resizable) {
@@ -215,7 +215,7 @@ card2 <- function(
   root_path = template_root()) {
 
   call <- match.call()
-  template_path <- file.path(root_path, 'views', 'card2.html')
+  template_path <- file.path(root_path, "views", "card2.html")
 
   if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
@@ -229,7 +229,7 @@ card2 <- function(
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
   if (length(tools)) {
@@ -244,9 +244,9 @@ card2 <- function(
     if (grepl("[\"']", inputId)) {
       stop("`card` ID cannot contain quotation marks.")
     }
-    card_id <- sprintf(" id='%s'", inputId)
+    card_id <- sprintf(" id=\"%s\"", inputId)
   } else {
-    card_id <- ''
+    card_id <- ""
   }
 
   set_attr_call(shiny::htmlTemplate(

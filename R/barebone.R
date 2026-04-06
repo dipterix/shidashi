@@ -49,8 +49,8 @@ create_barebone <- function(path) {
       ), file.path(path, "server.R"))
   }
 
-  dir.create(file.path(path, 'R'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'modules', 'module_id', 'R'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "R"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "modules", "module_id", "R"), showWarnings = FALSE, recursive = TRUE)
 
   # /R/common.R
   {
@@ -119,7 +119,7 @@ create_barebone <- function(path) {
         "",
         "module_breadcrumb <- function() {}"
       ),
-      con = file.path(path, 'R', 'common.R'))
+      con = file.path(path, "R", "common.R"))
   }
 
   # /modules/module_id/R/module-ui.R
@@ -157,7 +157,7 @@ create_barebone <- function(path) {
         "  })",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'R', "module-ui.R")
+      con = file.path(path, "modules", "module_id", "R", "module-ui.R")
     )
   }
 
@@ -172,7 +172,7 @@ create_barebone <- function(path) {
         "  server_module_id(input, output, session, ...)",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'server.R')
+      con = file.path(path, "modules", "module_id", "server.R")
     )
   }
 
@@ -202,7 +202,7 @@ create_barebone <- function(path) {
         "  system_prompt: You are an R shiny expert. You have access to the shiny",
         "    application via provided tools."
       ),
-      con = file.path(path, 'modules', 'module_id', 'agents.yaml')
+      con = file.path(path, "modules", "module_id", "agents.yaml")
     )
   }
 
@@ -276,8 +276,8 @@ create_barebone_bslib <- function(path) {
       ), file.path(path, "server.R"))
   }
 
-  dir.create(file.path(path, 'R'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'modules', 'module_id', 'R'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "R"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "modules", "module_id", "R"), showWarnings = FALSE, recursive = TRUE)
 
   # /R/common.R
   {
@@ -327,7 +327,7 @@ create_barebone_bslib <- function(path) {
         "module_breadcrumb <- function() {}",
         ""
       ),
-      con = file.path(path, 'R', 'common.R'))
+      con = file.path(path, "R", "common.R"))
   }
 
   # /modules/module_id/R/module-ui.R
@@ -365,7 +365,7 @@ create_barebone_bslib <- function(path) {
         "  })",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'R', "module-ui.R")
+      con = file.path(path, "modules", "module_id", "R", "module-ui.R")
     )
   }
 
@@ -380,7 +380,7 @@ create_barebone_bslib <- function(path) {
         "  server_module_id(input, output, session, ...)",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'server.R')
+      con = file.path(path, "modules", "module_id", "server.R")
     )
   }
 
@@ -410,7 +410,7 @@ create_barebone_bslib <- function(path) {
         "  system_prompt: You are an R shiny expert. You have access to the shiny",
         "    application via provided tools."
       ),
-      con = file.path(path, 'modules', 'module_id', 'agents.yaml')
+      con = file.path(path, "modules", "module_id", "agents.yaml")
     )
   }
 
@@ -422,8 +422,8 @@ create_barebone_bslib <- function(path) {
 # Internal helper: create agents/ directory with MCP tools and skills
 create_barebone_agents <- function(path) {
   # Create directory structure
-  dir.create(file.path(path, 'agents', 'tools'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'agents', 'skills', 'greet', 'scripts'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "agents", "tools"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "agents", "skills", "greet", "scripts"), showWarnings = FALSE, recursive = TRUE)
 
   # agents/tools/hello_world.R
   writeLines(
@@ -451,7 +451,7 @@ create_barebone_agents <- function(path) {
       "  }",
       ")"
     ),
-    con = file.path(path, 'agents', 'tools', 'hello_world.R')
+    con = file.path(path, "agents", "tools", "hello_world.R")
   )
 
   # agents/tools/get_shiny_input_values.R
@@ -498,7 +498,7 @@ create_barebone_agents <- function(path) {
       "  }",
       ")"
     ),
-    con = file.path(path, 'agents', 'tools', 'get_shiny_input_values.R')
+    con = file.path(path, "agents", "tools", "get_shiny_input_values.R")
   )
 
   # agents/skills/greet/SKILL.md
@@ -523,7 +523,7 @@ create_barebone_agents <- function(path) {
       "",
       "- `args[1]`: The name to greet (default: `\"World\"`)"
     ),
-    con = file.path(path, 'agents', 'skills', 'greet', 'SKILL.md')
+    con = file.path(path, "agents", "skills", "greet", "SKILL.md")
   )
 
   # agents/skills/greet/scripts/greet.R
@@ -540,7 +540,7 @@ create_barebone_agents <- function(path) {
       "",
       "cat(sprintf(\"Hello, %s!\\n\", name))"
     ),
-    con = file.path(path, 'agents', 'skills', 'greet', 'scripts', 'greet.R')
+    con = file.path(path, "agents", "skills", "greet", "scripts", "greet.R")
   )
 
   # agents/tool-schema.yaml
@@ -568,7 +568,7 @@ create_barebone_agents <- function(path) {
       "        type: string",
       "        description: \"Name to greet (default: 'World')\""
     ),
-    con = file.path(path, 'agents', 'tool-schema.yaml')
+    con = file.path(path, "agents", "tool-schema.yaml")
   )
 
   invisible()

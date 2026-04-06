@@ -77,9 +77,9 @@ module_info <- function(root_path = template_root(),
   groups <- unique(groups)
   group_level <- factor(groups, levels = groups, ordered = TRUE)
 
-  module_tbl <- do.call('rbind', lapply(modules_ids, function(mid) {
+  module_tbl <- do.call("rbind", lapply(modules_ids, function(mid) {
     x <- modules[[mid]]
-    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
+    y <- x[!names(x) %in% c("order", "group", "label", "icon", "badge", "module", "hidden")]
     y$module <- mid
     url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
     if (length(x$group) == 1 && x$group %in% group_level) {
@@ -250,7 +250,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
   }
 
   if (length(module_id) == 1) {
-    module_root <- file.path(root_path, 'modules', module_id)
+    module_root <- file.path(root_path, "modules", module_id)
     module_info$template_path <- file.path(module_root, "module-ui.html")
 
     if (dir.exists(module_root)) {
@@ -275,7 +275,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
       agent_conf <- load_agent_conf(root_path = root_path, module_id = module_id)
 
-      r_folder <- file.path(module_root, 'R')
+      r_folder <- file.path(module_root, "R")
       if (dir.exists(r_folder)) {
         fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                          recursive = FALSE, include.dirs = FALSE,
@@ -303,7 +303,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
                                                        env = env)
       # Store agent config in module env for chatbot_ui / back_top_button
 
-      module_handler <- file.path(root_path, 'modules', module_id, 'server.R')
+      module_handler <- file.path(root_path, "modules", module_id, "server.R")
       if (file.exists(module_handler)) {
         # server_env <- new.env(parent = env)
         server_env <- env
@@ -383,7 +383,7 @@ load_module <- function(
   force(env)
   query_str <- request$QUERY_STRING
   if (length(query_str) != 1) {
-    query_str <- '/'
+    query_str <- "/"
   }
   query_list <- shiny::parseQueryString(query_str)
   module_id <- query_list$module

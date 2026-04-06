@@ -265,10 +265,10 @@ my_tool <- shidashi::mcp_wrapper(function(session) {
           tags$pre(
             class = "bg-gray-90 pre-compact",
             tags$code(
-'modules/mymodule/skills/analyze/
+"modules/mymodule/skills/analyze/
 ├── SKILL.md        # Defines tool name, args, descriptions
 └── scripts/
-    └── run.R       # The actual script'
+    └── run.R       # The actual script"
             )
           ),
           tags$p("Example ", tags$code("SKILL.md"), ":"),

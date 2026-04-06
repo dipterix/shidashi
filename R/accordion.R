@@ -21,7 +21,7 @@ accordion_item <- function(
 
   body <- shiny::tagList(...)
 
-  template_path <- file.path(root_path, 'views', 'accordion-item.html')
+  template_path <- file.path(root_path, "views", "accordion-item.html")
 
   if (length(footer)) {
     footer <- shiny::div(
@@ -29,7 +29,7 @@ accordion_item <- function(
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
   if (length(title) >= 1) {
@@ -108,7 +108,7 @@ accordion <- function(
   force(root_path)
   parentId <- id
 
-  items <- unname(lapply(call[['...']], function(item) {
+  items <- unname(lapply(call[["..."]], function(item) {
     item[["parentId"]] <- parentId
     item[["root_path"]] <- root_path
 

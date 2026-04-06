@@ -25,7 +25,7 @@ adminlte_ui <- function(root_path = template_root()) {
           template_path <- resource$template_path
         } else {
           # 404
-          template_path <- file.path(root_path, 'views', '404.html')
+          template_path <- file.path(root_path, "views", "404.html")
           if (!file.exists(template_path)) {
             return("Page not found (404)")
           }
@@ -37,7 +37,7 @@ adminlte_ui <- function(root_path = template_root()) {
       call <- as.call(c(list(quote(shiny::htmlTemplate)), `@args`))
       return(eval(call, envir = env))
     }, error = function(e) {
-      module_template <- file.path(root_path, 'views', '500.html')
+      module_template <- file.path(root_path, "views", "500.html")
       error <- shiny::pre(
         style = "word-wrap: break-word; white-space: break-spaces;",
         paste(
@@ -75,7 +75,13 @@ adminlte_sidebar <- function(root_path = template_root(),
   if (length(divider)) {
     divider <- data.frame(
       name = names(divider),
-      order = sapply(divider, function(x) { if(isTRUE(is.numeric(x$order))) {x$order}else{NA} })
+      order = sapply(divider, function(x) {
+        if (isTRUE(is.numeric(x$order))) {
+          x$order
+        } else {
+          NA
+        }
+      })
     )
     divider <- divider[!is.na(divider$order), ]
   }
@@ -85,7 +91,7 @@ adminlte_sidebar <- function(root_path = template_root(),
 
   groups <- settings$groups
   if (length(groups)) {
-    groups <- groups[names(groups) != '']
+    groups <- groups[names(groups) != ""]
   }
   group_icons <- sapply(groups, function(x) { ifelse(length(x$icon) == 1, x$icon, "") })
   group_badge <- sapply(groups, function(x) { ifelse(length(x$badge) == 1, x$badge, "") })
@@ -99,12 +105,12 @@ adminlte_sidebar <- function(root_path = template_root(),
   groups <- unique(groups)
   group_level <- factor(groups, levels = groups, ordered = TRUE)
 
-  module_tbl <- do.call('rbind', lapply(modules_ids, function(mid) {
+  module_tbl <- do.call("rbind", lapply(modules_ids, function(mid) {
     x <- modules[[mid]]
     if (isTRUE(x$hidden)) {
       return(NULL)
     }
-    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
+    y <- x[!names(x) %in% c("order", "group", "label", "icon", "badge", "module", "hidden")]
     y$module <- mid
     y$shared_id <- shared_id
     url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
@@ -149,17 +155,18 @@ adminlte_sidebar <- function(root_path = template_root(),
   ignore_group <- NULL
   last_order <- -Inf
 
-  for(i in seq_len(nrow(module_tbl))) {
+  for (i in seq_len(nrow(module_tbl))) {
     x <- module_tbl[i, ]
 
     current_order <- x$renderOrder
 
-    divide_item <- divider[divider$order <= current_order & divider$order > last_order,]
+    divide_item <- divider[divider$order <= current_order &
+                             divider$order > last_order, ]
     if (nrow(divide_item)) {
-      for(j in seq_len(nrow(divide_item))) {
+      for (j in seq_len(nrow(divide_item))) {
         tmp <- divide_item[j, ]
         side_bar[[length(side_bar) + 1]] <- shiny::tags$li(
-          class="nav-header nav-divider",
+          class = "nav-header nav-divider",
           shiny::span(
             tmp$name
           )
@@ -171,7 +178,7 @@ adminlte_sidebar <- function(root_path = template_root(),
     if (is.na(x$group)) {
       item <- menu_item(text = x$label, icon = x$icon, href = x$url, badge = x$badge)
       side_bar[[length(side_bar) + 1]] <- item
-    } else if(!as.character(x$group) %in% ignore_group) {
+    } else if (!as.character(x$group) %in% ignore_group) {
 
       # add group
       group <- x$group

@@ -45,7 +45,7 @@
 #' }
 #'
 #' @export
-shiny_progress <- function (
+shiny_progress <- function(
   title, max = 1, ..., quiet = FALSE,
   session = shiny::getDefaultReactiveDomain(), shiny_auto_close = FALSE,
   log = NULL, outputId = NULL) {
@@ -58,8 +58,7 @@ shiny_progress <- function (
   if (inherits(session, c("ShinySession", "session_proxy",
                           "R6"))) {
     within_shiny <- TRUE
-  }
-  else {
+  } else {
     within_shiny <- FALSE
   }
   current <- 0
@@ -75,12 +74,11 @@ shiny_progress <- function (
     if (!.quiet) {
       if (is.function(log)) {
         log(...)
-      }
-      else {
+      } else {
         s <- paste(..., collapse = "", sep = "")
         nz <- nchar(s, allowNA = TRUE, keepNA = TRUE)
         w <- getOption("width", 80L)
-        s <- paste0(s, paste(rep(' ', w - nz %% w), collapse = ""))
+        s <- paste0(s, paste(rep(" ", w - nz %% w), collapse = ""))
         message("\r", s, appendLF = identical(bullet, "stop"))
       }
     }
@@ -108,8 +106,7 @@ shiny_progress <- function (
       title <<- message
       current <<- value
     }
-  }
-  else if(length(outputId)) {
+  } else if (length(outputId)) {
     progress <- NULL
     inc <- function(detail, message = NULL, amount = 1, ...) {
       current <<- current + amount
@@ -229,7 +226,7 @@ progressOutput <- function(
 
   if (value < 0) {
     value <- 0
-  } else if(value > 100) {
+  } else if (value > 100) {
     value <- 100L
   }
   size <- match.arg(size)
@@ -259,7 +256,10 @@ progressOutput <- function(
 
 #' @rdname progressOutput
 #' @export
-renderProgress <- function(expr, env=parent.frame(), quoted=FALSE, outputArgs = list()) {
+renderProgress <- function(expr,
+                           env = parent.frame(),
+                           quoted = FALSE,
+                           outputArgs = list()) {
 
   func <- shiny::installExprFunction(expr, "func", env, quoted, label = "renderProgress")
   shiny::createRenderFunction(func, function(value, session, name, ...) {

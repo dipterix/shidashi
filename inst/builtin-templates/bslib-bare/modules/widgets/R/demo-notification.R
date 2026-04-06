@@ -101,7 +101,7 @@ server_notification <- function(input, output, session, ...) {
     )
     on.exit({ clear_notifications(class = "notif_7_autoclose") })
     progress <- shiny_progress(title = "Running", max = 10, outputId = "notif_7_prg")
-    for(i in 1:10) {
+    for (i in 1:10) {
       Sys.sleep(0.5)
       progress$inc(detail = paste("Channel", i))
     }

@@ -21,7 +21,7 @@ clipboardOutput <- function(
 
   if (as_card_tool) {
     card_tool(
-      class = combine_class('clipboard-btn', "shidashi-clipboard-output", class),
+      class = combine_class("clipboard-btn", "shidashi-clipboard-output", class),
       icon = "copy",
       title = message,
       inputId = outputId,
@@ -33,9 +33,9 @@ clipboardOutput <- function(
       id = outputId,
       class = "shidashi-clipboard-output",
       shiny::tags$button(
-        class = combine_class('clipboard-btn btn btn-default', class),
+        class = combine_class("clipboard-btn btn btn-default", class),
         "data-clipboard-text" = clip_text,
-        role = 'button',
+        role = "button",
         message
       )
     )
@@ -45,7 +45,7 @@ clipboardOutput <- function(
 
 #' @rdname clipboardOutput
 #' @export
-renderClipboard <- function(expr, env=parent.frame(), quoted=FALSE, outputArgs = list()) {
+renderClipboard <- function(expr, env = parent.frame(), quoted = FALSE, outputArgs = list()) {
 
   func <- shiny::installExprFunction(expr, "func", env, quoted, label = "renderClipboard")
   shiny::createRenderFunction(func, function(value, session, name, ...) {

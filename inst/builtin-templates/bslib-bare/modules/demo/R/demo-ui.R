@@ -56,9 +56,9 @@ ui_demo_monthly <- function() {
         tools = list(
           as_badge(sprintf("%s|bg-primary", Sys.Date())),
           card_tool(widget = "flip", title = "See details"),
-          card_tool(widget = 'collapse'),
-          card_tool(widget = 'link', href = "https://github.com/dipterix/shidashi"),
-          card_tool(widget = 'maximize')
+          card_tool(widget = "collapse"),
+          card_tool(widget = "link", href = "https://github.com/dipterix/shidashi"),
+          card_tool(widget = "maximize")
         ),
         flip_box(
           class = "fill",
@@ -129,7 +129,7 @@ ui_demo_monthly <- function() {
         title = "Goal Completion",
         class_body = "height-300",
         tools = list(
-          card_tool(widget = 'collapse')
+          card_tool(widget = "collapse")
         ),
         footer = fluidRow(
           column(
@@ -156,23 +156,23 @@ ui_demo_monthly <- function() {
           h6(class = "text-center", "Goal Completion"),
           progressOutput(ns("sales_report_prog1"), description = "",
                          "Add Products to Cart",
-                         span(class="float-end", "123/150"),
-                         value = 123/150 * 100),
+                         span(class = "float-end", "123/150"),
+                         value = 123 / 150 * 100),
           progressOutput(ns("sales_report_prog2"), description = "",
                          "Complete Purchase",
                          class = "bg-red",
-                         span(class="float-end", "310/400"),
-                         value = 310/400 * 100),
+                         span(class = "float-end", "310/400"),
+                         value = 310 / 400 * 100),
           progressOutput(ns("sales_report_prog3"), description = "",
                          "Visit Premium Page",
                          class = "bg-success",
-                         span(class="float-end", "480/800"),
-                         value = 480/800 * 100),
+                         span(class = "float-end", "480/800"),
+                         value = 480 / 800 * 100),
           progressOutput(ns("sales_report_prog4"), description = "",
                          "Inquiries",
                          class = "bg-yellow",
-                         span(class="float-end", "250/500"),
-                         value = 250/500 * 100)
+                         span(class = "float-end", "250/500"),
+                         value = 250 / 500 * 100)
         )
       )
     )
@@ -222,7 +222,7 @@ ui_demo_details <- function() {
         ),
         "Summary" = div(
           class = "fill position-absolute overflow-auto",
-          tableOutput(ns('summary_table'))
+          tableOutput(ns("summary_table"))
         )
       )
     )
@@ -263,7 +263,7 @@ server_demo <- function(input, output, session, ...) {
     data(iris)
     iris[iris$Petal.Width > input$iris_threshold,
          c("Petal.Length", "Petal.Width", "Species")]
-  }, striped = TRUE, spacing = 's', width = '100%')
+  }, striped = TRUE, spacing = "s", width = "100%")
 
   generate_ggtheme <- function(
     theme,
@@ -309,10 +309,10 @@ server_demo <- function(input, output, session, ...) {
         need(nrow(iris) > 0, "No data point selected")
       )
 
-      ggplot(data=iris) +
-        aes(x=Sepal.Length, y=Petal.Length, color=Species) +
+      ggplot(data = iris) +
+        aes(x = Sepal.Length, y = Petal.Length, color = Species) +
         geom_point() +
-        geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
+        geom_rug(col = "steelblue", alpha = 0.1, linewidth = 1.5) + ggtheme
     }),
     outputId = "iris_plot",
     description = "Scatter plot of iris, thresholded by input `iris_threshold`",
@@ -327,12 +327,12 @@ server_demo <- function(input, output, session, ...) {
       close = FALSE,
       autohide = FALSE,
       progressOutput(ns("data_gen_pro"), description = "Loading data...",
-                     size = 'xs', class = "bg-yellow")
+                     size = "xs", class = "bg-yellow")
     )
     on.exit({ clear_notifications() })
 
     progress <- shiny_progress("", max = 10, outputId = "data_gen_pro")
-    for(i in 1:10) {
+    for (i in 1:10) {
       progress$inc(sprintf("step %s", i), message = ifelse(
         i > 5, "Analyze data", "Loading data"
       ))
@@ -340,11 +340,11 @@ server_demo <- function(input, output, session, ...) {
     }
 
     local_data$data <- data.frame(
-      name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20),
-              rep('D', 100),
-              sample(LETTERS, 20000, replace = TRUE)),
-      value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1),
-               rnorm(20, 25, 4), rnorm(100, 12, 1), rnorm(20000, 15, 30) )
+      name = c(rep("A", 500), rep("B", 500), rep("B", 500), rep("C", 20),
+               rep("D", 100),
+               sample(LETTERS, 20000, replace = TRUE)),
+      value = c(rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1),
+                rnorm(20, 25, 4), rnorm(100, 12, 1), rnorm(20000, 15, 30) )
     )
   }
 
@@ -375,15 +375,22 @@ server_demo <- function(input, output, session, ...) {
 
     ggtheme <- generate_ggtheme(
       theme,
-      legend.position="none",
+      legend.position = "none",
       axis.line.y.left = element_blank(),
       axis.text = element_text(color = theme$foreground)
     )
     ggplot(merged) +
-      aes(myaxis, value, fill=name) +
-      geom_violin(width=1) +
-      geom_boxplot(width=0.1, color="grey", alpha=0.2) +
-      geom_jitter(height = 0, width = 0.1, size = 0.1, alpha = 0.2) +
+      aes(myaxis, value, fill = name) +
+      geom_violin(width = 1) +
+      geom_boxplot(width = 0.1,
+                   color = "grey",
+                   alpha = 0.2) +
+      geom_jitter(
+        height = 0,
+        width = 0.1,
+        size = 0.1,
+        alpha = 0.2
+      ) +
       ggtheme +
       xlab("")
   })

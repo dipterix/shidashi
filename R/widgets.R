@@ -72,8 +72,8 @@ flex_item <- function(
     align <- match.arg(align)
     l[["align-self"]] <- align
   }
-  l[['order']] <- order
-  l[['flex']] <- flex
+  l[["order"]] <- order
+  l[["flex"]] <- flex
 
   style1 <- paste(names(l), as.vector(l), sep = ":", collapse = "; ")
   if (length(style)) {
@@ -132,7 +132,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
   if (!length(title)) {
     title <- NULL
   } else {
-    title <- shiny::h6(class="dropdown-header", title)
+    title <- shiny::h6(class = "dropdown-header", title)
   }
 
   # ---- Optional drawer button (fires shidashi-event, no logic) ----
@@ -163,7 +163,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
       ),
       shiny::tags$button(
         type = "button",
-        class = "btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
+        class = "btn btn-default dropdown-toggle dropdown-toggle-split border-left-1",
         # AdminLTE3
         "data-toggle" = "dropdown",
         # bs5

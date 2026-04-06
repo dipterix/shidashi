@@ -36,7 +36,7 @@ info_box <- function(..., icon = "envelope", class = "",
     )
   }
 
-  template_path <- file.path(root_path, 'views', 'info-box.html')
+  template_path <- file.path(root_path, "views", "info-box.html")
 
   re <- shiny::htmlTemplate(
     template_path,
@@ -82,7 +82,7 @@ info_box <- function(..., icon = "envelope", class = "",
 flip_box <- function(front, back, active_on = c("click", "click-front", "manual"), inputId = NULL, class = NULL) {
   call <- match.call()
   active_on <- match.arg(active_on)
-  if (active_on != 'click' && length(inputId) != 1) {
+  if (active_on != "click" && length(inputId) != 1) {
     stop("`inputId` must be specified if `active_on` is not 'click'")
   }
   set_attr_call(shiny::div(

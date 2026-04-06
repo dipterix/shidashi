@@ -87,7 +87,7 @@ ui_details <- function() {
           tags$pre(
             class = "bg-gray-90 pre-compact",
             tags$code(
-'VS Code/Claude Code    (MCP Client)
+"VS Code/Claude Code    (MCP Client)
        |
        | stdio (JSON-RPC)
        v
@@ -95,7 +95,7 @@ ui_details <- function() {
        |
        | HTTP
        v
-  Shiny /mcp           (Your app)'
+  Shiny /mcp           (Your app)"
             )
           ),
           tags$p(

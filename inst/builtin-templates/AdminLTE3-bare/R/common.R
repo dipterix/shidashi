@@ -17,7 +17,7 @@ page_loader <- function() {
     shiny::img(
       class = "animation__shake",
       src = page_logo("large"),
-      alt = "Logo", height="60", width="60"
+      alt = "Logo", height = "60", width = "60"
     )
   )
 }

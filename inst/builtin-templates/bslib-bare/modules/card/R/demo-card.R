@@ -1,9 +1,9 @@
 
 verbatim <- function(code) {
   tags$code(
-    class = 'clipboard-btn shidashi-clipboard-output',
-    'data-clipboard-text' = code,
-    role = 'button', title = 'Click to copy!',
+    class = "clipboard-btn shidashi-clipboard-output",
+    "data-clipboard-text" = code,
+    role = "button", title = "Click to copy!",
     code)
 }
 
@@ -18,7 +18,7 @@ ui_card_controls <- function() {
         class_foot = "display-block-force",
         body_main = div(
           p(
-            class = 'inline-all',
+            class = "inline-all",
             "Use ",
             verbatim("card_operate(...)"),
             " to collapse, expand, maximize, or minimize",
@@ -66,11 +66,11 @@ ui_card_controls <- function() {
         footer = fluidRow(
           column(
             width = 6L,
-            actionButton(ns('switch_tab_a'), "Switch to Tab A")
+            actionButton(ns("switch_tab_a"), "Switch to Tab A")
           ),
           column(
             width = 6L,
-            actionButton(ns('add_tab_a'), "New Tab")
+            actionButton(ns("add_tab_a"), "New Tab")
           )
         )
       )
@@ -84,7 +84,7 @@ ui_card_controls <- function() {
         body_main = div(
           class = "padding-20",
           p(
-            class = 'inline-all',
+            class = "inline-all",
             "use ",
             verbatim("card2_open(...)"), ", ",
             verbatim("card2_close(...)"), ", ",

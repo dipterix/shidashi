@@ -100,7 +100,7 @@ server_flip_box <- function(input, output, session, ...) {
 
   observeEvent(input$show_progress, {
     progress <- shiny_progress(title = "Running algorithms", max = 10, shiny_auto_close = TRUE)
-    for(i in 1:10) {
+    for (i in 1:10) {
       progress$inc(sprintf("Running part %s", i))
       Sys.sleep(0.1)
     }

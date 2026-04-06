@@ -3,7 +3,7 @@ library(shiny)
 # Debug
 if (FALSE) {
   template_settings$set(
-    'root_path' = "inst/builtin-templates/bslib-bare/"
+    "root_path" = "inst/builtin-templates/bslib-bare/"
   )
 }
 
@@ -26,7 +26,7 @@ server <- function(input, output, session) {
         if (is.na(group_name)) {
           group_name <- "<no group>"
         }
-        if (system.file(package = "logger") != '') {
+        if (system.file(package = "logger") != "") {
           logger::log_info("Loading - { module_table$label[1] } ({group_name}/{ module_table$id })")
         }
         shiny::moduleServer(resource$module$id, resource$module$server, session = session)

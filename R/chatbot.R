@@ -446,8 +446,9 @@ chatbot_server <- function(input, output, session,
 
     res$cost <- tryCatch(
       local_chat$get_cost(),
-      error = function(e)
+      error = function(e) {
         NA_real_
+      }
     )
     res
   }

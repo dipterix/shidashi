@@ -62,16 +62,16 @@ as_icon <- function(icon = NULL, class = "fas") {
 #' @export
 as_badge <- function(badge = NULL) {
   if (!length(badge) || nchar(badge) == 0) {
-    badge <- ''
+    badge <- ""
   } else {
     if (inherits(badge, "shiny.tag")) {
       badge$attribs$class <- combine_class(badge$attribs$class, "right badge")
     } else {
       badge <- strsplit(badge, "\\|")[[1]]
       if (length(badge) > 1) {
-        badge <- shiny::span(class=paste("right badge", badge[[2]]), badge[[1]])
+        badge <- shiny::span(class = paste("right badge", badge[[2]]), badge[[1]])
       } else {
-        badge <- shiny::span(class=paste("right badge"), badge[[1]])
+        badge <- shiny::span(class = paste("right badge"), badge[[1]])
       }
     }
   }
@@ -85,7 +85,7 @@ menu_item <- function(
 
   icon <- as_icon(icon, class = "nav-icon fas")
   badge <- as_badge(badge)
-  module <- ''
+  module <- ""
   if (startsWith(href, "#")) {
     target <- "_self"
   } else if (startsWith(href, "?module=")) {

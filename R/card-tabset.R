@@ -5,9 +5,9 @@ card_tabset_header <- function(id_tabset, index, title, active = FALSE) {
       class = ifelse(active, "nav-link active", "nav-link"),
       id = sprintf("%s-%s-tab", id_tabset, index),
       # For AdminLTE3
-      'data-toggle' = "tab",
+      "data-toggle" = "tab",
       # For bootstrap5
-      'data-bs-toggle' = "tab",
+      "data-bs-toggle" = "tab",
       href = sprintf("#%s-%s", id_tabset, index),
       role = "tab",
       "aria-controls" = sprintf("%s-%s", id_tabset, index),

@@ -99,14 +99,14 @@ combine_class <- function(...) {
   s <- paste(c(...), collapse = " ", sep = " ")
   s <- unlist(strsplit(s, " "))
   s <- unique(s)
-  s <- s[!s %in% '']
+  s <- s[!s %in% ""]
   paste(s, collapse = " ")
 }
 remove_html_class <- function(target, class) {
   if (!length(target)) { return("") }
   s <- unlist(strsplit(target, " "))
   s <- unique(s)
-  s <- s[!s %in% c('', class)]
+  s <- s[!s %in% c("", class)]
   paste(s, collapse = " ")
 }
 
@@ -118,8 +118,8 @@ guess_body_class <- function(cls) {
   if (missing(cls)) {
     cls <- "fancy-scroll-y darm-mode"
   } else {
-    cls <- unlist(strsplit(paste(cls, collapse = ' '), " "))
-    combine_class(cls[startsWith(cls, "fancy-scroll-") | cls %in% 'dark-mode'])
+    cls <- unlist(strsplit(paste(cls, collapse = " "), " "))
+    combine_class(cls[startsWith(cls, "fancy-scroll-") | cls %in% "dark-mode"])
   }
 }
 
@@ -167,13 +167,13 @@ get_construct_string <- function(x) {
 #'
 #' @export
 format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
-                          width.cutoff = 80L, indent = 2, wrap=TRUE,
+                          width.cutoff = 80L, indent = 2, wrap = TRUE,
                           args.newline = TRUE, blank = FALSE, ...) {
   if (!quoted) {
     expr <- substitute(expr)
   }
 
-  if (length(expr) !=1 ||
+  if (length(expr) != 1 ||
       !is.character(expr)) {
     expr <- paste(deparse(expr), collapse = "\n")
   }
@@ -198,7 +198,7 @@ format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
 html_highlight_code <- function(
   expr, class = NULL, quoted = FALSE,
   reformat = TRUE, copy_on_click = TRUE,
-  width.cutoff = 80L, indent = 2, wrap=TRUE,
+  width.cutoff = 80L, indent = 2, wrap = TRUE,
   args.newline = TRUE, blank = FALSE,
   ..., hover = c("overflow-visible-on-hover", "overflow-auto")) {
 
@@ -241,7 +241,7 @@ html_highlight_code <- function(
 show_ui_code <- function(
   x, class = NULL, code_only = FALSE,
   as_card = FALSE, card_title = "", class_body = "bg-gray-70",
-  width.cutoff = 80L, indent = 2, wrap=TRUE,
+  width.cutoff = 80L, indent = 2, wrap = TRUE,
   args.newline = TRUE, blank = FALSE, copy_on_click = TRUE,
   ...)
 {
@@ -275,7 +275,7 @@ show_ui_code <- function(
       class_foot = "display-block bg-gray-90 no-padding code-display fill-width",
       if (code_only) {
         NULL
-      } else{
+      } else {
         x
       }
     )
@@ -362,7 +362,7 @@ combine_html_class <- function(...) {
   s <- paste(c(...), collapse = " ", sep = " ")
   s <- unlist(strsplit(s, " "))
   s <- unique(s)
-  s <- s[!s %in% '']
+  s <- s[!s %in% ""]
   paste(s, collapse = " ")
 }
 
@@ -375,7 +375,7 @@ remove_html_class <- function(target, class) {
   s <- unlist(strsplit(target, " "))
   s <- unique(s)
   class <- unlist(strsplit(class, " "))
-  s <- s[!s %in% c('', class)]
+  s <- s[!s %in% c("", class)]
   paste(s, collapse = " ")
 }
 
