@@ -3,6 +3,7 @@
 \name{fire_event}
 \alias{fire_event}
 \alias{get_event}
+\alias{get_theme}
 \title{Fire or read a session event}
 \usage{
 fire_event(
@@ -13,6 +14,8 @@ fire_event(
 )
 
 get_event(key, session = shiny::getDefaultReactiveDomain(), default = NULL)
+
+get_theme(session = shiny::getDefaultReactiveDomain())
 }
 \arguments{
 \item{key}{a single character string identifying the event type}
@@ -31,6 +34,15 @@ sessions sharing the same \code{shared_id}}
 \code{fire_event} returns \code{NULL} invisibly.
   \code{get_event} returns the last value fired for \code{key}, or
   \code{default} if none.
+  \code{get_theme} returns a named list with three character elements:
+  \describe{
+    \item{theme}{Either \code{"light"} or \code{"dark"}.}
+    \item{foreground}{Hex colour string for text / foreground elements.}
+    \item{background}{Hex colour string for the page background.}
+  }
+  Before the browser fires its first theme event, the light-theme fallback
+  \code{list(theme = "light", background = "#FFFFFF", foreground = "#000000")}
+  is returned.
 }
 \description{
 \code{fire_event} sets a reactive event value on the current session.
@@ -41,7 +53,16 @@ user).
 \code{get_event} reads the current value of an event key from the
 session registry.
 
-Both functions must be called inside a Shiny server context.
+\code{get_theme} is a convenience wrapper around
+\code{get_event("theme.changed")} that returns the current dashboard theme.
+
+All three functions must be called inside a Shiny server context.
+}
+\details{
+\code{get_theme} and \code{get_event} auto-register the session if needed
+and must be called inside a reactive context
+(\code{\link[shiny]{observe}}, \code{\link[shiny]{observeEvent}},
+\code{\link[shiny]{reactive}}, render functions).
 }
 \examples{
 
@@ -55,6 +76,13 @@ server <- function(input, output, session) {
   observe({
     evt <- shidashi::get_event("my_event", session = session)
     print(evt)
+  })
+
+  # get_theme must be called within a reactive context
+  output$plot <- renderPlot({
+    theme <- shidashi::get_theme()
+    par(bg = theme$background, fg = theme$foreground)
+    plot(1:10)
   })
 }
 

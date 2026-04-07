@@ -137,41 +137,152 @@ globals_session_registry <- function() {
 
 
 #' @name register_session
-#' @title The 'JavaScript' tunnel
-#' @param session shiny reactive domain
-#' @param once logical; if \code{TRUE}, run the handler once then suspend
-#' @return \code{register_session} registers the session in the global registry
-#' and returns invisibly.
-#' \code{enable_input_broadcast} and \code{enable_input_sync} opt the session
-#' into cross-tab input sharing and return invisibly.
-#' \code{get_theme} returns a list of theme, foreground, and background color.
-#' \code{get_event} returns the last value fired for \code{key}, or
-#' \code{default} if none.
+#' @title Shiny session registration and cross-tab synchronisation
 #'
-#' @details Call \code{register_session} at the top of a module server function
-#' to register the session in the global registry. This sets up the reactive
-#' event bus and resolves the \code{shared_id} from the URL query string
-#' (\code{?shared_id=...}) or generates a random one.
+#' @param session A Shiny session object or session proxy (created by
+#'   \code{\link[shiny]{moduleServer}}). Most functions in this family default
+#'   to \code{shiny::getDefaultReactiveDomain()} so callers inside module
+#'   server functions do not need to pass it explicitly.
+#'   \code{register_session} and \code{unregister_session} require an explicit
+#'   value.
+#' @param once Logical; if \code{TRUE}, resume the suspended observer for a
+#'   single run via \code{$run()} instead of permanently re-activating it with
+#'   \code{$resume()}.  Useful for one-shot snapshots without installing a
+#'   persistent observer.
+#' @param name A single character string identifying a named slot in the
+#'   session's handler list (used by \code{get_handler} and
+#'   \code{set_handler}).  Three names are reserved for internal use and will
+#'   trigger an error if passed to \code{set_handler}:
+#'   \code{"event_handler"}, \code{"broadcast_handler"}, and
+#'   \code{"input_sync_handler"}.
+#' @param handler A Shiny Observer object created by \code{shiny::observe()},
+#'   or \code{NULL} to clear the named slot (used by \code{set_handler}).
+#'   Passing any other object type raises an error.
 #'
-#' \code{enable_input_broadcast} and \code{enable_input_sync} opt the session
-#' into cross-tab input sharing. Sessions with the same \code{shared_id}
-#' (same browser, same URL) synchronise their inputs.
+#' @return
+#' \code{register_session} returns the session token (\code{session$token})
+#' invisibly; it is idempotent and safe to call multiple times for the same
+#' session.
 #'
-#' \code{get_theme} and \code{get_event} auto-register the session if needed
-#' and must be called inside a reactive context
-#' (\code{\link[shiny]{observe}}, \code{\link[shiny]{observeEvent}},
-#' \code{\link[shiny]{reactive}}, render functions).
+#' \code{unregister_session} returns \code{NULL} invisibly; it is idempotent.
+#'
+#' \code{enable_input_broadcast}, \code{disable_input_broadcast},
+#' \code{enable_input_sync}, and \code{disable_input_sync} all return
+#' invisibly.  They are silent no-ops when the session is already closed.
+#'
+#' \code{get_handler} returns the named \code{Observer} object stored under
+#' \code{name}, or \code{NULL} if the slot is empty or the session is closed.
+#'
+#' \code{set_handler} returns \code{TRUE} invisibly when it successfully
+#' installs the handler, or \code{FALSE} invisibly when the session is already
+#' closed.
+#'
+#' @details
+#' \subsection{Session registration}{
+#'
+#' \strong{\code{register_session()}} — Call once at the top of every Shiny
+#' module server function.  It is idempotent: calling it a second time on the
+#' same session safely refreshes the session object and URL in the registry
+#' entry without re-creating observers.
+#'
+#' Internally it creates an entry in the application-global session registry
+#' (initialised by \code{\link{init_app}}), resolves a \code{shared_id} token
+#' shared across browser tabs from the \code{?shared_id=...} URL query string
+#' (or generates a random 26-character string when absent), sets up the
+#' per-session reactive event bus, and — for named module sessions — sends a
+#' \code{shidashi.register_module_token} custom message to bind the module
+#' namespace to its session token on the JavaScript side.
+#'
+#' \strong{\code{unregister_session()}} — Removes the session entry from the
+#' registry and destroys all attached observers.  This is called automatically
+#' when the session ends via the \code{onSessionEnded} hook installed by
+#' \code{register_session()}.  Direct calls are only needed for explicit early
+#' cleanup (e.g. in tests).
+#'
+#' }
+#' \subsection{Session-scoped handlers}{
+#'
+#' Each registered session maintains a named slot list for Shiny
+#' \code{Observer} objects called \emph{handlers}.  This provides a lightweight
+#' system for attaching module-level lifecycle hooks that are tied to the
+#' session's lifetime.
+#'
+#' \strong{User-defined handlers — \code{get_handler()} / \code{set_handler()}}
+#'
+#' \code{set_handler(name, handler)} installs \code{handler} under \code{name},
+#' first suspending and destroying any \code{Observer} already stored there.
+#' Pass \code{handler = NULL} to clear the slot.  Returns \code{FALSE}
+#' invisibly if the session is already closed.
+#'
+#' \code{get_handler(name)} retrieves the stored \code{Observer} (or
+#' \code{NULL}).  It auto-registers the session if not yet registered and
+#' returns \code{NULL} gracefully if the session is closed.
+#'
+#' Three handler names are reserved for internal shidashi infrastructure and
+#' will raise an error if passed to \code{set_handler}:
+#' \code{"event_handler"}, \code{"broadcast_handler"}, and
+#' \code{"input_sync_handler"}.
+#'
+#' \strong{Built-in cross-tab sync handlers}
+#'
+#' shidashi pre-installs two opt-in \code{Observer} slots in every registered
+#' session (both start \emph{suspended}):
+#'
+#' \describe{
+#'   \item{Input broadcast (\code{enable_input_broadcast()} /
+#'         \code{disable_input_broadcast()})}{Continuously monitors the
+#'         session's \code{input} values and, whenever they change, pushes a
+#'         snapshot to the client via \code{shidashi.cache_session_input}.
+#'         Other browser tabs sharing the same \code{shared_id} can read this
+#'         cached snapshot to restore or compare input state.}
+#'   \item{Input sync (\code{enable_input_sync()} /
+#'         \code{disable_input_sync()})}{Listens for serialised input maps
+#'         broadcast by \emph{other} sessions sharing the same
+#'         \code{shared_id} via the root-session \code{@shidashi@} input.
+#'         Values differing from the local \code{input} are written into the
+#'         session's private \code{inputs} \code{reactiveValues}.  Messages
+#'         from the same session are ignored to prevent feedback loops.}
+#' }
+#'
+#' Both observers run at priority \code{-100000} (after all ordinary reactive
+#' computations have settled).  Use \code{once = TRUE} to trigger a single
+#' cycle without permanently resuming the observer.  The \code{disable_*}
+#' variants suspend the observer and are silent no-ops when the session has
+#' already ended.
+#'
+#' }
+#' \subsection{Session lifecycle}{
+#'
+#' \preformatted{
+#' init_app()                       # global.R, once per app start
+#'     |
+#'     v
+#' register_session(session)        # top of each module server()
+#'     |
+#'     v
+#' ... reactive code ...
+#'     get_handler() / set_handler() # attach user-defined session observers
+#'     enable_input_broadcast()      # optional: push inputs to browser cache
+#'     enable_input_sync()           # optional: receive peer-tab inputs
+#'     |
+#'     v
+#' session ends -> unregister_session()  # runs automatically
+#' }
+#'
+#' }
 #'
 #' @examples
 #'
-#' # shiny server function
-#'
 #' library(shiny)
+#'
+#' # --- Basic usage in a module server ---
 #' server <- function(input, output, session) {
 #'   shidashi::register_session(session)
 #'
-#'   # opt-in to cross-tab input sync (suspended by default)
+#'   # opt-in to cross-tab input broadcast (suspended by default)
 #'   shidashi::enable_input_broadcast(session)
+#'
+#'   # opt-in to receive inputs from peer tabs
 #'   shidashi::enable_input_sync(session)
 #'
 #'   # get_theme must be called within a reactive context
@@ -180,7 +291,22 @@ globals_session_registry <- function() {
 #'     par(bg = theme$background, fg = theme$foreground)
 #'     plot(1:10)
 #'   })
+#' }
 #'
+#' # --- Named handler: attach a reusable session-scoped observer ---
+#' server2 <- function(input, output, session) {
+#'   shidashi::register_session(session)
+#'
+#'   cleanup <- shiny::observe({
+#'     # ... module-level teardown logic ...
+#'     shidashi::set_handler("my_cleanup", NULL, session)
+#'   }, suspended = TRUE, domain = session)
+#'
+#'   shidashi::set_handler("my_cleanup", cleanup, session)
+#'
+#'   # retrieve and resume the observer elsewhere in the same session
+#'   h <- shidashi::get_handler("my_cleanup", session)
+#'   if (!is.null(h)) h$resume()
 #' }
 #'
 #' @export
@@ -240,6 +366,7 @@ register_session <- function(session) {
     entry$shiny_session <- session
     entry$url <- shiny::isolate(session$clientData$url_search)
     entry$namespace <- namespace
+    registry$set(token, entry)
     return(invisible(token))
   }
 
@@ -286,7 +413,7 @@ register_session <- function(session) {
           )
           session$sendCustomMessage("shidashi.cache_session_input", message)
         }
-      }, 
+      },
       domain = session,
       priority = -100000,
       suspended = TRUE
@@ -359,7 +486,7 @@ register_session <- function(session) {
 # @param session A Shiny session object
 
 #' @rdname register_session
-#' @export 
+#' @export
 unregister_session <- function(session) {
   token <- session$token
   if (is.null(token) || !nzchar(token)) return(invisible(NULL))
@@ -368,26 +495,19 @@ unregister_session <- function(session) {
   if (registry$has(token)) {
     entry <- registry$get(token)
     if (identical(entry$shiny_session, session) || entry$shiny_session$isClosed()) {
-      # suspend & destroy observers
-      tryCatch({
-        entry$handlers$event_handler$suspend()
-        entry$handlers$event_handler$destroy()
-      }, error = function(e) {})
-      entry$handlers$event_handler <- NULL
-
-      tryCatch({
-        entry$handlers$input_sync_handler$suspend()
-        entry$handlers$input_sync_handler$destroy()
-      }, error = function(e) {})
-      entry$handlers$input_sync_handler <- NULL
-
-      tryCatch({
-        entry$handlers$broadcast_handler$suspend()
-        entry$handlers$broadcast_handler$destroy()
-      }, error = function(e) {})
-      entry$handlers$broadcast_handler <- NULL
 
       registry$remove(token)
+
+      lapply(entry$handlers, function(handler) {
+        # suspend & destroy observers
+        if (inherits(handler, "Observer")) {
+          tryCatch({
+            handler$suspend()
+            handler$destroy()
+          }, error = function(e) {})
+        }
+      })
+
       message("Unregistered session token: ", token)
     }
   }
@@ -483,7 +603,10 @@ globals_get_sessions_by_shared_id <- function(shared_id) {
 #' \code{get_event} reads the current value of an event key from the
 #' session registry.
 #'
-#' Both functions must be called inside a Shiny server context.
+#' \code{get_theme} is a convenience wrapper around
+#' \code{get_event("theme.changed")} that returns the current dashboard theme.
+#'
+#' All three functions must be called inside a Shiny server context.
 #'
 #' @param key a single character string identifying the event type
 #' @param value the event payload (any R object)
@@ -495,6 +618,21 @@ globals_get_sessions_by_shared_id <- function(shared_id) {
 #' @return \code{fire_event} returns \code{NULL} invisibly.
 #'   \code{get_event} returns the last value fired for \code{key}, or
 #'   \code{default} if none.
+#'   \code{get_theme} returns a named list with three character elements:
+#'   \describe{
+#'     \item{theme}{Either \code{"light"} or \code{"dark"}.}
+#'     \item{foreground}{Hex colour string for text / foreground elements.}
+#'     \item{background}{Hex colour string for the page background.}
+#'   }
+#'   Before the browser fires its first theme event, the light-theme fallback
+#'   \code{list(theme = "light", background = "#FFFFFF", foreground = "#000000")}
+#'   is returned.
+#'
+#' @details
+#' \code{get_theme} and \code{get_event} auto-register the session if needed
+#' and must be called inside a reactive context
+#' (\code{\link[shiny]{observe}}, \code{\link[shiny]{observeEvent}},
+#' \code{\link[shiny]{reactive}}, render functions).
 #'
 #' @examples
 #'
@@ -508,6 +646,13 @@ globals_get_sessions_by_shared_id <- function(shared_id) {
 #'   observe({
 #'     evt <- shidashi::get_event("my_event", session = session)
 #'     print(evt)
+#'   })
+#'
+#'   # get_theme must be called within a reactive context
+#'   output$plot <- renderPlot({
+#'     theme <- shidashi::get_theme()
+#'     par(bg = theme$background, fg = theme$foreground)
+#'     plot(1:10)
 #'   })
 #' }
 #'
@@ -523,7 +668,6 @@ fire_event <- function(
   if (is.null(session)) {
     stop("shidashi::fire_event() must be called in shiny server")
   }
-  print(match.call())
   token <- session$token
   entry <- get_session_entry(token)
   if (is.null(entry)) {
@@ -784,11 +928,7 @@ globals_new_chat <- function(module_id, session = shiny::getDefaultReactiveDomai
 }
 
 
-
-
-
-
-#' @rdname register_session
+#' @rdname fire_event
 #' @export
 get_theme <- function(
   session = shiny::getDefaultReactiveDomain()
@@ -812,6 +952,7 @@ enable_input_broadcast <- function(
 ) {
   register_session(session)
   entry <- get_session_entry(session$token)
+  if (is.null(entry)) return(invisible())
   if (once) {
     entry$handlers$broadcast_handler$run()
   } else {
@@ -838,6 +979,7 @@ enable_input_sync <- function(session = shiny::getDefaultReactiveDomain(),
                               once = FALSE) {
   register_session(session)
   entry <- get_session_entry(session$token)
+  if (is.null(entry)) return(invisible())
   if (once) {
     entry$handlers$input_sync_handler$run()
   } else {
@@ -856,4 +998,58 @@ disable_input_sync <- function(session = shiny::getDefaultReactiveDomain()) {
   invisible()
 }
 
+#' @rdname register_session
+#' @export
+get_handler <- function(name, session = shiny::getDefaultReactiveDomain()) {
+  if (session$isClosed()) {
+    return(NULL)
+  }
+  entry <- get_session_entry(session$token)
+  if (is.null(entry)) {
+    register_session(session = session)
+    entry <- get_session_entry(session$token)
+  }
+  if (is.null(entry)) return(NULL)
+  entry$handlers[[name]]
+}
 
+#' @rdname register_session
+#' @export
+set_handler <- function(name, handler, session = shiny::getDefaultReactiveDomain()) {
+  if (name %in% c("event_handler", "broadcast_handler", "input_sync_handler")) {
+    stop("Handler name ", sQuote(name), " is reserved. Please pick another name.")
+  }
+  if (!inherits(handler, "Observer") && !is.null(handler)) {
+    stop("shidashi::set_handler - `handler` must be `NULL` or shiny::observe({...})")
+  }
+  if (session$isClosed()) {
+    return(invisible(FALSE))
+  }
+  # get current handler: `get_handler` will automatically register session
+  # so no need to register here
+  current_handler <- get_handler(name = name, session = session)
+  if (identical(current_handler, handler)) {
+    return(invisible(TRUE))
+  }
+
+  if (!is.null(current_handler)) {
+    tryCatch({
+      current_handler$suspend()
+      current_handler$destroy()
+    }, error = function(e) {})
+  }
+
+  entry <- get_session_entry(session$token)
+
+  if (length(entry)) {
+    entry$handlers[[name]] <- handler
+
+    registry <- globals_session_registry()
+    registry$set(key = session$token, entry)
+
+    return(invisible(TRUE))
+  }
+
+  # Cannot register session
+  return(invisible(FALSE))
+}
