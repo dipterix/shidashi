@@ -331,7 +331,8 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
             # Build MCP tools
             tools <- .mcptools_maker(session)
-            entry$tools <- tools$as_list()
+            entry$tools$reset()
+            entry$tools$mset(.list = tools$as_list())
             registry$set(session$token, entry)
 
             # Set agent mode early so MCP can filter tools even if

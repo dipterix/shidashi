@@ -270,7 +270,7 @@ server_session_events <- function(input, output, session, ...) {
       paste0("shared_id:  ", entry$shared_id),
       paste0("namespace:  ", entry$namespace),
       paste0("registered: ", format(entry$registered_at, "%Y-%m-%d %H:%M:%S")),
-      paste0("mcp_tools:  ", length(entry$tools)),
+      paste0("mcp_tools:  ", entry$tools$size()),
       sep = "\n"
     ))
   })

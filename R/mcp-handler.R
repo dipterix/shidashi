@@ -474,13 +474,13 @@ mcp_handle_tools_list <- function(id, params, mcp_session_id) {
     # Only use the first session: can only bind one at a time
     bound_token <- bound_token[[1]]
     entry <- get_session_entry(bound_token)
-    if (length(entry) && is.list(entry$tools) && length(entry$tools)) {
+    if (length(entry) && entry$tools$size() > 0) {
       # Filter tools by current agent mode
       module_id <- entry$namespace
       current_mode <- globals_get_agent_mode(module_id = module_id)
       enabled_tools <- Filter(function(t) {
         is_tool_enabled_for_mode(t, current_mode)
-      }, entry$tools)
+      }, entry$tools$as_list())
       if (length(enabled_tools)) {
         schema <- lapply(enabled_tools, ellmer_tool_schema)
         tools <- c(tools, unname(schema))
@@ -629,11 +629,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
   }
 
   # Look up tool in session's registered tools
-  if (tool_name %in% names(entry$tools)) {
-    tool_obj <- entry$tools[[tool_name]]
-  } else {
-    tool_obj <- NULL
-  }
+  tool_obj <- entry$tools$get(tool_name, missing = NULL)
 
   if (is.null(tool_obj)) {
     result <- list(
@@ -641,7 +637,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
         type = "text",
         text = paste0(
           "Tool '", tool_name, "' not found on bound session. ",
-          "Available tools: ", paste(names(entry$tools), collapse = ", ")
+          "Available tools: ", paste(entry$tools$keys(), collapse = ", ")
         )
       )),
       isError = TRUE
@@ -783,8 +779,8 @@ mcp_tool_list_shinysessions <- function(arguments) {
     if (isTRUE(closed)) return(NULL)
 
     tool_names <- character(0)
-    if (is.list(entry$tools) && length(entry$tools) > 0L) {
-      tool_names <- names(entry$tools)
+    if (entry$tools$size() > 0L) {
+      tool_names <- entry$tools$keys()
     }
 
     list(
@@ -866,7 +862,7 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
   registry$set(token, entry)
 
   # Build response with info about the bound session
-  tool_info <- lapply(entry$tools, function(tool_obj) {
+  tool_info <- lapply(entry$tools$as_list(), function(tool_obj) {
     if (!inherits(tool_obj, "ellmer::ToolDef")) { return() }
     list(name = tool_obj@name,
          description = paste(tool_obj@description, collapse = "\n"))
@@ -962,7 +958,7 @@ mcp_tool_get_session_info <- function(mcp_session_id) {
     ))
   }
 
-  tool_info <- lapply(entry$tools, function(tool_obj) {
+  tool_info <- lapply(entry$tools$as_list(), function(tool_obj) {
     if (!inherits(tool_obj, "ellmer::ToolDef")) { return() }
     list(name = tool_obj@name,
          description = paste(tool_obj@description, collapse = "\n"))

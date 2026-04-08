@@ -354,12 +354,12 @@ register_session <- function(session) {
       namespace          = namespace,
       url                = url,
       registered_at      = Sys.time(),
-      tools              = structure(list(), names = character(0L)),
+      tools              = fastmap::fastmap(),
       output_renderers   = fastmap::fastmap(),
       shared_id          = shared_id,
       events             = shiny::reactiveValues(),
       inputs             = shiny::reactiveValues(),
-      handlers           = list()
+      handlers           = fastmap::fastmap()
     )
     message("Registered session token: ", token)
   } else {
@@ -370,11 +370,11 @@ register_session <- function(session) {
     return(invisible(token))
   }
 
-  if (is.null(entry$handlers$event_handler)) {
+  if (!entry$handlers$has("event_handler")) {
     # register observer
     root_session <- session$rootScope()
 
-    entry$handlers$event_handler <- shiny::bindEvent(
+    entry$handlers$set("event_handler", shiny::bindEvent(
       shiny::observe({
         event <- root_session$input[["@shidashi_event@"]]
         if (!length(event) || !is.list(event)) { return() }
@@ -384,14 +384,14 @@ register_session <- function(session) {
       }, domain = root_session),
       root_session$input[["@shidashi_event@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE
-    )
+    ))
 
     session$sendCustomMessage("shidashi.get_theme", list())
   }
 
   # broadcast_handler — stored in session's registry entry handlers
-  if (is.null(entry$handlers$broadcast_handler)) {
-    entry$handlers$broadcast_handler <- shiny::observe(
+  if (!entry$handlers$has("broadcast_handler")) {
+    entry$handlers$set("broadcast_handler", shiny::observe(
       {
         inputs <- shiny::reactiveValuesToList(session$input)
         nms <- names(inputs)
@@ -417,12 +417,12 @@ register_session <- function(session) {
       domain = session,
       priority = -100000,
       suspended = TRUE
-    )
+    ))
   }
 
-  if (is.null(entry$handlers$input_sync_handler)) {
+  if (!entry$handlers$has("input_sync_handler")) {
     root_session <- session$rootScope()
-    entry$handlers$input_sync_handler <- shiny::bindEvent(
+    entry$handlers$set("input_sync_handler", shiny::bindEvent(
       shiny::observe({
         try(
           silent = TRUE,
@@ -457,7 +457,7 @@ register_session <- function(session) {
       }, suspended = TRUE, domain = root_session, priority = -100000),
       root_session$input[["@shidashi@"]],
       ignoreNULL = TRUE, ignoreInit = TRUE
-    )
+    ))
   }
 
   registry$set(token, entry)
@@ -498,7 +498,10 @@ unregister_session <- function(session) {
 
       registry$remove(token)
 
-      lapply(entry$handlers, function(handler) {
+      handler_keys <- entry$handlers$keys()
+      lapply(handler_keys, function(handler_key) {
+        handler <- entry$handlers$get(handler_key)
+        entry$handlers$remove(handler_key)
         # suspend & destroy observers
         if (inherits(handler, "Observer")) {
           tryCatch({
@@ -507,6 +510,12 @@ unregister_session <- function(session) {
           }, error = function(e) {})
         }
       })
+
+      entry$handlers$reset()
+
+      # also reset other fastmaps
+      entry$tools$reset()
+      entry$output_renderers$reset()
 
       message("Unregistered session token: ", token)
     }
@@ -880,10 +889,10 @@ globals_bind_chat_tools <- function(
   token <- session$token
   entry <- registry$get(token)
   enabled_tools <- list()
-  if (length(entry$tools)) {
+  if (entry$tools$size() > 0) {
     enabled_tools <- Filter(function(t) {
       is_tool_enabled_for_mode(t, mode)
-    }, entry$tools)
+    }, entry$tools$as_list())
   }
   # ask_user is always available
   enabled_tools <- c(enabled_tools, list(make_ask_user_tool(session)))
@@ -953,10 +962,14 @@ enable_input_broadcast <- function(
   register_session(session)
   entry <- get_session_entry(session$token)
   if (is.null(entry)) return(invisible())
-  if (once) {
-    entry$handlers$broadcast_handler$run()
-  } else {
-    entry$handlers$broadcast_handler$resume()
+
+  handler <- entry$handlers$get("broadcast_handler")
+  if (inherits(handler, "Observer")) {
+    if (once) {
+      handler$run()
+    } else {
+      handler$resume()
+    }
   }
   invisible()
 }
@@ -968,7 +981,10 @@ disable_input_broadcast <- function(
 ) {
   entry <- get_session_entry(session$token)
   if (!is.null(entry)) {
-    entry$handlers$broadcast_handler$suspend()
+    handler <- entry$handlers$get("broadcast_handler")
+    if (inherits(handler, "Observer")) {
+      handler$suspend()
+    }
   }
   invisible()
 }
@@ -980,10 +996,15 @@ enable_input_sync <- function(session = shiny::getDefaultReactiveDomain(),
   register_session(session)
   entry <- get_session_entry(session$token)
   if (is.null(entry)) return(invisible())
-  if (once) {
-    entry$handlers$input_sync_handler$run()
-  } else {
-    entry$handlers$input_sync_handler$resume()
+
+  handler <- entry$handlers$get("input_sync_handler")
+
+  if (inherits(handler, "Observer")) {
+    if (once) {
+      handler$run()
+    } else {
+      handler$resume()
+    }
   }
   invisible()
 }
@@ -993,7 +1014,10 @@ enable_input_sync <- function(session = shiny::getDefaultReactiveDomain(),
 disable_input_sync <- function(session = shiny::getDefaultReactiveDomain()) {
   entry <- get_session_entry(session$token)
   if (!is.null(entry)) {
-    entry$handlers$input_sync_handler$suspend()
+    handler <- entry$handlers$get("input_sync_handler")
+    if (inherits(handler, "Observer")) {
+      handler$suspend()
+    }
   }
   invisible()
 }
@@ -1010,7 +1034,7 @@ get_handler <- function(name, session = shiny::getDefaultReactiveDomain()) {
     entry <- get_session_entry(session$token)
   }
   if (is.null(entry)) return(NULL)
-  entry$handlers[[name]]
+  entry$handlers$get(name)
 }
 
 #' @rdname register_session
@@ -1042,11 +1066,7 @@ set_handler <- function(name, handler, session = shiny::getDefaultReactiveDomain
   entry <- get_session_entry(session$token)
 
   if (length(entry)) {
-    entry$handlers[[name]] <- handler
-
-    registry <- globals_session_registry()
-    registry$set(key = session$token, entry)
-
+    entry$handlers$set(name, handler)
     return(invisible(TRUE))
   }
 
