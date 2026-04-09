@@ -79,6 +79,27 @@ init_app <- function(env = parent.frame()) {
 
   set_shidashi_globals(global_env)
 
+  # Generate a shared_id once so that both UI rendering (load_module)
+
+  # and server-side registration (register_session) use the same value
+  # when the root URL has no ?shared_id= parameter.
+  # Try to use existing option
+  shared_id <- getOption(
+    "shidashi.shared_id",
+    Sys.getenv("SHIDASHI_SHARED_ID", unset = "")
+  )
+  if (
+    length(shared_id) == 1 &&
+      is.character(shared_id) &&
+      !is.na(shared_id) &&
+      nzchar(shared_id)
+  ) {
+    shared_id <- tolower(shared_id)
+  } else {
+    shared_id <- tolower(rand_string(length = 26))
+  }
+  options(shidashi.shared_id = shared_id)
+
   invisible()
 }
 
@@ -344,7 +365,8 @@ register_session <- function(session) {
       }
     }
     if (is.null(shared_id)) {
-      shared_id <- tolower(rand_string(length = 26))
+      shared_id <- getOption("shidashi.shared_id",
+                            default = tolower(rand_string(length = 26)))
     }
 
     entry <- list(
