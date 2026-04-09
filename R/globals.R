@@ -52,30 +52,49 @@ get_shidashi_globals <- function() {
 #' @export
 init_app <- function(env = parent.frame()) {
 
-  global_env <- new.env(parent = emptyenv())
+  # check if env$.__shidashi_globals__. exists
+  global_env <- env$.__shidashi_globals__.
+  if (!is.environment(global_env) || environmentIsLocked(global_env)) {
+    global_env <- new.env(parent = emptyenv())
 
-  global_env$session_registry <- fastmap::fastmap()
+    # Stores the env to make sure the environment is not gc'ed
+    env$.__shidashi_globals__. <- global_env
+  }
 
-  global_env$module_input_registry <- fastmap::fastmap()
-  global_env$module_output_registry <- fastmap::fastmap()
+  # Persist shiny sessions
+  if (!inherits(global_env$session_registry, "fastmap")) {
+    global_env$session_registry <- fastmap::fastmap()
+  }
+
+  # For MCP to query input and outputs
+  if (!inherits(global_env$module_input_registry, "fastmap")) {
+    global_env$module_input_registry <- fastmap::fastmap()
+  }
+
+  if (!inherits(global_env$module_output_registry, "fastmap")) {
+    global_env$module_output_registry <- fastmap::fastmap()
+  }
 
   # Chatbot: per-module conversation history
   # (Chat objects are created per-module in chatbot_server closures)
 
   # module_id -> list(active_idx, conversations)
   # Each conversation: list(title, turns, last_visited)
-  global_env$module_conversations <- fastmap::fastmap()
+  if (!inherits(global_env$module_conversations, "fastmap")) {
+    global_env$module_conversations <- fastmap::fastmap()
+  }
 
   # Phase 7: per-module agent mode state
   # module_id -> list(current_mode, modes, default_mode)
-  global_env$module_agent_modes <- fastmap::fastmap()
+  if (!inherits(global_env$module_agent_modes, "fastmap")) {
+    global_env$module_agent_modes <- fastmap::fastmap()
+  }
 
   # Per-module confirmation policy for destructive tools
   # module_id -> "auto_allow" | "ask" | "auto_reject"
-  global_env$module_confirmation_policy <- fastmap::fastmap()
-
-  # Stores the env to make sure the environment is not gc'ed
-  env$.__shidashi_globals__. <- global_env
+  if (!inherits(global_env$module_confirmation_policy, "fastmap")) {
+    global_env$module_confirmation_policy <- fastmap::fastmap()
+  }
 
   set_shidashi_globals(global_env)
 
@@ -158,7 +177,7 @@ globals_session_registry <- function() {
 
 
 #' @name register_session
-#' @title Shiny session registration and cross-tab synchronisation
+#' @title Shiny session registration and cross-tab synchronization
 #'
 #' @param session A Shiny session object or session proxy (created by
 #'   \code{\link[shiny]{moduleServer}}). Most functions in this family default
@@ -207,7 +226,7 @@ globals_session_registry <- function() {
 #' entry without re-creating observers.
 #'
 #' Internally it creates an entry in the application-global session registry
-#' (initialised by \code{\link{init_app}}), resolves a \code{shared_id} token
+#' (initialized by \code{\link{init_app}}), resolves a \code{shared_id} token
 #' shared across browser tabs from the \code{?shared_id=...} URL query string
 #' (or generates a random 26-character string when absent), sets up the
 #' per-session reactive event bus, and — for named module sessions — sends a
@@ -225,7 +244,7 @@ globals_session_registry <- function() {
 #'
 #' Each registered session maintains a named slot list for Shiny
 #' \code{Observer} objects called \emph{handlers}.  This provides a lightweight
-#' system for attaching module-level lifecycle hooks that are tied to the
+#' system for attaching module-level life-cycle hooks that are tied to the
 #' session's lifetime.
 #'
 #' \strong{User-defined handlers — \code{get_handler()} / \code{set_handler()}}
@@ -246,7 +265,7 @@ globals_session_registry <- function() {
 #'
 #' \strong{Built-in cross-tab sync handlers}
 #'
-#' shidashi pre-installs two opt-in \code{Observer} slots in every registered
+#' shidashi installs two opt-in \code{Observer} slots in every registered
 #' session (both start \emph{suspended}):
 #'
 #' \describe{
@@ -257,7 +276,7 @@ globals_session_registry <- function() {
 #'         Other browser tabs sharing the same \code{shared_id} can read this
 #'         cached snapshot to restore or compare input state.}
 #'   \item{Input sync (\code{enable_input_sync()} /
-#'         \code{disable_input_sync()})}{Listens for serialised input maps
+#'         \code{disable_input_sync()})}{Listens for serialized input maps
 #'         broadcast by \emph{other} sessions sharing the same
 #'         \code{shared_id} via the root-session \code{@shidashi@} input.
 #'         Values differing from the local \code{input} are written into the
@@ -272,7 +291,7 @@ globals_session_registry <- function() {
 #' already ended.
 #'
 #' }
-#' \subsection{Session lifecycle}{
+#' \subsection{Session life-cycle}{
 #'
 #' \preformatted{
 #' init_app()                       # global.R, once per app start
@@ -652,8 +671,8 @@ globals_get_sessions_by_shared_id <- function(shared_id) {
 #'   \code{get_theme} returns a named list with three character elements:
 #'   \describe{
 #'     \item{theme}{Either \code{"light"} or \code{"dark"}.}
-#'     \item{foreground}{Hex colour string for text / foreground elements.}
-#'     \item{background}{Hex colour string for the page background.}
+#'     \item{foreground}{Hex color string for text / foreground elements.}
+#'     \item{background}{Hex color string for the page background.}
 #'   }
 #'   Before the browser fires its first theme event, the light-theme fallback
 #'   \code{list(theme = "light", background = "#FFFFFF", foreground = "#000000")}

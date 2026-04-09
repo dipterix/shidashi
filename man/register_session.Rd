@@ -9,7 +9,7 @@
 \alias{disable_input_sync}
 \alias{get_handler}
 \alias{set_handler}
-\title{Shiny session registration and cross-tab synchronisation}
+\title{Shiny session registration and cross-tab synchronization}
 \usage{
 register_session(session)
 
@@ -73,7 +73,7 @@ installs the handler, or \code{FALSE} invisibly when the session is already
 closed.
 }
 \description{
-Shiny session registration and cross-tab synchronisation
+Shiny session registration and cross-tab synchronization
 }
 \details{
 \subsection{Session registration}{
@@ -84,7 +84,7 @@ same session safely refreshes the session object and URL in the registry
 entry without re-creating observers.
 
 Internally it creates an entry in the application-global session registry
-(initialised by \code{\link{init_app}}), resolves a \code{shared_id} token
+(initialized by \code{\link{init_app}}), resolves a \code{shared_id} token
 shared across browser tabs from the \code{?shared_id=...} URL query string
 (or generates a random 26-character string when absent), sets up the
 per-session reactive event bus, and — for named module sessions — sends a
@@ -102,7 +102,7 @@ cleanup (e.g. in tests).
 
 Each registered session maintains a named slot list for Shiny
 \code{Observer} objects called \emph{handlers}.  This provides a lightweight
-system for attaching module-level lifecycle hooks that are tied to the
+system for attaching module-level life-cycle hooks that are tied to the
 session's lifetime.
 
 \strong{User-defined handlers — \code{get_handler()} / \code{set_handler()}}
@@ -123,7 +123,7 @@ will raise an error if passed to \code{set_handler}:
 
 \strong{Built-in cross-tab sync handlers}
 
-shidashi pre-installs two opt-in \code{Observer} slots in every registered
+shidashi installs two opt-in \code{Observer} slots in every registered
 session (both start \emph{suspended}):
 
 \describe{
@@ -134,7 +134,7 @@ session (both start \emph{suspended}):
         Other browser tabs sharing the same \code{shared_id} can read this
         cached snapshot to restore or compare input state.}
   \item{Input sync (\code{enable_input_sync()} /
-        \code{disable_input_sync()})}{Listens for serialised input maps
+        \code{disable_input_sync()})}{Listens for serialized input maps
         broadcast by \emph{other} sessions sharing the same
         \code{shared_id} via the root-session \code{@shidashi@} input.
         Values differing from the local \code{input} are written into the
@@ -149,7 +149,7 @@ variants suspend the observer and are silent no-ops when the session has
 already ended.
 
 }
-\subsection{Session lifecycle}{
+\subsection{Session life-cycle}{
 
 \preformatted{
 init_app()                       # global.R, once per app start

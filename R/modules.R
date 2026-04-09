@@ -208,9 +208,9 @@ active_module <- function(
 #' @description \code{switch_module} programmatically switches the active
 #' module in the dashboard UI.
 #' It sends a \code{shidashi.switch_module} message to the JavaScript
-#' front-end.  When called from a module running inside an iframe, the
+#' front-end.  When called from a module running inside an \verb{iframe}, the
 #' handler automatically forwards the request to the parent window via
-#' \code{postMessage} so that the sidebar highlight, tab bar, and iframe
+#' \code{postMessage} so that the sidebar highlight, tab bar, and \verb{iframe}
 #' all update correctly.
 #' @param module_id character string; the target module identifier (must
 #'   match an entry in \file{modules.yaml}).

@@ -37,8 +37,8 @@ sessions sharing the same \code{shared_id}}
   \code{get_theme} returns a named list with three character elements:
   \describe{
     \item{theme}{Either \code{"light"} or \code{"dark"}.}
-    \item{foreground}{Hex colour string for text / foreground elements.}
-    \item{background}{Hex colour string for the page background.}
+    \item{foreground}{Hex color string for text / foreground elements.}
+    \item{background}{Hex color string for the page background.}
   }
   Before the browser fires its first theme event, the light-theme fallback
   \code{list(theme = "light", background = "#FFFFFF", foreground = "#000000")}
