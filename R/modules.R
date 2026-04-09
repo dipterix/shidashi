@@ -204,6 +204,31 @@ active_module <- function(
 }
 
 
+#' @rdname module_info
+#' @description \code{switch_module} programmatically switches the active
+#' module in the dashboard UI.
+#' It sends a \code{shidashi.switch_module} message to the JavaScript
+#' front-end.  When called from a module running inside an iframe, the
+#' handler automatically forwards the request to the parent window via
+#' \code{postMessage} so that the sidebar highlight, tab bar, and iframe
+#' all update correctly.
+#' @param module_id character string; the target module identifier (must
+#'   match an entry in \file{modules.yaml}).
+#' @export
+switch_module <- function(
+    module_id,
+    session = shiny::getDefaultReactiveDomain()) {
+  if (is.null(session)) {
+    stop("`switch_module`: must be called within a Shiny reactive context")
+  }
+  session$sendCustomMessage(
+    "shidashi.switch_module",
+    list(module_id = module_id)
+  )
+  invisible()
+}
+
+
 load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()) {
   if (length(module_id) > 1) {
     stop("length of `module_id` must not exceed one.")
@@ -391,8 +416,9 @@ load_module <- function(
   shared_id <- query_list$shared_id
   shared_id <- tolower(shared_id)
   shared_id <- gsub("[^a-z0-9_]", "", shared_id)
-  if (length(shared_id) != 1 || nchar(shared_id) ) {
-    shared_id <- rand_string(26)
+  if (length(shared_id) != 1 || nchar(shared_id) == 0) {
+    shared_id <- getOption("shidashi.shared_id",
+                          default = rand_string(26))
   }
 
   env$.request <- request

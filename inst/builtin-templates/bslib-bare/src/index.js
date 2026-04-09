@@ -1077,6 +1077,19 @@ class ShidashiApp {
       document.body.classList.add('in-iframe');
     }
 
+    // Listen for postMessage from child iframes (e.g. switch_module)
+    if (window.self === window.top) {
+      window.addEventListener('message', (evt) => {
+        if (evt.origin !== window.location.origin) return;
+        const data = evt.data;
+        if (data?.type === 'shidashi.switch_module' && data?.module_id) {
+          if (this.sidebar) this.sidebar.setActiveByModule(data.module_id);
+          if (this.iframeManager) this.iframeManager.openTabByModule(data.module_id);
+          this._reportActiveModule(data.module_id);
+        }
+      });
+    }
+
     // Initialize iframe manager
     const iframeContainer = document.querySelector('.shidashi-content');
     if (iframeContainer) {
@@ -1534,6 +1547,24 @@ class ShidashiApp {
       if (params.module_id) {
         this._reportActiveModule(params.module_id);
       }
+    });
+
+    this.shinyHandler('switch_module', (params) => {
+      if (!params.module_id) return;
+      // If inside an iframe, forward to parent via postMessage
+      if (window.self !== window.top) {
+        try {
+          window.parent.postMessage({
+            type: 'shidashi.switch_module',
+            module_id: params.module_id
+          }, window.location.origin);
+          return;
+        } catch (e) { /* cross-origin safety */ }
+      }
+      // Top-level: handle directly
+      if (this.sidebar) this.sidebar.setActiveByModule(params.module_id);
+      if (this.iframeManager) this.iframeManager.openTabByModule(params.module_id);
+      this._reportActiveModule(params.module_id);
     });
 
     this.shinyHandler('shutdown_session', (params) => {
