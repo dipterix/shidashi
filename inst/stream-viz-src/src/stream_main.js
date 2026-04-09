@@ -1,5 +1,5 @@
 /**
- * stream_main.js — StreamViz: multi-channel signal viewer
+ * stream_main.js — StreamViz: multi-channel signal viewer (Three.js renderer)
  *
  * Bundled by esbuild into inst/htmlwidgets/lib/stream-viz/stream_main.js.
  * Exported global: window.StreamVizLib = { StreamViz }
@@ -13,21 +13,37 @@
  *   Zoom out    — widen visible time range (×2)
  *   Zoom in     — narrow visible time range (×0.5)
  *   Reset       — return to full view
- *   Export SVG  — download the D3 visualisation as a vector SVG file
+ *   Export PNG  — download the Three.js visualisation as a PNG file
  *
  * Interaction:
  *   Mouse wheel — zoom in/out centred on cursor
  *   Click-drag  — pan horizontally when zoomed in
  */
 
-import { select } from 'd3-selection';
-import { line } from 'd3-shape';
-import { scaleLinear } from 'd3-scale';
-import { schemeTableau10 } from 'd3-scale-chromatic';
-import { axisBottom } from 'd3-axis';
-import { format as d3format } from 'd3-format';
+import {
+  WebGLRenderer,
+  Scene,
+  OrthographicCamera,
+  BufferGeometry,
+  Float32BufferAttribute,
+  LineBasicMaterial,
+  Line,
+  Mesh,
+  PlaneGeometry,
+  MeshBasicMaterial
+} from 'three';
 
 const MARGIN = { left: 48, right: 8, top: 4, bottom: 20 };
+
+// Tableau 10 colour palette (matches former D3 schemeTableau10)
+const TABLEAU10 = [
+  '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
+  '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
+];
+const TABLEAU10_HEX = [
+  0x4e79a7, 0xf28e2b, 0xe15759, 0x76b7b2, 0x59a14f,
+  0xedc948, 0xb07aa1, 0xff9da7, 0x9c755f, 0xbab0ac
+];
 
 // ---------------------------------------------------------------------------
 // Min/max decimation — collapses `arr` to at most `targetPts` points by
@@ -35,11 +51,11 @@ const MARGIN = { left: 48, right: 8, top: 4, bottom: 20 };
 // ---------------------------------------------------------------------------
 function minMaxDecimate(arr, targetPts) {
   const n = arr.length;
-  if (n <= targetPts) return Array.from(arr);
+  if (n <= targetPts) return arr;
 
   const pairs = Math.floor(targetPts / 2);
   const step = n / pairs;
-  const out = new Array(pairs * 2);
+  const out = new Float32Array(pairs * 2);
 
   for (let i = 0; i < pairs; i++) {
     const start = Math.floor(i * step);
@@ -50,7 +66,6 @@ function minMaxDecimate(arr, targetPts) {
       if (arr[j] < mn) mn = arr[j];
       if (arr[j] > mx) mx = arr[j];
     }
-    // store min first then max so the path traces a plausible waveform
     out[2 * i] = mn;
     out[2 * i + 1] = mx;
   }
@@ -94,7 +109,40 @@ async function fetchBinary(streamId) {
 }
 
 // ---------------------------------------------------------------------------
-// StreamViz — D3 stacked small-multiples channel display
+// Nice tick generation for axes (replaces D3 axisBottom auto-ticks)
+// ---------------------------------------------------------------------------
+function niceStep(range, maxTicks) {
+  const rough = range / maxTicks;
+  const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+  const frac = rough / pow;
+  let nice;
+  if (frac <= 1.5) nice = 1;
+  else if (frac <= 3) nice = 2;
+  else if (frac <= 7) nice = 5;
+  else nice = 10;
+  return nice * pow;
+}
+
+function generateTicks(tStart, tEnd, maxTicks) {
+  const range = tEnd - tStart;
+  if (range <= 0 || !isFinite(range)) return [];
+  const step = niceStep(range, maxTicks);
+  const first = Math.ceil(tStart / step) * step;
+  const ticks = [];
+  for (let t = first; t <= tEnd + step * 1e-9; t += step) {
+    ticks.push(t);
+  }
+  return ticks;
+}
+
+function formatTick(value, step) {
+  if (step >= 1) return value.toFixed(0);
+  const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 1);
+  return value.toFixed(decimals);
+}
+
+// ---------------------------------------------------------------------------
+// StreamViz — Three.js stacked small-multiples channel display
 // ---------------------------------------------------------------------------
 export class StreamViz {
   constructor(el, width, height) {
@@ -102,7 +150,17 @@ export class StreamViz {
     this.width = width;
     this.height = height;
 
-    this._svg = null;
+    // Three.js components
+    this._renderer = null;
+    this._scene = null;
+    this._camera = null;
+    this._overlayCanvas = null;
+    this._overlayCtx = null;
+    this._container = null;
+
+    // Cached scene objects for disposal tracking
+    this._sceneObjects = [];
+
     this._lastPayload = null;
 
     // Zoom state: [startFrac, endFrac] in [0,1], null = full view
@@ -128,28 +186,74 @@ export class StreamViz {
 
   // -------------------------------------------------------------------------
   _init() {
-    select(this.el).selectAll('*').remove();
+    this.el.innerHTML = '';
 
-    this._svg = select(this.el)
-      .append('svg')
-      .attr('width', this.width)
-      .attr('height', this.height)
-      .style('display', 'block')
-      .style('overflow', 'hidden')
-      .style('font-family', 'sans-serif');
+    // Container for layered canvases
+    const container = document.createElement('div');
+    container.style.position = 'relative';
+    container.style.width = this.width + 'px';
+    container.style.height = this.height + 'px';
+    container.style.overflow = 'hidden';
+    this.el.appendChild(container);
+    this._container = container;
 
-    // Empty state placeholder
-    this._svg.append('text')
-      .attr('x', '50%')
-      .attr('y', '50%')
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('fill', '#888')
-      .attr('font-size', '14px')
-      .text('No data — click Simulate');
+    // Three.js WebGL canvas (bottom layer — backgrounds + signal lines)
+    const dpr = window.devicePixelRatio || 1;
+    this._renderer = new WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true  // needed for PNG export
+    });
+    this._renderer.setSize(this.width, this.height);
+    this._renderer.setPixelRatio(dpr);
+    this._renderer.setClearColor(0x000000, 0);
+    const glCanvas = this._renderer.domElement;
+    glCanvas.style.position = 'absolute';
+    glCanvas.style.top = '0';
+    glCanvas.style.left = '0';
+    container.appendChild(glCanvas);
 
+    // 2D overlay canvas (top layer — text labels, axis ticks)
+    this._overlayCanvas = document.createElement('canvas');
+    this._overlayCanvas.width = Math.round(this.width * dpr);
+    this._overlayCanvas.height = Math.round(this.height * dpr);
+    this._overlayCanvas.style.width = this.width + 'px';
+    this._overlayCanvas.style.height = this.height + 'px';
+    this._overlayCanvas.style.position = 'absolute';
+    this._overlayCanvas.style.top = '0';
+    this._overlayCanvas.style.left = '0';
+    this._overlayCanvas.style.pointerEvents = 'none';
+    container.appendChild(this._overlayCanvas);
+    this._overlayCtx = this._overlayCanvas.getContext('2d');
+
+    // Scene + orthographic camera in pixel coordinates
+    // Camera: left=0, right=width, top=height, bottom=0
+    // This puts (0, height) at top-left and (width, 0) at bottom-right.
+    // We use height - screenY for y-coordinates.
+    this._scene = new Scene();
+    this._camera = new OrthographicCamera(0, this.width, this.height, 0, -1, 1);
+    this._camera.position.z = 0;
+
+    // Empty state
+    this._renderEmptyState();
     this._createControls();
     this._setupInteraction();
+  }
+
+  // -------------------------------------------------------------------------
+  _renderEmptyState() {
+    const ctx = this._overlayCtx;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, this._overlayCanvas.width, this._overlayCanvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = '#888';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No data — click Simulate', this.width / 2, this.height / 2);
+    ctx.restore();
+    this._renderer.render(this._scene, this._camera);
   }
 
   // -------------------------------------------------------------------------
@@ -204,7 +308,7 @@ export class StreamViz {
       container.appendChild(makeIcon('Zoom out', SVG_ZOOM_OUT, () => this.zoomOut()));
       container.appendChild(makeIcon('Zoom in', SVG_ZOOM_IN, () => this.zoomIn()));
       container.appendChild(makeIcon('Reset zoom', SVG_RESET, () => this.resetZoom()));
-      container.appendChild(makeIcon('Export SVG', SVG_IMAGE, () => this.exportSVG()));
+      container.appendChild(makeIcon('Export PNG', SVG_IMAGE, () => this.exportPNG()));
     }
 
     this._controlsEl = container;
@@ -212,65 +316,67 @@ export class StreamViz {
 
   // -------------------------------------------------------------------------
   _setupInteraction() {
-    // const svgNode = this._svg.node();
+    const glCanvas = this._renderer.domElement;
 
-    // // Mouse-wheel zoom (centred on cursor)
-    // svgNode.addEventListener('wheel', (e) => {
-    //   e.preventDefault();
-    //   const [start, end] = this._xRange || [0, 1];
-    //   const range = end - start;
-    //   if (e.deltaY < 0 && range <= 0.001) return;
-    //   if (e.deltaY > 0 && range >= 1)     return;
+    // Mouse-wheel zoom (centred on cursor)
+    glCanvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!this._lastPayload) return;
 
-    //   const factor = e.deltaY > 0 ? 1.5 : 1 / 1.5;
-    //   const newRange = Math.min(1, range * factor);
+      const [start, end] = this._xRange || [0, 1];
+      const range = end - start;
+      if (e.deltaY < 0 && range <= 0.001) return;
+      if (e.deltaY > 0 && range >= 1) return;
 
-    //   const rect = svgNode.getBoundingClientRect();
-    //   const innerW = this.width - MARGIN.left - MARGIN.right;
-    //   const mouseXFrac = Math.max(0, Math.min(1,
-    //     (e.clientX - rect.left - MARGIN.left) / innerW));
-    //   const mouseData = start + mouseXFrac * range;
+      const factor = e.deltaY > 0 ? 1.5 : 1 / 1.5;
+      const newRange = Math.min(1, range * factor);
 
-    //   let s = mouseData - mouseXFrac * newRange;
-    //   let t = s + newRange;
-    //   if (s < 0) { t -= s; s = 0; }
-    //   if (t > 1) { s -= (t - 1); t = 1; }
-    //   s = Math.max(0, s);
+      const rect = glCanvas.getBoundingClientRect();
+      const innerW = this.width - MARGIN.left - MARGIN.right;
+      const mouseXFrac = Math.max(0, Math.min(1,
+        (e.clientX - rect.left - MARGIN.left) / innerW));
+      const mouseData = start + mouseXFrac * range;
 
-    //   this._xRange = newRange >= 1 ? null : [s, t];
-    //   this._rerender();
-    // }, { passive: false });
+      let s = mouseData - mouseXFrac * newRange;
+      let t = s + newRange;
+      if (s < 0) { t -= s; s = 0; }
+      if (t > 1) { s -= (t - 1); t = 1; }
+      s = Math.max(0, s);
 
-    // // Click-drag to pan when zoomed in
-    // svgNode.addEventListener('mousedown', (e) => {
-    //   if (!this._xRange) return;
-    //   const startX = e.clientX;
-    //   const startRange = [...this._xRange];
-    //   svgNode.style.cursor = 'grabbing';
-    //   e.preventDefault();
+      this._xRange = newRange >= 1 ? null : [s, t];
+      this._rerender();
+    }, { passive: false });
 
-    //   const onMove = (e2) => {
-    //     const dx = e2.clientX - startX;
-    //     const innerW = this.width - MARGIN.left - MARGIN.right;
-    //     const range = startRange[1] - startRange[0];
-    //     const shift = -dx / innerW * range;
-    //     let s = startRange[0] + shift;
-    //     let t = startRange[1] + shift;
-    //     if (s < 0) { t -= s; s = 0; }
-    //     if (t > 1) { s -= (t - 1); t = 1; }
-    //     this._xRange = [Math.max(0, s), Math.min(1, t)];
-    //     this._rerender();
-    //   };
+    // Click-drag to pan when zoomed in
+    glCanvas.addEventListener('mousedown', (e) => {
+      if (!this._xRange || !this._lastPayload) return;
+      const startX = e.clientX;
+      const startRange = [...this._xRange];
+      glCanvas.style.cursor = 'grabbing';
+      e.preventDefault();
 
-    //   const onUp = () => {
-    //     svgNode.style.cursor = '';
-    //     document.removeEventListener('mousemove', onMove);
-    //     document.removeEventListener('mouseup', onUp);
-    //   };
+      const onMove = (e2) => {
+        const dx = e2.clientX - startX;
+        const innerW = this.width - MARGIN.left - MARGIN.right;
+        const range = startRange[1] - startRange[0];
+        const shift = -dx / innerW * range;
+        let s = startRange[0] + shift;
+        let t = startRange[1] + shift;
+        if (s < 0) { t -= s; s = 0; }
+        if (t > 1) { s -= (t - 1); t = 1; }
+        this._xRange = [Math.max(0, s), Math.min(1, t)];
+        this._rerender();
+      };
 
-    //   document.addEventListener('mousemove', onMove);
-    //   document.addEventListener('mouseup', onUp);
-    // });
+      const onUp = () => {
+        glCanvas.style.cursor = '';
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -405,36 +511,70 @@ export class StreamViz {
   }
 
   // -------------------------------------------------------------------------
-  // SVG export — downloads the D3 visualisation as a vector .svg file
+  // PNG export — composites WebGL + overlay canvases into a downloadable PNG
   // -------------------------------------------------------------------------
-  exportSVG() {
-    const svgNode = this._svg.node();
-    if (!svgNode) return;
+  exportPNG() {
+    if (!this._renderer) return;
 
-    const clone = svgNode.cloneNode(true);
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    // Force a render so the WebGL canvas has current content
+    this._renderer.render(this._scene, this._camera);
 
-    const svgString = new XMLSerializer().serializeToString(clone);
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.round(this.width * dpr);
+    const h = Math.round(this.height * dpr);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'stream-viz.svg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+    const offscreen = document.createElement('canvas');
+    offscreen.width = w;
+    offscreen.height = h;
+    const ctx = offscreen.getContext('2d');
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    // Layer 1: WebGL canvas
+    ctx.drawImage(this._renderer.domElement, 0, 0, w, h);
+    // Layer 2: overlay canvas (text)
+    ctx.drawImage(this._overlayCanvas, 0, 0, w, h);
+
+    offscreen.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'stream-viz.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }, 'image/png');
   }
 
   // -------------------------------------------------------------------------
   resize(width, height) {
     this.width = width;
     this.height = height;
-    if (this._svg) {
-      this._svg.attr('width', width).attr('height', height);
-      this._rerender();
+
+    if (this._container) {
+      this._container.style.width = width + 'px';
+      this._container.style.height = height + 'px';
     }
+    if (this._renderer) {
+      this._renderer.setSize(width, height);
+    }
+    if (this._overlayCanvas) {
+      const dpr = window.devicePixelRatio || 1;
+      this._overlayCanvas.width = Math.round(width * dpr);
+      this._overlayCanvas.height = Math.round(height * dpr);
+      this._overlayCanvas.style.width = width + 'px';
+      this._overlayCanvas.style.height = height + 'px';
+    }
+    if (this._camera) {
+      this._camera.right = width;
+      this._camera.top = height;
+      this._camera.updateProjectionMatrix();
+    }
+    this._rerender();
   }
 
   // -------------------------------------------------------------------------
@@ -485,9 +625,54 @@ export class StreamViz {
   }
 
   // -------------------------------------------------------------------------
+  // Clear all Three.js objects from the scene and free GPU resources
+  // -------------------------------------------------------------------------
+  _clearScene() {
+    for (let i = 0; i < this._sceneObjects.length; i++) {
+      const obj = this._sceneObjects[i];
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    }
+    this._sceneObjects.length = 0;
+
+    while (this._scene.children.length > 0) {
+      this._scene.remove(this._scene.children[0]);
+    }
+  }
+
+  // Helper: create a Line, track it, and add to scene
+  _addLine(positions, color, opacity, z) {
+    const geo = new BufferGeometry();
+    geo.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    const mat = new LineBasicMaterial({
+      color: color,
+      transparent: opacity < 1,
+      opacity: opacity
+    });
+    const line = new Line(geo, mat);
+    this._scene.add(line);
+    this._sceneObjects.push(line);
+    return line;
+  }
+
+  // Helper: create a background rectangle mesh
+  _addRect(x, y, w, h, color, opacity, z) {
+    const geo = new PlaneGeometry(w, h);
+    const mat = new MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: opacity
+    });
+    const mesh = new Mesh(geo, mat);
+    mesh.position.set(x + w / 2, y + h / 2, z);
+    this._scene.add(mesh);
+    this._sceneObjects.push(mesh);
+    return mesh;
+  }
+
+  // -------------------------------------------------------------------------
   _renderChannels(channels, header, iStart, iEnd) {
     const nCh = channels.length;
-    // Reserve bottom margin only on the last channel for the time axis
     const chHeightFull = nCh > 0 ? this.height / nCh : this.height;
     const innerW = Math.max(1, this.width - MARGIN.left - MARGIN.right);
 
@@ -497,138 +682,163 @@ export class StreamViz {
     // Target ≤ 2×pixel columns so rendering stays fast regardless of nT
     const targetPts = Math.max(4, Math.floor(innerW) * 2);
 
-    this._svg.selectAll('*').remove();
+    // --- Clear previous frame ---
+    this._clearScene();
 
+    // --- Clear 2D overlay ---
+    const ctx = this._overlayCtx;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, this._overlayCanvas.width, this._overlayCanvas.height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    // --- Render each channel ---
     channels.forEach((ch, ci) => {
       const isLast = ci === nCh - 1;
       const innerH = Math.max(1, chHeightFull - MARGIN.top - (isLast ? MARGIN.bottom : 4));
+      // Screen-space Y of this channel's top edge
+      const screenTop = ci * chHeightFull + MARGIN.top;
+      // In camera coords: Y is flipped — screenTop maps to (height - screenTop)
+      const camTop = this.height - screenTop;
+      const camBottom = camTop - innerH;
 
-      // --- per-channel autoscale: mean ± 3σ ----------------------------------
+      // -- per-channel autoscale: mean ± 3σ --
       let sum = 0;
       for (let i = 0; i < ch.length; i++) sum += ch[i];
-      const mean = sum / ch.length;
+      const mean = ch.length > 0 ? sum / ch.length : 0;
       let sq = 0;
       for (let i = 0; i < ch.length; i++) sq += (ch[i] - mean) ** 2;
-      const std = Math.sqrt(sq / ch.length) || 1e-9;
+      const std = Math.sqrt(ch.length > 0 ? sq / ch.length : 0) || 1e-9;
       const yMin = mean - 3 * std;
       const yMax = mean + 3 * std;
+      const yRange = yMax - yMin;
 
-      const decimated = minMaxDecimate(ch, targetPts);
-
-      const xScale = scaleLinear()
-        .domain([0, decimated.length - 1])
-        .range([0, innerW]);
-      const yScale = scaleLinear()
-        .domain([yMin, yMax])
-        .range([innerH, 0]);
-
-      const g = this._svg.append('g')
-        .attr('transform',
-          `translate(${MARGIN.left},${ci * chHeightFull + MARGIN.top})`);
-
-      // background stripe (subtle alternation)
+      // -- Background stripe (alternating channels) --
       if (ci % 2 === 1) {
-        g.append('rect')
-          .attr('width', innerW)
-          .attr('height', innerH)
-          .attr('fill', 'rgba(128,128,128,0.06)');
+        this._addRect(MARGIN.left, camBottom, innerW, innerH, 0x808080, 0.06, -0.5);
       }
 
-      // zero line
+      // -- Zero line --
       if (yMin < 0 && yMax > 0) {
-        g.append('line')
-          .attr('x1', 0).attr('x2', innerW)
-          .attr('y1', yScale(0)).attr('y2', yScale(0))
-          .attr('stroke', 'rgba(128,128,128,0.4)')
-          .attr('stroke-dasharray', '3,2')
-          .attr('stroke-width', 0.5);
+        const normZero = (0 - yMin) / yRange;
+        const zeroY = camBottom + normZero * innerH;
+        this._addLine([
+          MARGIN.left, zeroY, -0.3,
+          MARGIN.left + innerW, zeroY, -0.3
+        ], 0x808080, 0.4);
       }
 
-      // signal path
-      const pathGen = line()
-        .x((_, i) => xScale(i))
-        .y(d => {
-          const clamped = Math.max(yMin, Math.min(yMax, d));
-          return yScale(clamped);
-        })
-        .defined(d => isFinite(d));
+      // -- Signal line (Three.js) --
+      const decimated = minMaxDecimate(ch, targetPts);
+      const nPts = decimated.length;
 
-      g.append('path')
-        .datum(decimated)
-        .attr('fill', 'none')
-        .attr('stroke', schemeTableau10[ci % 10])
-        .attr('stroke-width', 0.9)
-        .attr('d', pathGen);
+      if (nPts > 1) {
+        const positions = new Float32Array(nPts * 3);
+        const xStep = innerW / (nPts - 1);
 
-      // channel label
+        for (let i = 0; i < nPts; i++) {
+          const val = decimated[i];
+          const clamped = Math.max(yMin, Math.min(yMax, isFinite(val) ? val : mean));
+          const normY = (clamped - yMin) / yRange; // 0 = yMin, 1 = yMax
+          positions[i * 3]     = MARGIN.left + i * xStep;
+          positions[i * 3 + 1] = camBottom + normY * innerH;
+          positions[i * 3 + 2] = 0;
+        }
+
+        this._addLine(positions, TABLEAU10_HEX[ci % 10], 1.0, 0);
+      }
+
+      // -- Channel label (2D overlay) --
       const fontSize = Math.min(11, Math.max(8, innerH / 2));
-      g.append('text')
-        .attr('x', -4)
-        .attr('y', innerH / 2)
-        .attr('text-anchor', 'end')
-        .attr('dominant-baseline', 'middle')
-        .attr('font-size', fontSize + 'px')
-        .attr('fill', schemeTableau10[ci % 10])
-        .text(chNames[ci] || `Ch ${ci + 1}`);
+      ctx.font = `${fontSize}px sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = TABLEAU10[ci % 10];
+      ctx.fillText(
+        chNames[ci] || `Ch ${ci + 1}`,
+        MARGIN.left - 4,
+        screenTop + innerH / 2
+      );
 
-      // Time axis on the last channel
+      // -- Time axis on the last channel (2D overlay + Three.js tick lines) --
       if (isLast) {
-        // Determine time domain from header fields
         let tStart, tEnd;
         if (header.timepoints && header.timepoints.length > 0) {
-          // Explicit timepoint vector — slice to visible range
           const tp = header.timepoints;
           tStart = tp[iStart] != null ? tp[iStart] : iStart;
           tEnd   = tp[Math.min(iEnd, tp.length) - 1] != null
                    ? tp[Math.min(iEnd, tp.length) - 1] : iEnd;
         } else if (header.time_start != null && header.time_end != null) {
-          // Explicit start/end range
           const nT = header.n_timepoints || ch.length;
           const fullStart = header.time_start;
           const fullEnd   = header.time_end;
           tStart = fullStart + (iStart / nT) * (fullEnd - fullStart);
           tEnd   = fullStart + (iEnd / nT) * (fullEnd - fullStart);
         } else {
-          // Fallback: index / sample_rate
           const sampleRate = header.sample_rate || 1;
           tStart = (iStart || 0) / sampleRate;
           tEnd   = (iEnd || ch.length) / sampleRate;
         }
 
-        const timeScale = scaleLinear()
-          .domain([tStart, tEnd])
-          .range([0, innerW]);
+        // Screen Y of the axis baseline
+        const axisScreenY = screenTop + innerH;
+        // Camera Y for the axis
+        const axisCamY = this.height - axisScreenY;
 
-        // Tick formatter: honour x_decimal_points if provided
+        // Axis baseline (Three.js)
+        this._addLine([
+          MARGIN.left, axisCamY, -0.1,
+          MARGIN.left + innerW, axisCamY, -0.1
+        ], 0xaaaaaa, 1.0);
+
+        // Tick marks and labels
         const nTicks = Math.max(2, Math.min(10, Math.floor(innerW / 60)));
-        const axis = axisBottom(timeScale)
-          .ticks(nTicks)
-          .tickSizeOuter(0);
-        if (header.x_decimal_points != null && header.x_decimal_points >= 0) {
-          axis.tickFormat(d3format('.' + header.x_decimal_points + 'f'));
-        }
+        const ticks = generateTicks(tStart, tEnd, nTicks);
+        const tRange = tEnd - tStart;
+        const step = ticks.length > 1 ? ticks[1] - ticks[0] : tRange;
 
-        const axisG = g.append('g')
-          .attr('transform', `translate(0,${innerH})`)
-          .call(axis);
-        axisG.selectAll('text')
-          .attr('font-size', '9px')
-          .attr('fill', '#666');
-        axisG.selectAll('.domain, .tick line')
-          .attr('stroke', '#aaa');
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#666';
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 1;
+
+        ticks.forEach((t) => {
+          if (t < tStart || t > tEnd) return;
+          const xFrac = tRange > 0 ? (t - tStart) / tRange : 0;
+          const xPx = MARGIN.left + xFrac * innerW;
+
+          // Tick mark (2D canvas)
+          ctx.beginPath();
+          ctx.moveTo(xPx, axisScreenY);
+          ctx.lineTo(xPx, axisScreenY + 4);
+          ctx.stroke();
+
+          // Tick label
+          let label;
+          if (header.x_decimal_points != null && header.x_decimal_points >= 0) {
+            label = t.toFixed(header.x_decimal_points);
+          } else {
+            label = formatTick(t, step);
+          }
+          ctx.fillText(label, xPx, axisScreenY + 4);
+        });
 
         // Unit label
         if (header.x_unit) {
-          axisG.append('text')
-            .attr('x', innerW)
-            .attr('y', 14)
-            .attr('text-anchor', 'end')
-            .attr('font-size', '8px')
-            .attr('fill', '#999')
-            .text(header.x_unit);
+          ctx.font = '8px sans-serif';
+          ctx.textAlign = 'end';
+          ctx.fillStyle = '#999';
+          ctx.fillText(header.x_unit, MARGIN.left + innerW, axisScreenY + 14);
         }
       }
     });
+
+    ctx.restore();
+
+    // --- Render Three.js scene ---
+    this._renderer.render(this._scene, this._camera);
   }
 }
 

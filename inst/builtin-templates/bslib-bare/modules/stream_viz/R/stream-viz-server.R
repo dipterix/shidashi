@@ -12,7 +12,7 @@ server_stream_viz <- function(input, output, session, ...) {
       shidashi::stream_viz("viz_signal", session = session, streaming = TRUE)
     }),
     outputId = "viz_signal",
-    description = "Multi-channel signal viewer (stream-viz D3 widget)",
+    description = "Multi-channel signal viewer (stream-viz Three.js widget)",
     download_type = "stream_viz",
     session = session
   )
