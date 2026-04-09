@@ -14,7 +14,10 @@ node_modules$
 ^inst/builtin-templates/AdminLTE3-bare/www/shidashi/js/shidashi\.js\.map$
 ^inst/builtin-templates/bslib-bare/node_modules
 ^inst/builtin-templates/bslib-bare/src
+^inst/builtin-templates/bslib-bare/www/shidashi/js/index\.js\.map$
+^inst/builtin-templates/bslib-bare/www/stream$
 ^inst/screenshots$
+^inst/stream-viz-src$
 ^cran-comments\.md$
 ^CRAN-RELEASE$
 ^ui\.R$
