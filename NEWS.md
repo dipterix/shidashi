@@ -1,4 +1,4 @@
-# shidashi 0.1.9
+# shidashi 0.2.0
 
 ## New Features
 
