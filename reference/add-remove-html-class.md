@@ -32,7 +32,7 @@ No value is returned
 ## Examples
 
 ``` r
-server <- function(input, output, session){
+server <- function(input, output, session) {
 
   # Add class `hidden` to element with ID `elemid`
   add_class("#elemid", "hidden")

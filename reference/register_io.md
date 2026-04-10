@@ -1,12 +1,16 @@
 # Register Shiny Inputs and Outputs for `MCP` Access
 
-Wrap `shiny` input and output constructors to register metadata so that
-`MCP` (Model Context Protocol) agent tools can discover, read, and
-update them at runtime. When called inside a module loaded by
-`shidashi`, the input/output specification is recorded as a side effect
-and the UI element is returned. When called outside that context (e.g.
-in a plain Shiny app), the functions fall back to simply evaluating
-`expr`.
+Register `shiny` inputs and outputs for `MCP` (Model Context Protocol)
+agent access.
+
+`register_input()` wraps a `shiny` input constructor to register
+metadata. It evaluates `expr` and returns the UI element.
+
+`register_output()` is a server-side function that registers a render
+function call (e.g. `renderPlot({...})`), assigns it to
+`session$output`, registers the `MCP` output spec, and sets up
+download-widget handlers. The UI overlay icons are injected entirely by
+`JS`.
 
 ## Usage
 
@@ -26,7 +30,14 @@ register_output(
   outputId,
   description = "",
   quoted = FALSE,
-  env = parent.frame()
+  env = parent.frame(),
+  ...,
+  output_opts = list(),
+  download_function = NULL,
+  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data",
+    "stream_viz"),
+  extension = NULL,
+  session = shiny::getDefaultReactiveDomain()
 )
 ```
 
@@ -34,9 +45,9 @@ register_output(
 
 - expr:
 
-  a call expression that creates a `shiny` input or output widget, e.g.
-  `shiny::textInput(inputId = ns("x"), label = "X")` or
-  `shiny::plotOutput(ns("plot1"), height = "100%")`.
+  For `register_input`: a call expression that creates a `shiny` input
+  widget. For `register_output`: a render function call such as
+  `renderPlot({...})`.
 
 - inputId:
 
@@ -75,10 +86,39 @@ register_output(
   character string. The `shiny` output ID (without the module namespace
   prefix).
 
+- ...:
+
+  reserved for future use.
+
+- output_opts:
+
+  a named list of extra options for the output (e.g. width, height
+  defaults).
+
+- download_function:
+
+  a custom download handler function. When `download_type = "data"`,
+  this function receives the file path and writes the download content.
+
+- download_type:
+
+  character string. One of `"image"`, `"threeBrain"`, `"data"`, or
+  `"no-download"`.
+
+- extension:
+
+  character vector of allowed file extension for download, or `NULL`.
+
+- session:
+
+  the `shiny` session object. For `register_output`, defaults to
+  [`shiny::getDefaultReactiveDomain()`](https://rdrr.io/pkg/shiny/man/domains.html).
+
 ## Value
 
-The evaluated UI element produced by `expr`. The input or output
-specification is registered as a side effect.
+`register_input` returns the evaluated UI element. `register_output` is
+called for its side effects (assigning the render function and
+registering widgets) and returns `NULL` invisibly.
 
 ## See also
 
@@ -103,10 +143,12 @@ register_input(
   description = "Filter threshold for the plot"
 )
 
+# inside a shidashi module server function:
 register_output(
-  expr = shiny::plotOutput(ns("my_plot"), height = "100%"),
+  expr = renderPlot({ plot(iris) }),
   outputId = "my_plot",
-  description = "Scatter plot of filtered data"
+  description = "Scatter plot of iris data",
+  download_type = "image"
 )
 } # }
 ```

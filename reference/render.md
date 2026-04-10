@@ -63,7 +63,7 @@ This functions runs a 'shiny' application, and returns the job id if
 template_root()
 #> [1] "/home/runner/.local/share/R/shidashi/bslib-bare"
 
-if(interactive()){
+if(interactive()) {
   render()
 }
 ```

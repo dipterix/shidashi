@@ -8,11 +8,10 @@ When `open_drawer = TRUE`, an additional button is rendered that fires a
 server code (or
 [`chatbot_server`](https://dipterix.org/shidashi/reference/chatbot_server.md))
 can observe this event via
-[`register_session_events`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
-and call
-[`drawer_open`](https://dipterix.org/shidashi/reference/drawer.md) /
-[`shiny::renderUI`](https://rdrr.io/pkg/shiny/man/renderUI.html) to fill
-the drawer with content.
+[`get_event`](https://dipterix.org/shidashi/reference/fire_event.md) and
+call [`drawer_open`](https://dipterix.org/shidashi/reference/drawer.md)
+/ [`shiny::renderUI`](https://rdrr.io/pkg/shiny/man/renderUI.html) to
+fill the drawer with content.
 
 ## Usage
 

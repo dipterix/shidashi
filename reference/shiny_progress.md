@@ -63,7 +63,7 @@ a list of functions that controls the progress
 ``` r
 {
   progress <- shiny_progress("Procedure A", max = 10)
-  for(i in 1:10){
+  for(i in 1:10) {
     progress$inc(sprintf("Step %s", i))
     Sys.sleep(0.1)
   }
@@ -83,7 +83,7 @@ a list of functions that controls the progress
 #> [Procedure A]: Step 10 (10 out of 10)                                           
 #> Finished                                                                        
 
-if(interactive()){
+if(interactive()) {
   library(shiny)
 
   ui <- fluidPage(
@@ -96,7 +96,7 @@ if(interactive()){
     observeEvent(input$click, {
       progress <- shiny_progress("Procedure B", max = 10,
                                  shiny_auto_close = TRUE)
-      for(i in 1:10){
+      for(i in 1:10) {
         progress$inc(sprintf("Step %s", i))
         Sys.sleep(0.1)
       }

@@ -39,6 +39,13 @@
   [`card_operate()`](https://dipterix.org/shidashi/reference/card.md) :
   Card-like 'HTML' element
 
+- [`card_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  [`card_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  [`enable_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  [`disable_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  [`set_card_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  : Create a badge widget located at card header
+
 - [`card_tabset()`](https://dipterix.org/shidashi/reference/card_tabset.md)
   : Generates a set of card panels
 
@@ -60,6 +67,11 @@
   [`drawer_close()`](https://dipterix.org/shidashi/reference/drawer.md)
   [`drawer_toggle()`](https://dipterix.org/shidashi/reference/drawer.md)
   : Open, close, or toggle the drawer panel
+
+- [`fire_event()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  [`get_event()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  [`get_theme()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  : Fire or read a session event
 
 - [`flex_container()`](https://dipterix.org/shidashi/reference/flex_container.md)
   [`flex_item()`](https://dipterix.org/shidashi/reference/flex_container.md)
@@ -84,6 +96,13 @@
 - [`guess_body_class()`](https://dipterix.org/shidashi/reference/guess_body_class.md)
   : Guess the 'AdminLTE' body class for modules, used internally
 
+- [`html_asis()`](https://dipterix.org/shidashi/reference/html_asis.md)
+  : Escape HTML strings
+
+- [`combine_html_class()`](https://dipterix.org/shidashi/reference/html_class.md)
+  [`remove_html_class()`](https://dipterix.org/shidashi/reference/html_class.md)
+  : Combine, add, or remove 'HTML' classes
+
 - [`include_view()`](https://dipterix.org/shidashi/reference/include_view.md)
   : Template function to include 'snippets' in the view folder
 
@@ -92,12 +111,6 @@
 
 - [`init_app()`](https://dipterix.org/shidashi/reference/init_app.md) :
   Initialize a shidashi application
-
-- [`register_session_id()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
-  [`register_session_events()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
-  [`get_theme()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
-  [`get_jsevent()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
-  : The 'JavaScript' tunnel
 
 - [`mcp_wrapper()`](https://dipterix.org/shidashi/reference/mcp_wrapper.md)
   :
@@ -110,6 +123,7 @@
 - [`module_info()`](https://dipterix.org/shidashi/reference/module_info.md)
   [`current_module()`](https://dipterix.org/shidashi/reference/module_info.md)
   [`active_module()`](https://dipterix.org/shidashi/reference/module_info.md)
+  [`switch_module()`](https://dipterix.org/shidashi/reference/module_info.md)
   [`load_module()`](https://dipterix.org/shidashi/reference/module_info.md)
   : Obtain the module information
 
@@ -124,8 +138,8 @@
   [`renderProgress()`](https://dipterix.org/shidashi/reference/progressOutput.md)
   : Progress bar in shiny dashboard
 
-- [`register_global_reactiveValues()`](https://dipterix.org/shidashi/reference/register_global_reactiveValues.md)
-  : Register global reactive list
+- [`read_stream_vis()`](https://dipterix.org/shidashi/reference/read_stream_vis.md)
+  : Read a shidashi stream binary file
 
 - [`register_input()`](https://dipterix.org/shidashi/reference/register_io.md)
   [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
@@ -133,8 +147,21 @@
 
   Register Shiny Inputs and Outputs for `MCP` Access
 
+- [`register_session()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`unregister_session()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`enable_input_broadcast()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`disable_input_broadcast()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`enable_input_sync()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`disable_input_sync()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`get_handler()`](https://dipterix.org/shidashi/reference/register_session.md)
+  [`set_handler()`](https://dipterix.org/shidashi/reference/register_session.md)
+  : Shiny session registration and cross-tab synchronization
+
 - [`render()`](https://dipterix.org/shidashi/reference/render.md) :
   Render a 'shidashi' project
+
+- [`renderStreamViz()`](https://dipterix.org/shidashi/reference/renderStreamViz.md)
+  : Render a streaming widget
 
 - [`reset_output()`](https://dipterix.org/shidashi/reference/reset_output.md)
   : Reset shiny outputs with messages
@@ -150,11 +177,34 @@
 
   Wrap a Skill Directory as an `MCP` Tool Generator
 
+- [`streamVizOutput()`](https://dipterix.org/shidashi/reference/streamVizOutput.md)
+  : Output placeholder for a streaming visualization widget
+
+- [`stream_file_id()`](https://dipterix.org/shidashi/reference/stream_file_id.md)
+  : Build the token-qualified stream file identifier
+
+- [`stream_init()`](https://dipterix.org/shidashi/reference/stream_init.md)
+  : Initialize the shidashi stream directory for a Shiny session
+
+- [`stream_path()`](https://dipterix.org/shidashi/reference/stream_path.md)
+  : Get the absolute path for a shidashi stream file
+
+- [`stream_to_js()`](https://dipterix.org/shidashi/reference/stream_to_js.md)
+  :
+
+  Write data to a shidashi stream binary file
+
+- [`stream_viz()`](https://dipterix.org/shidashi/reference/stream_viz.md)
+  : Create a streaming widget
+
 - [`template_settings`](https://dipterix.org/shidashi/reference/template_settings.md)
   [`template_settings_set()`](https://dipterix.org/shidashi/reference/template_settings.md)
   [`template_settings_get()`](https://dipterix.org/shidashi/reference/template_settings.md)
   [`template_root()`](https://dipterix.org/shidashi/reference/template_settings.md)
   : Configure template options that are shared across the sessions
+
+- [`updateStreamViz()`](https://dipterix.org/shidashi/reference/updateStreamViz.md)
+  : Trigger an in-place update of a streaming widget
 
 - [`use_template()`](https://dipterix.org/shidashi/reference/use_template.md)
   : Download 'shidashi' templates from 'Github'

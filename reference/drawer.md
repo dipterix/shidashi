@@ -26,7 +26,7 @@ No value is returned (called for side effect).
 ## Examples
 
 ``` r
-server <- function(input, output, session){
+server <- function(input, output, session) {
   # Open the drawer
   drawer_open()
 

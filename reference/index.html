@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,6 +106,13 @@
 
         <dt>
 
+          <code><a href="card_badge.html">card_badge()</a></code> <code><a href="card_badge.html">card_recalculate_badge()</a></code> <code><a href="card_badge.html">enable_recalculate_badge()</a></code> <code><a href="card_badge.html">disable_recalculate_badge()</a></code> <code><a href="card_badge.html">set_card_badge()</a></code>
+
+        </dt>
+        <dd>Create a badge widget located at card header</dd>
+
+        <dt>
+
           <code><a href="card_tabset.html">card_tabset()</a></code>
 
         </dt>
@@ -138,6 +145,13 @@
 
         </dt>
         <dd>Open, close, or toggle the drawer panel</dd>
+
+        <dt>
+
+          <code><a href="fire_event.html">fire_event()</a></code> <code><a href="fire_event.html">get_event()</a></code> <code><a href="fire_event.html">get_theme()</a></code>
+
+        </dt>
+        <dd>Fire or read a session event</dd>
 
         <dt>
 
@@ -176,6 +190,20 @@
 
         <dt>
 
+          <code><a href="html_asis.html">html_asis()</a></code>
+
+        </dt>
+        <dd>Escape HTML strings</dd>
+
+        <dt>
+
+          <code><a href="html_class.html">combine_html_class()</a></code> <code><a href="html_class.html">remove_html_class()</a></code>
+
+        </dt>
+        <dd>Combine, add, or remove 'HTML' classes</dd>
+
+        <dt>
+
           <code><a href="include_view.html">include_view()</a></code>
 
         </dt>
@@ -197,13 +225,6 @@
 
         <dt>
 
-          <code><a href="javascript-tunnel.html">register_session_id()</a></code> <code><a href="javascript-tunnel.html">register_session_events()</a></code> <code><a href="javascript-tunnel.html">get_theme()</a></code> <code><a href="javascript-tunnel.html">get_jsevent()</a></code>
-
-        </dt>
-        <dd>The 'JavaScript' tunnel</dd>
-
-        <dt>
-
           <code><a href="mcp_wrapper.html">mcp_wrapper()</a></code>
 
         </dt>
@@ -218,7 +239,7 @@
 
         <dt>
 
-          <code><a href="module_info.html">module_info()</a></code> <code><a href="module_info.html">current_module()</a></code> <code><a href="module_info.html">active_module()</a></code> <code><a href="module_info.html">load_module()</a></code>
+          <code><a href="module_info.html">module_info()</a></code> <code><a href="module_info.html">current_module()</a></code> <code><a href="module_info.html">active_module()</a></code> <code><a href="module_info.html">switch_module()</a></code> <code><a href="module_info.html">load_module()</a></code>
 
         </dt>
         <dd>Obtain the module information</dd>
@@ -246,10 +267,10 @@
 
         <dt>
 
-          <code><a href="register_global_reactiveValues.html">register_global_reactiveValues()</a></code>
+          <code><a href="read_stream_vis.html">read_stream_vis()</a></code>
 
         </dt>
-        <dd>Register global reactive list</dd>
+        <dd>Read a shidashi stream binary file</dd>
 
         <dt>
 
@@ -260,10 +281,24 @@
 
         <dt>
 
+          <code><a href="register_session.html">register_session()</a></code> <code><a href="register_session.html">unregister_session()</a></code> <code><a href="register_session.html">enable_input_broadcast()</a></code> <code><a href="register_session.html">disable_input_broadcast()</a></code> <code><a href="register_session.html">enable_input_sync()</a></code> <code><a href="register_session.html">disable_input_sync()</a></code> <code><a href="register_session.html">get_handler()</a></code> <code><a href="register_session.html">set_handler()</a></code>
+
+        </dt>
+        <dd>Shiny session registration and cross-tab synchronization</dd>
+
+        <dt>
+
           <code><a href="render.html">render()</a></code>
 
         </dt>
         <dd>Render a 'shidashi' project</dd>
+
+        <dt>
+
+          <code><a href="renderStreamViz.html">renderStreamViz()</a></code>
+
+        </dt>
+        <dd>Render a streaming widget</dd>
 
         <dt>
 
@@ -295,10 +330,59 @@
 
         <dt>
 
+          <code><a href="streamVizOutput.html">streamVizOutput()</a></code>
+
+        </dt>
+        <dd>Output placeholder for a streaming visualization widget</dd>
+
+        <dt>
+
+          <code><a href="stream_file_id.html">stream_file_id()</a></code>
+
+        </dt>
+        <dd>Build the token-qualified stream file identifier</dd>
+
+        <dt>
+
+          <code><a href="stream_init.html">stream_init()</a></code>
+
+        </dt>
+        <dd>Initialize the shidashi stream directory for a Shiny session</dd>
+
+        <dt>
+
+          <code><a href="stream_path.html">stream_path()</a></code>
+
+        </dt>
+        <dd>Get the absolute path for a shidashi stream file</dd>
+
+        <dt>
+
+          <code><a href="stream_to_js.html">stream_to_js()</a></code>
+
+        </dt>
+        <dd>Write data to a <span class="pkg">shidashi</span> stream binary file</dd>
+
+        <dt>
+
+          <code><a href="stream_viz.html">stream_viz()</a></code>
+
+        </dt>
+        <dd>Create a streaming widget</dd>
+
+        <dt>
+
           <code><a href="template_settings.html">template_settings</a></code> <code><a href="template_settings.html">template_settings_set()</a></code> <code><a href="template_settings.html">template_settings_get()</a></code> <code><a href="template_settings.html">template_root()</a></code>
 
         </dt>
         <dd>Configure template options that are shared across the sessions</dd>
+
+        <dt>
+
+          <code><a href="updateStreamViz.html">updateStreamViz()</a></code>
+
+        </dt>
+        <dd>Trigger an in-place update of a streaming widget</dd>
 
         <dt>
 

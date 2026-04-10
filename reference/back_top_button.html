@@ -5,7 +5,7 @@ When open_drawer = TRUE, an additional button is rendered
 that fires a &quot;button.click&quot; shidashi-event with
 type = &quot;open_drawer&quot;.
 Module server code (or chatbot_server) can observe
-this event via register_session_events and call
+this event via get_event and call
 drawer_open / shiny::renderUI to fill the
 drawer with content."><meta property="og:description" content="This function is a template function that should be called
 in 'HTML' templates before closing the &quot;&amp;lt;/body&amp;gt;&quot; tag.
@@ -13,7 +13,7 @@ When open_drawer = TRUE, an additional button is rendered
 that fires a &quot;button.click&quot; shidashi-event with
 type = &quot;open_drawer&quot;.
 Module server code (or chatbot_server) can observe
-this event via register_session_events and call
+this event via get_event and call
 drawer_open / shiny::renderUI to fill the
 drawer with content."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -23,7 +23,7 @@ drawer with content."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -56,7 +56,7 @@ in 'HTML' templates before closing the <code>"&lt;/body&gt;"</code> tag.</p>
 that fires a <code>"button.click"</code> shidashi-event with
 <code>type = "open_drawer"</code>.
 Module server code (or <code><a href="chatbot_server.html">chatbot_server</a></code>) can observe
-this event via <code><a href="javascript-tunnel.html">register_session_events</a></code> and call
+this event via <code><a href="fire_event.html">get_event</a></code> and call
 <code><a href="drawer.html">drawer_open</a></code> / <code><a href="https://rdrr.io/pkg/shiny/man/renderUI.html" class="external-link">shiny::renderUI</a></code> to fill the
 drawer with content.</p>
     </div>

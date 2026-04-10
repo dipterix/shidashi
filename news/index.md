@@ -1,5 +1,129 @@
 # Changelog
 
+## shidashi 0.2.0
+
+### New Features
+
+- Added `stream_viz` `htmlwidgets` widget for real-time multi-channel
+  signal viewing; binary stream files are produced by
+  [`stream_to_js()`](https://dipterix.org/shidashi/reference/stream_to_js.md)
+  and fetched by the browser via `fetchStreamData()`; rendering engine
+  switched from `D3` to `Three.js` (`WebGL`) for improved performance on
+  high-density multi-channel data
+- Added streaming helpers:
+  [`stream_init()`](https://dipterix.org/shidashi/reference/stream_init.md)
+  sets up per-session stream directories with automatic cleanup;
+  [`stream_path()`](https://dipterix.org/shidashi/reference/stream_path.md)
+  returns the token-qualified file path;
+  [`stream_file_id()`](https://dipterix.org/shidashi/reference/stream_file_id.md)
+  builds the `{token}_{ns(id)}` identifier used by both R and `JS`
+- Added
+  [`stream_to_js()`](https://dipterix.org/shidashi/reference/stream_to_js.md)
+  for writing binary envelope files (supports `raw`, `json`, `int32`,
+  `float32`, `float64` body types) and
+  [`read_stream_vis()`](https://dipterix.org/shidashi/reference/read_stream_vis.md)
+  for reading them back in R
+- Added
+  [`streamVizOutput()`](https://dipterix.org/shidashi/reference/streamVizOutput.md)
+  /
+  [`renderStreamViz()`](https://dipterix.org/shidashi/reference/renderStreamViz.md)
+  /
+  [`updateStreamViz()`](https://dipterix.org/shidashi/reference/updateStreamViz.md)
+  Shiny bindings for the `stream_viz` widget
+- [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
+  is now a server-side function: it assigns the render function,
+  registers the `MCP` output spec, and injects download/pop-out widget
+  icons via `JS` overlay (no UI-side wrapper needed)
+- Added output widget overlay system: registered outputs gain
+  hover-visible download and pop-out icons injected entirely by `JS`;
+  download modal supports `image`, `htmlwidget`, `threeBrain`, `data`,
+  and `stream_viz` types
+- Added
+  [`server_standalone_viewer()`](https://dipterix.org/shidashi/reference/server_standalone_viewer.md)
+  — a hidden module that re-renders a parent session’s output in a
+  standalone browser tab (pop-out window), forwarding inputs back to the
+  original module session
+- Added
+  [`fire_event()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  and
+  [`get_event()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  for a reactive session event bus; events can be scoped locally
+  (per-session) or globally (cross-tab broadcast via `shared_id`);
+  [`get_theme()`](https://dipterix.org/shidashi/reference/fire_event.md)
+  is a convenience wrapper that returns the current dashboard theme
+- Added
+  [`register_session()`](https://dipterix.org/shidashi/reference/register_session.md)
+  /
+  [`unregister_session()`](https://dipterix.org/shidashi/reference/register_session.md)
+  for comprehensive session life-cycle management with automatic
+  cleanup, reactive event bus setup, and cross-tab synchronization
+  support; replaces the deprecated `register_session_id()`
+- Added
+  [`get_handler()`](https://dipterix.org/shidashi/reference/register_session.md)
+  /
+  [`set_handler()`](https://dipterix.org/shidashi/reference/register_session.md)
+  for managing named session-scoped `Observer` objects with a shared
+  registry; handlers are automatically destroyed on session end
+- Added
+  [`enable_input_broadcast()`](https://dipterix.org/shidashi/reference/register_session.md)
+  /
+  [`disable_input_broadcast()`](https://dipterix.org/shidashi/reference/register_session.md)
+  and
+  [`enable_input_sync()`](https://dipterix.org/shidashi/reference/register_session.md)
+  /
+  [`disable_input_sync()`](https://dipterix.org/shidashi/reference/register_session.md)
+  for opt-in cross-tab input state synchronization; broadcast publishes
+  the current session’s inputs for peer tabs, sync restores inputs from
+  a peer session
+- Added
+  [`switch_module()`](https://dipterix.org/shidashi/reference/module_info.md)
+  to programmatically navigate to another module from server-side code;
+  supports cross-`iframe` forwarding via `JS` `postMessage`
+- Added
+  [`card_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  UI component for dynamic badge widgets in card headers;
+  [`set_card_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  updates badge text and styling from the server without re-rendering;
+  [`card_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  creates a clickable “recalculate needed” badge with
+  [`enable_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  /
+  [`disable_recalculate_badge()`](https://dipterix.org/shidashi/reference/card_badge.md)
+  toggles
+- Added
+  [`html_asis()`](https://dipterix.org/shidashi/reference/html_asis.md)
+  for escaping HTML special characters to display strings literally;
+  [`combine_html_class()`](https://dipterix.org/shidashi/reference/html_class.md)
+  merges and remove duplicated class strings;
+  [`remove_html_class()`](https://dipterix.org/shidashi/reference/html_class.md)
+  removes specified classes from a class string
+- `shared_id` is now unified and shared across UI and server via
+  [`init_app()`](https://dipterix.org/shidashi/reference/init_app.md);
+  resolved from URL query string, R option, environment variable, or
+  auto-generated
+- Internal session registries (`tools`, `output_renderers`, `handlers`)
+  now use `fastmap` for `O(1)` lookup and efficient memory management
+- Added `_captureSVG()` helper in `JS` to convert `SVG` (raster)
+  elements (e.g. `D3` output) to `PNG` data URLs for the query-UI tool
+- Added `shidashi.set_shiny_input` `JS` message handler for programmatic
+  cross-session input forwarding
+- Added `shidashi.switch_module` `JS` message handler for programmatic
+  module navigation from `JS`
+- Added `shidashi.register_output_widgets` `JS` message handler that
+  injects the download/pop-out overlay icons on registered outputs
+- Added demo template modules: `output_widgets`, `stream_viz`, and
+  `session_events`; added hidden `standalone_viewer` module
+- Added `htmlwidgets` to `Imports`
+
+### Bug Fixes
+
+- Fixed download file extension not used correctly in
+  [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
+- Fixed position issue for output widget overlay container
+- Fixed multi-result `MCP` tool request not handled correctly in
+  chat-bot
+- Sanitized `MCP` tool-call results for dashboard display
+
 ## shidashi 0.1.7 & 0.1.8
 
 ### New Features

@@ -76,9 +76,10 @@ Several packages depend on shidashi (notably `ravedash` and
 [`as_icon()`](https://dipterix.org/shidashi/reference/as_icon.md),
 [`add_class()`](https://dipterix.org/shidashi/reference/add-remove-html-class.md),
 [`remove_class()`](https://dipterix.org/shidashi/reference/add-remove-html-class.md),
-[`register_session_id()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md),
-[`register_session_events()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md),
-[`get_theme()`](https://dipterix.org/shidashi/reference/javascript-tunnel.md)
+[`register_session()`](https://dipterix.org/shidashi/reference/register_session.md),
+[`enable_input_broadcast()`](https://dipterix.org/shidashi/reference/register_session.md),
+[`enable_input_sync()`](https://dipterix.org/shidashi/reference/register_session.md),
+[`get_theme()`](https://dipterix.org/shidashi/reference/fire_event.md)
 
 ### JS Message Handlers (6)
 

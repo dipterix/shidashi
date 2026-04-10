@@ -12,6 +12,13 @@ is static and always returns the module whose server code is running,
 `active_module` dynamically tracks which module the user is looking at
 from any context.
 
+`switch_module` programmatically switches the active module in the
+dashboard UI. It sends a `shidashi.switch_module` message to the
+JavaScript front-end. When called from a module running inside an
+`iframe`, the handler automatically forwards the request to the parent
+window via `postMessage` so that the sidebar highlight, tab bar, and
+`iframe` all update correctly.
+
 ## Usage
 
 ``` r
@@ -26,6 +33,8 @@ active_module(
   session = shiny::getDefaultReactiveDomain(),
   root_path = template_root()
 )
+
+switch_module(module_id, session = shiny::getDefaultReactiveDomain())
 
 load_module(
   root_path = template_root(),
@@ -48,6 +57,11 @@ load_module(
 
   shiny reactive domain; used to extract the module id from the URL
   query string when `.module_id` is not found.
+
+- module_id:
+
+  character string; the target module identifier (must match an entry in
+  `modules.yaml`).
 
 - request:
 
@@ -144,29 +158,37 @@ the function falls back to `current_module()`.
 ``` r
 library(shiny)
 module_info()
-#>              id  group           label                 icon badge
-#> 1    getstarted   <NA>     Get Started               rocket      
-#> 2          card  Cards           Cards               square      
-#> 3       widgets  Cards         Widgets         puzzle-piece      
-#> 4       aiagent Agents   AI Agent Demo                robot      
-#> 5      mcpsetup Agents MCP Setup Guide                 plug      
-#> 6          demo   <NA>            Demo            chart-bar      
-#> 7 filestructure   <NA>  File Structure          folder-open      
-#> 8       page500   <NA>       Error 500 exclamation-triangle      
-#>                      url
-#> 1    /?module=getstarted
-#> 2          /?module=card
-#> 3       /?module=widgets
-#> 4       /?module=aiagent
-#> 5      /?module=mcpsetup
-#> 6          /?module=demo
-#> 7 /?module=filestructure
-#> 8       /?module=page500
+#>                   id   group           label                 icon badge
+#> 1         getstarted    <NA>     Get Started               rocket      
+#> 2               card   Cards           Cards               square      
+#> 3            widgets   Cards         Widgets         puzzle-piece      
+#> 4            aiagent  Agents   AI Agent Demo                robot      
+#> 5           mcpsetup  Agents MCP Setup Guide                 plug      
+#> 6     output_widgets Widgets  Output Widgets    external-link-alt      
+#> 7               demo    <NA>            Demo            chart-bar      
+#> 8      filestructure    <NA>  File Structure          folder-open      
+#> 9            page500    <NA>       Error 500 exclamation-triangle      
+#> 10        stream_viz Widgets      Stream Viz          wave-square      
+#> 11    session_events Widgets  Session Events      broadcast-tower      
+#> 12 standalone_viewer    <NA>                                           
+#>                           url
+#> 1         /?module=getstarted
+#> 2               /?module=card
+#> 3            /?module=widgets
+#> 4            /?module=aiagent
+#> 5           /?module=mcpsetup
+#> 6     /?module=output_widgets
+#> 7               /?module=demo
+#> 8      /?module=filestructure
+#> 9            /?module=page500
+#> 10        /?module=stream_viz
+#> 11    /?module=session_events
+#> 12 /?module=standalone_viewer
 
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x562c60135a18>
+#> <environment: 0x55b4a125a128>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -185,8 +207,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x562c632c8708>
-#> <environment: 0x562c632cf5f0>
+#> <bytecode: 0x55b49bc894c0>
+#> <environment: 0x55b49bc7f760>
 #> 
 #> $module$template_path
 #> NULL
@@ -198,7 +220,7 @@ module_data <- load_module(
   request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
-if (interactive()){
+if (interactive()) {
 
 # get module title
 env$module_title()

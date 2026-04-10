@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,49 @@
       <small>Source: <a href="https://github.com/dipterix/shidashi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="shidashi-020">shidashi 0.2.0<a class="anchor" aria-label="anchor" href="#shidashi-020"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li>Added <code>stream_viz</code> <code>htmlwidgets</code> widget for real-time multi-channel signal viewing; binary stream files are produced by <code><a href="../reference/stream_to_js.html">stream_to_js()</a></code> and fetched by the browser via <code>fetchStreamData()</code>; rendering engine switched from <code>D3</code> to <code>Three.js</code> (<code>WebGL</code>) for improved performance on high-density multi-channel data</li>
+<li>Added streaming helpers: <code><a href="../reference/stream_init.html">stream_init()</a></code> sets up per-session stream directories with automatic cleanup; <code><a href="../reference/stream_path.html">stream_path()</a></code> returns the token-qualified file path; <code><a href="../reference/stream_file_id.html">stream_file_id()</a></code> builds the <code>{token}_{ns(id)}</code> identifier used by both R and <code>JS</code>
+</li>
+<li>Added <code><a href="../reference/stream_to_js.html">stream_to_js()</a></code> for writing binary envelope files (supports <code>raw</code>, <code>json</code>, <code>int32</code>, <code>float32</code>, <code>float64</code> body types) and <code><a href="../reference/read_stream_vis.html">read_stream_vis()</a></code> for reading them back in R</li>
+<li>Added <code><a href="../reference/streamVizOutput.html">streamVizOutput()</a></code> / <code><a href="../reference/renderStreamViz.html">renderStreamViz()</a></code> / <code><a href="../reference/updateStreamViz.html">updateStreamViz()</a></code> Shiny bindings for the <code>stream_viz</code> widget</li>
+<li>
+<code><a href="../reference/register_io.html">register_output()</a></code> is now a server-side function: it assigns the render function, registers the <code>MCP</code> output spec, and injects download/pop-out widget icons via <code>JS</code> overlay (no UI-side wrapper needed)</li>
+<li>Added output widget overlay system: registered outputs gain hover-visible download and pop-out icons injected entirely by <code>JS</code>; download modal supports <code>image</code>, <code>htmlwidget</code>, <code>threeBrain</code>, <code>data</code>, and <code>stream_viz</code> types</li>
+<li>Added <code><a href="../reference/server_standalone_viewer.html">server_standalone_viewer()</a></code> — a hidden module that re-renders a parent session’s output in a standalone browser tab (pop-out window), forwarding inputs back to the original module session</li>
+<li>Added <code><a href="../reference/fire_event.html">fire_event()</a></code> and <code><a href="../reference/fire_event.html">get_event()</a></code> for a reactive session event bus; events can be scoped locally (per-session) or globally (cross-tab broadcast via <code>shared_id</code>); <code><a href="../reference/fire_event.html">get_theme()</a></code> is a convenience wrapper that returns the current dashboard theme</li>
+<li>Added <code><a href="../reference/register_session.html">register_session()</a></code> / <code><a href="../reference/register_session.html">unregister_session()</a></code> for comprehensive session life-cycle management with automatic cleanup, reactive event bus setup, and cross-tab synchronization support; replaces the deprecated <code>register_session_id()</code>
+</li>
+<li>Added <code><a href="../reference/register_session.html">get_handler()</a></code> / <code><a href="../reference/register_session.html">set_handler()</a></code> for managing named session-scoped <code>Observer</code> objects with a shared registry; handlers are automatically destroyed on session end</li>
+<li>Added <code><a href="../reference/register_session.html">enable_input_broadcast()</a></code> / <code><a href="../reference/register_session.html">disable_input_broadcast()</a></code> and <code><a href="../reference/register_session.html">enable_input_sync()</a></code> / <code><a href="../reference/register_session.html">disable_input_sync()</a></code> for opt-in cross-tab input state synchronization; broadcast publishes the current session’s inputs for peer tabs, sync restores inputs from a peer session</li>
+<li>Added <code><a href="../reference/module_info.html">switch_module()</a></code> to programmatically navigate to another module from server-side code; supports cross-<code>iframe</code> forwarding via <code>JS</code> <code>postMessage</code>
+</li>
+<li>Added <code><a href="../reference/card_badge.html">card_badge()</a></code> UI component for dynamic badge widgets in card headers; <code><a href="../reference/card_badge.html">set_card_badge()</a></code> updates badge text and styling from the server without re-rendering; <code><a href="../reference/card_badge.html">card_recalculate_badge()</a></code> creates a clickable “recalculate needed” badge with <code><a href="../reference/card_badge.html">enable_recalculate_badge()</a></code> / <code><a href="../reference/card_badge.html">disable_recalculate_badge()</a></code> toggles</li>
+<li>Added <code><a href="../reference/html_asis.html">html_asis()</a></code> for escaping HTML special characters to display strings literally; <code><a href="../reference/html_class.html">combine_html_class()</a></code> merges and remove duplicated class strings; <code><a href="../reference/html_class.html">remove_html_class()</a></code> removes specified classes from a class string</li>
+<li>
+<code>shared_id</code> is now unified and shared across UI and server via <code><a href="../reference/init_app.html">init_app()</a></code>; resolved from URL query string, R option, environment variable, or auto-generated</li>
+<li>Internal session registries (<code>tools</code>, <code>output_renderers</code>, <code>handlers</code>) now use <code>fastmap</code> for <code>O(1)</code> lookup and efficient memory management</li>
+<li>Added <code>_captureSVG()</code> helper in <code>JS</code> to convert <code>SVG</code> (raster) elements (e.g. <code>D3</code> output) to <code>PNG</code> data URLs for the query-UI tool</li>
+<li>Added <code>shidashi.set_shiny_input</code> <code>JS</code> message handler for programmatic cross-session input forwarding</li>
+<li>Added <code>shidashi.switch_module</code> <code>JS</code> message handler for programmatic module navigation from <code>JS</code>
+</li>
+<li>Added <code>shidashi.register_output_widgets</code> <code>JS</code> message handler that injects the download/pop-out overlay icons on registered outputs</li>
+<li>Added demo template modules: <code>output_widgets</code>, <code>stream_viz</code>, and <code>session_events</code>; added hidden <code>standalone_viewer</code> module</li>
+<li>Added <code>htmlwidgets</code> to <code>Imports</code>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-0">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0"></a></h3>
+<ul><li>Fixed download file extension not used correctly in <code><a href="../reference/register_io.html">register_output()</a></code>
+</li>
+<li>Fixed position issue for output widget overlay container</li>
+<li>Fixed multi-result <code>MCP</code> tool request not handled correctly in chat-bot</li>
+<li>Sanitized <code>MCP</code> tool-call results for dashboard display</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.7" id="shidashi-017--018">shidashi 0.1.7 &amp; 0.1.8<a class="anchor" aria-label="anchor" href="#shidashi-017--018"></a></h2>
 <div class="section level3">

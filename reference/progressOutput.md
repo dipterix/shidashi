@@ -95,7 +95,7 @@ progressOutput("sales_report_prog1",
 #> </div>
 
 # server function
-server <- function(input, output, session, ...){
+server <- function(input, output, session, ...) {
   output$sales_report_prog1 <- renderProgress({
     return(list(
       value = 140 / 150 * 100,
