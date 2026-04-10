@@ -1,4 +1,4 @@
-create_barebone <- function(path){
+create_barebone <- function(path) {
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   src <- system.file("builtin-templates", "AdminLTE3-bare", package = "shidashi")
   fs <- list.files(src, full.names = TRUE, recursive = FALSE, all.files = FALSE,
@@ -21,9 +21,8 @@ create_barebone <- function(path){
         "",
         "server <- function(input, output, session) {",
         "",
-        "  shared_data <- shidashi::register_session_id(session)",
-        "  shared_data$enable_broadcast()",
-        "  shared_data$enable_sync()",
+        "  shidashi::enable_input_broadcast(session)",
+        "  shidashi::enable_input_sync(session)",
         "",
         "  # Load and dispatch module server on navigation",
         "  shiny::observeEvent(session$clientData$url_search, {",
@@ -50,26 +49,26 @@ create_barebone <- function(path){
       ), file.path(path, "server.R"))
   }
 
-  dir.create(file.path(path, 'R'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'modules', 'module_id', 'R'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "R"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "modules", "module_id", "R"), showWarnings = FALSE, recursive = TRUE)
 
   # /R/common.R
   {
     writeLines(
       c(
         "library(shiny)",
-        "page_title <- function(complete = TRUE){",
-        "  if(complete){",
+        "page_title <- function(complete = TRUE) {",
+        "  if (complete) {",
         "    \"Shiny Dashboard Template - Barebone\"",
         "  } else {",
         "    \"ShiDashi\"",
         "  }",
         "}",
-        "page_logo <- function(size = c(\"normal\", \"small\", \"large\")){",
+        "page_logo <- function(size = c(\"normal\", \"small\", \"large\")) {",
         "  # Relative path to your logo icon in www/",
         "  \"shidashi/img/icon.png\"",
         "}",
-        "page_loader <- function(){",
+        "page_loader <- function() {",
         "  # if no loader is needed, then return NULL",
         "  shiny::div(",
         "    class = \"preloader flex-column justify-content-center align-items-center\",",
@@ -80,7 +79,7 @@ create_barebone <- function(path){
         "    )",
         "  )",
         "}",
-        "body_class <- function(){",
+        "body_class <- function() {",
         "  c(",
         "    #--- Fix the navigation banner ---",
         "    #\"layout-navbar-fixed\",",
@@ -108,7 +107,7 @@ create_barebone <- function(path){
         "",
         "  )",
         "}",
-        "nav_class <- function(){",
+        "nav_class <- function() {",
         "  c(",
         "    \"main-header\",",
         "    \"navbar\",",
@@ -118,9 +117,9 @@ create_barebone <- function(path){
         "  )",
         "}",
         "",
-        "module_breadcrumb <- function(){}"
+        "module_breadcrumb <- function() {}"
       ),
-      con = file.path(path, 'R', 'common.R'))
+      con = file.path(path, "R", "common.R"))
   }
 
   # /modules/module_id/R/module-ui.R
@@ -130,7 +129,7 @@ create_barebone <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "ui <- function(){",
+        "ui <- function() {",
         "  fluidPage(",
         "    fluidRow(",
         "      column(",
@@ -142,11 +141,11 @@ create_barebone <- function(path){
         "  )",
         "}",
         "",
-        "server_module_id <- function(input, output, session, ...){",
-        "  event_data <- register_session_events(session)",
+        "server_module_id <- function(input, output, session, ...) {",
+        "  shidashi::register_session(session)",
         "",
         "  output$plot <- renderPlot({",
-        "    theme <- shidashi::get_theme(event_data)",
+        "    theme <- shidashi::get_theme()",
         "    set.seed(1)",
         "    par(",
         "      bg = theme$background, fg = theme$foreground,",
@@ -158,7 +157,7 @@ create_barebone <- function(path){
         "  })",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'R', "module-ui.R")
+      con = file.path(path, "modules", "module_id", "R", "module-ui.R")
     )
   }
 
@@ -169,11 +168,11 @@ create_barebone <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "server <- function(input, output, session, ...){",
+        "server <- function(input, output, session, ...) {",
         "  server_module_id(input, output, session, ...)",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'server.R')
+      con = file.path(path, "modules", "module_id", "server.R")
     )
   }
 
@@ -203,7 +202,7 @@ create_barebone <- function(path){
         "  system_prompt: You are an R shiny expert. You have access to the shiny",
         "    application via provided tools."
       ),
-      con = file.path(path, 'modules', 'module_id', 'agents.yaml')
+      con = file.path(path, "modules", "module_id", "agents.yaml")
     )
   }
 
@@ -211,10 +210,10 @@ create_barebone <- function(path){
 }
 
 
-create_barebone_bslib <- function(path){
+create_barebone_bslib <- function(path) {
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
   src <- system.file("builtin-templates", "bslib-bare", package = "shidashi")
-  if(!nchar(src) || !dir.exists(src)){
+  if (!nchar(src) || !dir.exists(src)) {
     stop("Cannot find bslib-bare template. Please update the `shidashi` package.")
   }
   fs <- list.files(src, full.names = TRUE, recursive = FALSE, all.files = FALSE,
@@ -237,9 +236,8 @@ create_barebone_bslib <- function(path){
         "",
         "server <- function(input, output, session) {",
         "",
-        "  shared_data <- shidashi::register_session_id(session)",
-        "  shared_data$enable_broadcast()",
-        "  shared_data$enable_sync()",
+        "  shidashi::enable_input_broadcast(session)",
+        "  shidashi::enable_input_sync(session)",
         "",
         "  # Load and dispatch module server on navigation",
         "  shiny::observeEvent(session$clientData$url_search, {",
@@ -278,8 +276,8 @@ create_barebone_bslib <- function(path){
       ), file.path(path, "server.R"))
   }
 
-  dir.create(file.path(path, 'R'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'modules', 'module_id', 'R'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "R"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "modules", "module_id", "R"), showWarnings = FALSE, recursive = TRUE)
 
   # /R/common.R
   {
@@ -329,7 +327,7 @@ create_barebone_bslib <- function(path){
         "module_breadcrumb <- function() {}",
         ""
       ),
-      con = file.path(path, 'R', 'common.R'))
+      con = file.path(path, "R", "common.R"))
   }
 
   # /modules/module_id/R/module-ui.R
@@ -339,7 +337,7 @@ create_barebone_bslib <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "ui <- function(){",
+        "ui <- function() {",
         "  fluidPage(",
         "    fluidRow(",
         "      column(",
@@ -351,11 +349,11 @@ create_barebone_bslib <- function(path){
         "  )",
         "}",
         "",
-        "server_module_id <- function(input, output, session, ...){",
-        "  event_data <- register_session_events(session)",
+        "server_module_id <- function(input, output, session, ...) {",
+        "  shidashi::register_session(session)",
         "",
         "  output$plot <- renderPlot({",
-        "    theme <- shidashi::get_theme(event_data)",
+        "    theme <- shidashi::get_theme()",
         "    set.seed(1)",
         "    par(",
         "      bg = theme$background, fg = theme$foreground,",
@@ -367,7 +365,7 @@ create_barebone_bslib <- function(path){
         "  })",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'R', "module-ui.R")
+      con = file.path(path, "modules", "module_id", "R", "module-ui.R")
     )
   }
 
@@ -378,11 +376,11 @@ create_barebone_bslib <- function(path){
         "library(shiny)",
         "library(shidashi)",
         "",
-        "server <- function(input, output, session, ...){",
+        "server <- function(input, output, session, ...) {",
         "  server_module_id(input, output, session, ...)",
         "}"
       ),
-      con = file.path(path, 'modules', 'module_id', 'server.R')
+      con = file.path(path, "modules", "module_id", "server.R")
     )
   }
 
@@ -412,7 +410,7 @@ create_barebone_bslib <- function(path){
         "  system_prompt: You are an R shiny expert. You have access to the shiny",
         "    application via provided tools."
       ),
-      con = file.path(path, 'modules', 'module_id', 'agents.yaml')
+      con = file.path(path, "modules", "module_id", "agents.yaml")
     )
   }
 
@@ -424,8 +422,8 @@ create_barebone_bslib <- function(path){
 # Internal helper: create agents/ directory with MCP tools and skills
 create_barebone_agents <- function(path) {
   # Create directory structure
-  dir.create(file.path(path, 'agents', 'tools'), showWarnings = FALSE, recursive = TRUE)
-  dir.create(file.path(path, 'agents', 'skills', 'greet', 'scripts'), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "agents", "tools"), showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(path, "agents", "skills", "greet", "scripts"), showWarnings = FALSE, recursive = TRUE)
 
   # agents/tools/hello_world.R
   writeLines(
@@ -453,7 +451,7 @@ create_barebone_agents <- function(path) {
       "  }",
       ")"
     ),
-    con = file.path(path, 'agents', 'tools', 'hello_world.R')
+    con = file.path(path, "agents", "tools", "hello_world.R")
   )
 
   # agents/tools/get_shiny_input_values.R
@@ -500,7 +498,7 @@ create_barebone_agents <- function(path) {
       "  }",
       ")"
     ),
-    con = file.path(path, 'agents', 'tools', 'get_shiny_input_values.R')
+    con = file.path(path, "agents", "tools", "get_shiny_input_values.R")
   )
 
   # agents/skills/greet/SKILL.md
@@ -525,7 +523,7 @@ create_barebone_agents <- function(path) {
       "",
       "- `args[1]`: The name to greet (default: `\"World\"`)"
     ),
-    con = file.path(path, 'agents', 'skills', 'greet', 'SKILL.md')
+    con = file.path(path, "agents", "skills", "greet", "SKILL.md")
   )
 
   # agents/skills/greet/scripts/greet.R
@@ -542,7 +540,7 @@ create_barebone_agents <- function(path) {
       "",
       "cat(sprintf(\"Hello, %s!\\n\", name))"
     ),
-    con = file.path(path, 'agents', 'skills', 'greet', 'scripts', 'greet.R')
+    con = file.path(path, "agents", "skills", "greet", "scripts", "greet.R")
   )
 
   # agents/tool-schema.yaml
@@ -570,7 +568,7 @@ create_barebone_agents <- function(path) {
       "        type: string",
       "        description: \"Name to greet (default: 'World')\""
     ),
-    con = file.path(path, 'agents', 'tool-schema.yaml')
+    con = file.path(path, "agents", "tool-schema.yaml")
   )
 
   invisible()

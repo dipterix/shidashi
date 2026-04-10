@@ -100,7 +100,7 @@ get_script_category <- function(skill_scripts, script_name) {
 
 load_agent_conf <- function(root_path, module_id) {
   root_path <- normalizePath(root_path, mustWork = TRUE)
-  module_root <- file.path(root_path, 'modules', module_id)
+  module_root <- file.path(root_path, "modules", module_id)
   agent_conf_path <- file.path(module_root, "agents.yaml")
   # read agent.yaml
   if (file.exists(agent_conf_path)) {

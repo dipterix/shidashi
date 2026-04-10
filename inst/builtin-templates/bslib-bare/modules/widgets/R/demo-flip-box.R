@@ -1,4 +1,4 @@
-ui_flip_box <- function(){
+ui_flip_box <- function() {
 
   shiny::tagList(
     column(
@@ -61,7 +61,7 @@ ui_flip_box <- function(){
 
 }
 
-ui_flip_card <- function(){
+ui_flip_card <- function() {
   tagList(
     column(
       width = 12L,
@@ -91,7 +91,7 @@ ui_flip_card <- function(){
   )
 }
 
-server_flip_box <- function(input, output, session, ...){
+server_flip_box <- function(input, output, session, ...) {
 
   output$flip_box_plot <- renderPlot({
     plot(rnorm(100, 10 * sin(seq(0, 2, length.out = 100))), pch = 16,
@@ -100,7 +100,7 @@ server_flip_box <- function(input, output, session, ...){
 
   observeEvent(input$show_progress, {
     progress <- shiny_progress(title = "Running algorithms", max = 10, shiny_auto_close = TRUE)
-    for(i in 1:10){
+    for (i in 1:10) {
       progress$inc(sprintf("Running part %s", i))
       Sys.sleep(0.1)
     }

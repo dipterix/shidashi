@@ -4,6 +4,7 @@
 \alias{module_info}
 \alias{current_module}
 \alias{active_module}
+\alias{switch_module}
 \alias{load_module}
 \title{Obtain the module information}
 \usage{
@@ -19,6 +20,8 @@ active_module(
   root_path = template_root()
 )
 
+switch_module(module_id, session = shiny::getDefaultReactiveDomain())
+
 load_module(
   root_path = template_root(),
   request = list(QUERY_STRING = "/"),
@@ -32,6 +35,9 @@ load_module(
 
 \item{session}{shiny reactive domain; used to extract the module id from
 the URL query string when \code{.module_id} is not found.}
+
+\item{module_id}{character string; the target module identifier (must
+match an entry in \file{modules.yaml}).}
 
 \item{request}{'HTTP' request string}
 
@@ -72,6 +78,14 @@ tab (or the standalone module if no \verb{iframe} manager is present).
 Unlike \code{current_module} which is static and always returns the module
 whose server code is running, \code{active_module} dynamically tracks
 which module the user is looking at from any context.
+
+\code{switch_module} programmatically switches the active
+module in the dashboard UI.
+It sends a \code{shidashi.switch_module} message to the JavaScript
+front-end.  When called from a module running inside an \verb{iframe}, the
+handler automatically forwards the request to the parent window via
+\code{postMessage} so that the sidebar highlight, tab bar, and \verb{iframe}
+all update correctly.
 }
 \details{
 The module files are stored in \code{modules/} folder in your
@@ -118,7 +132,7 @@ module_data <- load_module(
   request = list(QUERY_STRING = "/?module=module_id"))
 env <- module_data$environment
 
-if (interactive()){
+if (interactive()) {
 
 # get module title
 env$module_title()

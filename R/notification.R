@@ -70,15 +70,15 @@ show_notification <- function(
   session = shiny::getDefaultReactiveDomain(),
   class = NULL,
   ...
-){
+) {
   type <- match.arg(type)
   position <- match.arg(position)
   delay <- as.integer(delay)
-  if(!length(delay) || is.na(delay) || delay <= 0){
+  if (!length(delay) || is.na(delay) || delay <= 0) {
     delay <- 5000L
     close <- TRUE
   }
-  if(length(icon)){
+  if (length(icon)) {
     icon <- as_icon(icon)
     icon <- icon$attribs$class
   }
@@ -106,7 +106,7 @@ show_notification <- function(
 #' @export
 clear_notifications <- function(
   class = NULL,
-  session = shiny::getDefaultReactiveDomain()){
+  session = shiny::getDefaultReactiveDomain()) {
 
   class <- unique(c(class, "toast"))
   class <- gsub(" ", "", class)

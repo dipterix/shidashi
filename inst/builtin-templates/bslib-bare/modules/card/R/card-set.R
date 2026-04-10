@@ -1,5 +1,5 @@
 
-ui_card_set <- function(){
+ui_card_set <- function() {
   tagList(
     shiny::column(
       width = 4L,
@@ -119,7 +119,7 @@ ui_card_set <- function(){
             p("An observer listens to click event on `add_card`."),
             html_highlight_code(
               observeEvent(input$add_card, {
-                if(input$add_card %% 2) {
+                if (input$add_card %% 2) {
                   card_tabset_insert(
                     inputId = "card_tabset_expand_demo",
                     title = "More...",

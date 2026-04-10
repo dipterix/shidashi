@@ -51,7 +51,7 @@ cd inst/builtin-templates/bslib-bare && npm install
 Several packages depend on shidashi (notably `ravedash` and `rave-pipelines`). The following 22 interfaces must be preserved:
 
 ### R Functions (16)
-`render()`, `adminlte_ui()`, `template_settings$set()`, `show_notification()`, `clear_notifications()`, `card()`, `card_tool()`, `card_tabset()`, `flex_container()`, `flex_item()`, `as_icon()`, `add_class()`, `remove_class()`, `register_session_id()`, `register_session_events()`, `get_theme()`
+`render()`, `adminlte_ui()`, `template_settings$set()`, `show_notification()`, `clear_notifications()`, `card()`, `card_tool()`, `card_tabset()`, `flex_container()`, `flex_item()`, `as_icon()`, `add_class()`, `remove_class()`, `register_session()`, `enable_input_broadcast()`, `enable_input_sync()`, `get_theme()`
 
 ### JS Message Handlers (6)
 `shidashi.set_current_module`, `shidashi.shutdown_session`, `shidashi.open_iframe_tab`, `shidashi.set_html`, `shidashi.add_class`, `shidashi.remove_class`

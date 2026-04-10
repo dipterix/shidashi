@@ -1,13 +1,13 @@
-card_tabset_header <- function(id_tabset, index, title, active = FALSE){
+card_tabset_header <- function(id_tabset, index, title, active = FALSE) {
   shiny::tags$li(
     class = "nav-item nav-tab-header",
     shiny::a(
       class = ifelse(active, "nav-link active", "nav-link"),
       id = sprintf("%s-%s-tab", id_tabset, index),
       # For AdminLTE3
-      'data-toggle' = "tab",
+      "data-toggle" = "tab",
       # For bootstrap5
-      'data-bs-toggle' = "tab",
+      "data-bs-toggle" = "tab",
       href = sprintf("#%s-%s", id_tabset, index),
       role = "tab",
       "aria-controls" = sprintf("%s-%s", id_tabset, index),
@@ -18,7 +18,7 @@ card_tabset_header <- function(id_tabset, index, title, active = FALSE){
   )
 }
 
-card_tabset_content <- function(id_tabset, index, active, ...){
+card_tabset_content <- function(id_tabset, index, active, ...) {
   shiny::div(
     class = ifelse(active, "tab-pane fade active fill-min-height show position-relative", "tab-pane fade fill-min-height position-relative"),
     id = sprintf("%s-%s", id_tabset, index),
@@ -96,7 +96,7 @@ card_tabset_content <- function(id_tabset, index, active, ...){
 card_tabset <- function(
   ..., inputId = rand_string(prefix = "tabset-"), title = NULL,
   names = NULL, active = NULL, tools = NULL, footer = NULL,
-  class = "", class_header = "", class_body = "", class_foot = ""){
+  class = "", class_header = "", class_body = "", class_foot = "") {
 
   call_ <- match.call()
 
@@ -184,7 +184,7 @@ card_tabset <- function(
 #' @seealso \code{\link{card_tabset}}
 #' @export
 card_tabset_insert <- function(inputId, title, ..., active = TRUE,
-                            notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
+                            notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage(
     "shidashi.card_tabset_insert",
     list(
@@ -199,7 +199,7 @@ card_tabset_insert <- function(inputId, title, ..., active = TRUE,
 
 #' @rdname card_tabset_operate
 #' @export
-card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
+card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage(
     "shidashi.card_tabset_remove",
     list(
@@ -212,7 +212,7 @@ card_tabset_remove <- function(inputId, title, notify_on_failure = TRUE, session
 
 #' @rdname card_tabset_operate
 #' @export
-card_tabset_activate <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()){
+card_tabset_activate <- function(inputId, title, notify_on_failure = TRUE, session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage(
     "shidashi.card_tabset_activate",
     list(

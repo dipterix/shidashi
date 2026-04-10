@@ -1,5 +1,5 @@
 
-ui_card_basic <- function(){
+ui_card_basic <- function() {
 
   shiny::tagList(
     shiny::column( width = 3L, card_with_code(

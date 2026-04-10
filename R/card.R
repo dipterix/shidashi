@@ -110,29 +110,29 @@ card <- function(
   title, ..., footer = NULL, tools = NULL, inputId = NULL,
   class = "", class_header = "", class_body = "", class_foot = "",
   style_header = NULL, style_body = NULL, start_collapsed = FALSE,
-  resizable = FALSE, root_path = template_root()){
+  resizable = FALSE, root_path = template_root()) {
 
   call <- match.call()
   body <- shiny::tagList(...)
 
-  template_path <- file.path(root_path, 'views', 'card.html')
+  template_path <- file.path(root_path, "views", "card.html")
 
-  if(length(title) >= 1){
+  if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
   } else {
     data_title <- ""
   }
 
-  if(length(footer)){
+  if (length(footer)) {
     footer <- shiny::div(
       class = combine_class("card-footer", class_foot),
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
-  if(length(tools)){
+  if (length(tools)) {
     tools <- shiny::div(
       class = "card-tools",
       tools
@@ -141,30 +141,30 @@ card <- function(
     tools <- ""
   }
 
-  if(length(inputId) == 1){
-    if(grepl("[\"']", inputId)){
+  if (length(inputId) == 1) {
+    if (grepl("[\"']", inputId)) {
       stop("`card` ID cannot contain quotation marks.")
     }
-    card_id <- sprintf(" id='%s'", inputId)
+    card_id <- sprintf(" id=\"%s\"", inputId)
   } else {
-    card_id <- ''
+    card_id <- ""
   }
 
-  if(resizable){
+  if (resizable) {
     default_class_body <- "height-400 resize-vertical flex-container no-padding"
-    if(length(class_body)){
+    if (length(class_body)) {
       class_body <- unlist(strsplit(class_body, " "))
-      if(length(class_body)){
+      if (length(class_body)) {
         tmp <- class_body[
           startsWith(class_body, "height-") |
             startsWith(class_body, "min-height-")
         ]
-        size <- sapply(strsplit(tmp, "-"), function(x){ x[[length(x)]] })
-        if(length(size)){
+        size <- sapply(strsplit(tmp, "-"), function(x) { x[[length(x)]] })
+        if (length(size)) {
           suppressWarnings({
             size <- as.numeric(size)
             size <- size[!is.na(size)]
-            if(length(size) && size %% 50 == 0){
+            if (length(size) && size %% 50 == 0) {
               default_class_body <- "resize-vertical flex-container no-padding"
             }
           })
@@ -212,27 +212,27 @@ card2 <- function(
   class = "", class_header = "", class_body = "min-height-400",
   class_foot = "",
   style_header = NULL, style_body = NULL, start_collapsed = FALSE,
-  root_path = template_root()){
+  root_path = template_root()) {
 
   call <- match.call()
-  template_path <- file.path(root_path, 'views', 'card2.html')
+  template_path <- file.path(root_path, "views", "card2.html")
 
-  if(length(title) >= 1){
+  if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
   } else {
     data_title <- ""
   }
 
-  if(length(footer)){
+  if (length(footer)) {
     footer <- shiny::div(
       class = combine_class("card-footer", class_foot),
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
-  if(length(tools)){
+  if (length(tools)) {
     tools <- shiny::tagList(
       tools
     )
@@ -240,13 +240,13 @@ card2 <- function(
     tools <- ""
   }
 
-  if(length(inputId) == 1){
-    if(grepl("[\"']", inputId)){
+  if (length(inputId) == 1) {
+    if (grepl("[\"']", inputId)) {
       stop("`card` ID cannot contain quotation marks.")
     }
-    card_id <- sprintf(" id='%s'", inputId)
+    card_id <- sprintf(" id=\"%s\"", inputId)
   } else {
-    card_id <- ''
+    card_id <- ""
   }
 
   set_attr_call(shiny::htmlTemplate(
@@ -270,7 +270,7 @@ card2 <- function(
 
 #' @rdname card
 #' @export
-card2_open <- function(inputId, session = shiny::getDefaultReactiveDomain()){
+card2_open <- function(inputId, session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage(
     "shidashi.card2widget",
     list(
@@ -281,7 +281,7 @@ card2_open <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 
 #' @rdname card
 #' @export
-card2_close <- function(inputId, session = shiny::getDefaultReactiveDomain()){
+card2_close <- function(inputId, session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage(
     "shidashi.card2widget",
     list(
@@ -292,7 +292,7 @@ card2_close <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 
 #' @rdname card
 #' @export
-card2_toggle <- function(inputId, session = shiny::getDefaultReactiveDomain()){
+card2_toggle <- function(inputId, session = shiny::getDefaultReactiveDomain()) {
   # session$sendCustomMessage(
   #   "shidashi.click",
   #   list(
@@ -311,13 +311,13 @@ card2_toggle <- function(inputId, session = shiny::getDefaultReactiveDomain()){
 #' @export
 card_operate <- function(
   inputId, title, method, session = shiny::getDefaultReactiveDomain()
-){
+) {
   method <- match.arg(
     method, choices = c("collapse", "expand", "remove", "toggle",
                         "maximize", "minimize", "toggleMaximize")
   )
   params <- list(method = method)
-  if(missing(inputId)){
+  if (missing(inputId)) {
     params$title <- title
   } else {
     params$inputId <- session$ns(inputId)

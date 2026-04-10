@@ -2157,6 +2157,49 @@ form {
 }
 
 // ==========================================================================
+// Output widget overlay (download/popout icons)
+// ==========================================================================
+
+// .shidashi-output-widget-wrapper uses Bootstrap's position-relative class
+// applied via JS — no additional position rule needed here.
+
+.shidashi-output-widget-container {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.shidashi-output-widget-wrapper:hover .shidashi-output-widget-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.shidashi-output-widget-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  line-height: 1;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    text-decoration: none;
+  }
+}
+
+// ==========================================================================
 // Dark-mode tweaks
 // ==========================================================================
 

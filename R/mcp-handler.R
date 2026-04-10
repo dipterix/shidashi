@@ -20,93 +20,16 @@
 #     tools              = <named list of ToolDef objects or NULL>
 #   )
 
-# ---------- Shiny session registry helpers --------------------------------
-
-# Register a Shiny session for MCP access
-# Internal
-register_session_mcp <- function(session) {
-  token <- session$token
-  if (is.null(token) || !nzchar(token)) return(invisible(NULL))
-
-  namespace <- session$ns(NULL)
-
-  registry <- globals_mcp_session_registry()
-  registered <- registry$has(token)
-  # Skip if registered
-  if (registered && (length(namespace) != 1 || !nzchar(namespace))) {
-    return(invisible(token))
-  }
-
-  entry <- registry$get(token, list())
-
-  if (identical(entry$shiny_session, session)) {
-    # already registered
-    return(invisible(token))
-  }
-  if (!registered || !length(entry)) {
-    entry <- list(
-      shiny_session      = session,
-      shidashi_module_id = NULL,
-      mcp_session_ids    = character(),
-      namespace          = namespace,
-      url                = shiny::isolate(session$clientData$url_search),
-      registered_at      = Sys.time(),
-      tools              = structure(list(), names = character(0L))
-    )
-    message("Registered session token: ", token)
-  } else {
-    entry$shiny_session <- session
-    entry$url <- shiny::isolate(session$clientData$url_search)
-    entry$namespace <- namespace
-  }
-
-  registry$set(token, entry)
-
-
-  # Send module token to root-level JS so the chatbot can bind
-  if (length(namespace) == 1L && nzchar(namespace)) {
-    # It does not matter who send out custom messages, can be root session or
-    # session proxy: they will be the same to JS
-    session$sendCustomMessage(
-      "shidashi.register_module_token",
-      list(module_id = namespace, token = token)
-    )
-  }
-
-  # Belt: onSessionEnded cleanup
-  session$onSessionEnded(function() {
-    mcp_unregister_session(session)
-    mcp_sweep_closed_sessions()
-  })
-
-  invisible(token)
-}
-
-#' Remove a Shiny session from the MCP registry
-#' @param session A Shiny session object
-#' @keywords internal
-#' @noRd
-mcp_unregister_session <- function(session) {
-  token <- session$token
-  if (is.null(token) || !nzchar(token)) return(invisible(NULL))
-
-  registry <- globals_mcp_session_registry()
-  if (registry$has(token)) {
-    entry <- registry$get(token)
-    if (identical(entry$shiny_session, session) || entry$shiny_session$isClosed()) {
-      registry$remove(token)
-      message("Unregistered session token: ", token)
-    }
-  }
-  invisible(NULL)
-}
+# ---------- MCP-specific session binding helpers --------------------------
+# Generic helpers (register_session, unregister_session, sweep_closed_sessions,
+# get_session_entry) are in globals.R.
 
 # Given a MCP session ID, find shiny session tokens
 mcp_tool_bound_shinysessions <- function(mcp_session_id) {
   if (length(mcp_session_id) != 1 || is.na(mcp_session_id) || !nzchar(mcp_session_id)) {
     return(character(0L))
   }
-  registry <- globals_mcp_session_registry()
+  registry <- globals_session_registry()
   tokens <- registry$keys()
   tokens[
     vapply(tokens, function(token) {
@@ -121,7 +44,7 @@ mcp_tool_unregister_shinysession <- function(mcp_session_id) {
   tokens <- mcp_tool_bound_shinysessions(mcp_session_id)
   if (!length(tokens)) { return() }
 
-  registry <- globals_mcp_session_registry()
+  registry <- globals_session_registry()
   lapply(tokens, function(token) {
     entry <- registry$get(token)
     entry$mcp_session_ids <- entry$mcp_session_ids[!entry$mcp_session_ids %in% mcp_session_id]
@@ -129,53 +52,6 @@ mcp_tool_unregister_shinysession <- function(mcp_session_id) {
   })
 
   invisible(TRUE)
-}
-
-#' Sweep closed Shiny sessions from the registry
-#'
-#' Iterates all registered sessions and removes any where
-#' \code{session$isClosed()} returns \code{TRUE}.
-#' Called defensively on every MCP request.
-#' @keywords internal
-#' @noRd
-mcp_sweep_closed_sessions <- function() {
-  registry <- globals_mcp_session_registry()
-  tokens <- registry$keys()
-  lapply(tokens, function(token) {
-    entry <- registry$get(token)
-    if (!length(entry) || !is.environment(entry$shiny_session)) {
-      registry$remove(token)
-      return()
-    }
-    closed <- tryCatch(entry$shiny_session$isClosed(), error = function(e) TRUE)
-    if (isTRUE(closed)) {
-      registry$remove(token)
-    }
-  })
-  invisible(NULL)
-}
-
-# Look up a registry entry by Shiny session token.
-# Returns the entry list, or NULL if not found / closed.
-mcp_get_shiny_entry <- function(token) {
-  if (length(token) != 1 || !is.character(token) || is.na(token) || !nzchar(token)) {
-    return(NULL)
-  }
-  registry <- globals_mcp_session_registry()
-  if (!registry$has(token)) {
-    return(NULL)
-  }
-  entry <- registry$get(token, missing = list())
-  if (!is.environment(entry$shiny_session)) {
-    registry$remove(token)
-    return(NULL)
-  }
-  closed <- tryCatch(entry$shiny_session$isClosed(), error = function(e) TRUE)
-  if (isTRUE(closed)) {
-    registry$remove(token)
-    return(NULL)
-  }
-  entry
 }
 
 # ---------- app-level HTTP handler ----------------------------------------
@@ -238,7 +114,7 @@ register_mcp_route <- function(app) {
 mcp_http_handler <- function(req) {
 
   # --- sweep stale Shiny sessions (defensive) ---------------------------
-  mcp_sweep_closed_sessions()
+  sweep_closed_sessions()
 
   # --- read body --------------------------------------------------------
   mcp_session_id <- req$HTTP_MCP_SESSION_ID  # may be NULL on initialize
@@ -597,14 +473,14 @@ mcp_handle_tools_list <- function(id, params, mcp_session_id) {
   if (length(bound_token)) {
     # Only use the first session: can only bind one at a time
     bound_token <- bound_token[[1]]
-    entry <- mcp_get_shiny_entry(bound_token)
-    if (length(entry) && is.list(entry$tools) && length(entry$tools)) {
+    entry <- get_session_entry(bound_token)
+    if (length(entry) && entry$tools$size() > 0) {
       # Filter tools by current agent mode
       module_id <- entry$namespace
       current_mode <- globals_get_agent_mode(module_id = module_id)
       enabled_tools <- Filter(function(t) {
         is_tool_enabled_for_mode(t, current_mode)
-      }, entry$tools)
+      }, entry$tools$as_list())
       if (length(enabled_tools)) {
         schema <- lapply(enabled_tools, ellmer_tool_schema)
         tools <- c(tools, unname(schema))
@@ -739,7 +615,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
   }
 
   bound_token <- bound_token[[1]]
-  entry <- mcp_get_shiny_entry(bound_token)
+  entry <- get_session_entry(bound_token)
 
   if (is.null(entry)) {
     result <- list(
@@ -753,11 +629,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
   }
 
   # Look up tool in session's registered tools
-  if (tool_name %in% names(entry$tools)) {
-    tool_obj <- entry$tools[[tool_name]]
-  } else {
-    tool_obj <- NULL
-  }
+  tool_obj <- entry$tools$get(tool_name, missing = NULL)
 
   if (is.null(tool_obj)) {
     result <- list(
@@ -765,7 +637,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
         type = "text",
         text = paste0(
           "Tool '", tool_name, "' not found on bound session. ",
-          "Available tools: ", paste(names(entry$tools), collapse = ", ")
+          "Available tools: ", paste(entry$tools$keys(), collapse = ", ")
         )
       )),
       isError = TRUE
@@ -897,7 +769,7 @@ mcp_handle_tools_call <- function(id, params, mcp_session_id) {
 #' @keywords internal
 #' @noRd
 mcp_tool_list_shinysessions <- function(arguments) {
-  registry <- globals_mcp_session_registry()
+  registry <- globals_session_registry()
   tokens <- registry$keys()
 
   sessions_info <- lapply(tokens, function(tk) {
@@ -907,8 +779,8 @@ mcp_tool_list_shinysessions <- function(arguments) {
     if (isTRUE(closed)) return(NULL)
 
     tool_names <- character(0)
-    if (is.list(entry$tools) && length(entry$tools) > 0L) {
-      tool_names <- names(entry$tools)
+    if (entry$tools$size() > 0L) {
+      tool_names <- entry$tools$keys()
     }
 
     list(
@@ -962,7 +834,7 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
 
 
   # Validate Shiny session exists and is open
-  entry <- mcp_get_shiny_entry(token)
+  entry <- get_session_entry(token)
 
   # Unregister existing sessions
   mcp_tool_unregister_shinysession(mcp_session_id = mcp_session_id)
@@ -982,15 +854,15 @@ mcp_tool_register_shinysession <- function(arguments, mcp_session_id) {
   }
 
   # re-fetch
-  entry <- mcp_get_shiny_entry(token)
+  entry <- get_session_entry(token)
 
   # Bind MCP session to Shiny token
   entry$mcp_session_ids <- unique(c(entry$mcp_session_ids, mcp_session_id))
-  registry <- globals_mcp_session_registry()
+  registry <- globals_session_registry()
   registry$set(token, entry)
 
   # Build response with info about the bound session
-  tool_info <- lapply(entry$tools, function(tool_obj) {
+  tool_info <- lapply(entry$tools$as_list(), function(tool_obj) {
     if (!inherits(tool_obj, "ellmer::ToolDef")) { return() }
     list(name = tool_obj@name,
          description = paste(tool_obj@description, collapse = "\n"))
@@ -1071,7 +943,7 @@ mcp_tool_get_session_info <- function(mcp_session_id) {
     ))
   }
 
-  entry <- mcp_get_shiny_entry(bound_token)
+  entry <- get_session_entry(bound_token)
   if (is.null(entry)) {
     return(list(
       content = list(list(
@@ -1086,7 +958,7 @@ mcp_tool_get_session_info <- function(mcp_session_id) {
     ))
   }
 
-  tool_info <- lapply(entry$tools, function(tool_obj) {
+  tool_info <- lapply(entry$tools$as_list(), function(tool_obj) {
     if (!inherits(tool_obj, "ellmer::ToolDef")) { return() }
     list(name = tool_obj@name,
          description = paste(tool_obj@description, collapse = "\n"))

@@ -335,7 +335,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     item <- data.frame(
       inputId     = inputId,
       description = paste(description, collapse = " "),
-      type        = deparse1(expr),
+      type        = truc_string(deparse1(expr), max_char = 100),
       update      = update_info$update,
       writable    = as.logical(writable)[[1]]
     )
@@ -360,13 +360,13 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
     item <- data.frame(
       outputId    = outputId,
-      description = paste(description, collapse = " ")
+      description = paste(description, collapse = " "),
+      type        = truc_string(deparse1(expr), max_char = 150, side = "both")
     )
 
     output_specs$set(outputId, item)
 
-    # Evaluate the expression and return the UI element
-    eval(expr, envir = env)
+    return(invisible(item))
   }
   class(register_output_spec) <- c("register_output_impl", "function")
 
@@ -499,7 +499,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       ),
       fun = function(inputIds = character()) {
         inputIds <- unlist(inputIds)
-        inputIds <- inputIds[!is.na(inputIds)]
+        inputIds <- inputIds[!is.na(inputIds) & nzchar(inputIds)]
         if (length(inputIds) > 0) {
           items <- input_specs$mget(inputIds)
         } else {
@@ -533,7 +533,9 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         "The value will be sent to the corresponding shiny update function",
         "(e.g. updateTextInput, updateSelectInput, updateNumericInput).",
         "Call `shiny_input_info()` first to discover available input IDs,",
-        "their types, current values, and whether they are writable."
+        "their types, current values, and whether they are writable.",
+        "After changing the inputs, always call `shiny_input_info` again",
+        "to verify the changes."
       ),
       arguments = list(
         inputId = ellmer::type_string(
@@ -594,6 +596,9 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
         ))
 
         eval(expr)
+
+        # Wait for Shiny to update
+        Sys.sleep(0.1)
 
         return(invisible(list(
           updated = TRUE,
@@ -802,21 +807,322 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
 }
 
+find_expr <- function(call, env) {
+  if (!is.call(call)) {
+    stop("find_expr needs a function call, got:\n", deparse1(call))
+    return(NULL)
+  }
+  fn_symbol <- call[[1L]]
+  # Resolve the actual function object
+  fn <- NULL
+
+  if (
+    identical(fn_symbol, quote(shiny::bindEvent)) ||
+    identical(fn_symbol, quote(bindEvent))
+  ) {
+    call <- match.call(definition = shiny::bindEvent, call = call)
+    call <- call$x
+    fn_symbol <- call[[1L]]
+  }
+
+  if (is.call(fn_symbol) && identical(fn_symbol[[1L]], quote(`::`))) {
+    # pkg::fun(...) form
+    pkg <- as.character(fn_symbol[[2L]])
+    fun_name <- as.character(fn_symbol[[3L]])
+    ns <- asNamespace(pkg)
+    fn <- ns[[fun_name]]
+  } else {
+    # try to get the function
+    tryCatch(
+      {
+        fn <- eval(fn_symbol, envir = new.env(parent = env))
+      },
+      error = function(e) {}
+    )
+  }
+
+  if (is.function(fn)) {
+    call <- match.call(fn, call)
+  }
+
+  call <- as.list(call)
+
+  expr <- call[["expr"]]
+  if (is.null(expr)) {
+    # First positional argument
+    expr <- call[[2]]
+  }
+
+  expr
+}
+
+
+# Internal helper: set up download handler, popout handler, and send
+# output metadata to JS. Called by register_output().
+register_output_widgets <- function(
+  render_expr,
+  render_env,
+  outputId,
+  download_type = "image",
+  download_function = NULL,
+  output_opts = list(),
+  extension = NULL,
+  description = "",
+  session = shiny::getDefaultReactiveDomain()
+) {
+
+  if (is.null(session)) { return(invisible()) }
+
+  ns <- session$ns
+  ns_outputId <- ns(outputId)
+  input <- session$input
+
+  # Determine enabled widgets
+  widgets <- "popout"
+  if (!identical(download_type, "no-download")) {
+    widgets <- c("download", widgets)
+  }
+
+  # --- Download handler setup ---
+  if ("download" %in% widgets) {
+    download_ns_id <- ns(paste0(outputId, "__download"))
+    trigger_ns_id <- paste0(ns_outputId, "__download_trigger")
+    modal_prefix <- paste0(outputId, "__dlmodal_")
+
+    shiny::bindEvent(
+      shiny::observe({
+        # Build modal UI based on download_type
+        modal_ui <- switch(
+          download_type,
+          "image" = shiny::tagList(
+            shiny::numericInput(
+              inputId = ns(paste0(modal_prefix, "width")),
+              label = "Width (cm)",
+              value = 30, min = 1, max = 200, step = 0.1
+            ),
+            shiny::numericInput(
+              inputId = ns(paste0(modal_prefix, "height")),
+              label = "Height (cm)",
+              value = 20, min = 1, max = 200, step = 0.1
+            ),
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
+          "threeBrain" = shiny::tagList(
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "title")),
+              label = "Title",
+              value = "RAVE Viewer"
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
+          "data" = shiny::tagList(
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
+          "htmlwidget" = shiny::tagList(
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::checkboxInput(
+              inputId = ns(paste0(modal_prefix, "self_contained")),
+              label = "Self-contained",
+              value = TRUE
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
+          "stream_viz" = shiny::tagList(
+            shiny::textInput(
+              inputId = ns(paste0(modal_prefix, "filename")),
+              label = "Filename",
+              value = paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+            ),
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          ),
+          # fallback
+          shiny::tagList(
+            shiny::downloadButton(
+              outputId = download_ns_id,
+              label = "Download"
+            )
+          )
+        )
+
+        shiny::showModal(shiny::modalDialog(
+          title = if (nzchar(description)) description else paste("Download", outputId),
+          modal_ui,
+          easyClose = TRUE,
+          footer = shiny::modalButton("Cancel")
+        ), session = session)
+      }, domain = session),
+      input[[paste0(outputId, "__download_trigger")]],
+      ignoreNULL = TRUE, ignoreInit = TRUE
+    )
+
+    # Download handler
+    session$output[[paste0(outputId, "__download")]] <- shiny::downloadHandler(
+      filename = function() {
+        fname <- input[[paste0(modal_prefix, "filename")]]
+        if (!length(fname) || !nzchar(fname)) {
+          fname <- paste0(outputId, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+        }
+        switch(
+          download_type,
+          "image" = paste0(fname, ".pdf"),
+          "threeBrain" = paste0(fname, ".html"),
+          "htmlwidget" = paste0(fname, ".html"),
+          "stream_viz" = paste0(fname, ".bin"),
+          {
+            if (length(extension)) {
+              extension <- gsub("^[\\.]{0,}", ".", extension)
+            } else {
+              extension <- ""
+            }
+            paste0(fname, extension)
+          }
+
+        )
+      },
+      content = function(file) {
+        switch(
+          download_type,
+          "image" = {
+            width_cm <- input[[paste0(modal_prefix, "width")]]
+            height_cm <- input[[paste0(modal_prefix, "height")]]
+            if (!length(width_cm) || is.na(width_cm)) {
+              width_cm <- 30
+            }
+            if (!length(height_cm) || is.na(height_cm)) {
+              height_cm <- 20
+            }
+            width_in <- width_cm / 2.54
+            height_in <- height_cm / 2.54
+
+            grDevices::pdf(
+              file,
+              onefile = TRUE,
+              useDingbats = FALSE,
+              width = width_in,
+              height = height_in
+            )
+
+            tryCatch(
+              {
+                res <- eval(render_expr, envir = new.env(parent = render_env))
+                if (inherits(res, "ggplot")) {
+                  # render ggplot
+                  print(res)
+                }
+              },
+              finally = {
+                grDevices::dev.off()
+              }
+            )
+          },
+          "threeBrain" = {
+            tb <- asNamespace("threeBrain")
+            title <- input[[paste0(modal_prefix, "title")]]
+            if (!length(title) || !nzchar(title)) {
+              title <- "RAVE Viewer"
+            }
+            widget <- eval(render_expr, envir = new.env(parent = render_env))
+            tb$save_brain(widget, file, title = title)
+          },
+          "htmlwidget" = {
+            widget <- eval(render_expr, envir = new.env(parent = render_env))
+            htmlwidgets::saveWidget(widget, file, selfcontained = TRUE)
+          },
+          "data" = {
+            if (is.function(download_function)) {
+              download_function(file)
+            }
+          },
+          "stream_viz" = {
+            bin_path <- stream_path(outputId, session)
+            if (file.exists(bin_path)) {
+              file.copy(bin_path, file, overwrite = TRUE)
+            }
+          }
+        )
+
+        # download finishes, dismiss the modal
+        shiny::removeModal()
+      }
+    )
+  }
+
+  # --- Send output metadata to JS ---
+  session$sendCustomMessage("shidashi.register_output_widgets", list(
+    outputId = ns_outputId,
+    widgets = as.list(widgets),
+    download_type = download_type,
+    token = session$token
+  ))
+
+  # --- Store render info in session registry ---
+  entry <- get_session_entry(session$token)
+  if (!is.null(entry)) {
+    entry$output_renderers$set(outputId, list(
+      render_expr = render_expr,
+      render_env = render_env,
+      output_opts = output_opts,
+      extension = extension,
+      download_type = download_type
+    ))
+  }
+
+  invisible()
+}
+
 #' @name register_io
 #' @title Register Shiny Inputs and Outputs for \verb{MCP} Access
 #' @description
-#' Wrap \code{shiny} input and output constructors to register metadata
-#' so that \verb{MCP} (Model Context Protocol) agent tools can discover, read,
-#' and update them at runtime.  When called inside a module loaded by
-#' \code{shidashi}, the input/output specification is recorded as a side
-#' effect and the UI element is returned.  When called outside that
-#' context (e.g. in a plain Shiny app), the functions fall back to simply
-#' evaluating \code{expr}.
+#' Register \code{shiny} inputs and outputs for \verb{MCP} (Model Context
+#' Protocol) agent access.
 #'
-#' @param expr a call expression that creates a \code{shiny} input or
-#'   output widget, e.g.
-#'   \code{shiny::textInput(inputId = ns("x"), label = "X")} or
-#'   \code{shiny::plotOutput(ns("plot1"), height = "100\%")}.
+#' \code{register_input()} wraps a \code{shiny} input constructor to
+#' register metadata.  It evaluates \code{expr} and returns the UI element.
+#'
+#' \code{register_output()} is a server-side function that registers a
+#' render function call (e.g. \code{renderPlot(\{...\})}), assigns it to
+#' \code{session$output}, registers the \verb{MCP} output spec, and sets
+#' up download-widget handlers.  The UI overlay icons are injected
+#' entirely by \verb{JS}.
+#'
+#' @param expr For \code{register_input}: a call expression that creates
+#'   a \code{shiny} input widget.
+#'   For \code{register_output}: a render function call such as
+#'   \code{renderPlot(\{...\})}.
 #' @param inputId character string.  The \code{shiny} input ID
 #'   (without the module namespace prefix).
 #' @param outputId character string.  The \code{shiny} output ID
@@ -833,8 +1139,23 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 #'   \code{expr} is treated as already quoted; otherwise it is captured
 #'   with \code{substitute()}.
 #' @param env the environment in which to evaluate \code{expr}.
-#' @return The evaluated UI element produced by \code{expr}.  The
-#'   input or output specification is registered as a side effect.
+#' @param ... reserved for future use.
+#' @param output_opts a named list of extra options for the output
+#'   (e.g. width, height defaults).
+#' @param download_function a custom download handler function.  When
+#'   \code{download_type = "data"}, this function receives the file path
+#'   and writes the download content.
+#' @param download_type character string.  One of \code{"image"},
+#'   \code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.
+#' @param extension character vector of allowed file extension for
+#'   download, or \code{NULL}.
+#' @param session the \code{shiny} session object.  For
+#'   \code{register_output}, defaults to
+#'   \code{shiny::getDefaultReactiveDomain()}.
+#' @return \code{register_input} returns the evaluated UI element.
+#'   \code{register_output} is called for its side effects (assigning
+#'   the render function and registering widgets) and returns \code{NULL}
+#'   invisibly.
 #' @seealso \code{\link{init_app}}, \code{\link{mcp_wrapper}}
 #' @examples
 #' \dontrun{
@@ -852,10 +1173,12 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 #'   description = "Filter threshold for the plot"
 #' )
 #'
+#' # inside a shidashi module server function:
 #' register_output(
-#'   expr = shiny::plotOutput(ns("my_plot"), height = "100%"),
+#'   expr = renderPlot(\{ plot(iris) \}),
 #'   outputId = "my_plot",
-#'   description = "Scatter plot of filtered data"
+#'   description = "Scatter plot of iris data",
+#'   download_type = "image"
 #' )
 #' }
 #' @export
@@ -895,11 +1218,34 @@ register_input <- function(expr,
 
 #' @rdname register_io
 #' @export
-register_output <- function(expr, outputId, description = "", quoted = FALSE, env = parent.frame()) {
+register_output <- function(
+  expr,
+  outputId,
+  description = "",
+  quoted = FALSE,
+  env = parent.frame(),
+  ...,
+  output_opts = list(),
+  download_function = NULL,
+  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data", "stream_viz"),
+  extension = NULL,
+  session = shiny::getDefaultReactiveDomain()
+) {
+
+  if (is.null(session)) {
+    stop("shidashi::register_output must run in a shiny server function.")
+  }
+
+  download_type <- match.arg(download_type)
+
   if (!quoted) {
     expr <- substitute(expr)
   }
 
+  # Parse the render call to extract the inner expr
+  parsed_expr <- find_expr(expr, env)
+
+  # Register MCP output spec (records the call, does NOT eval)
   register_output_impl <- get0(
     x = ".register_output",
     envir = env,
@@ -915,7 +1261,26 @@ register_output <- function(expr, outputId, description = "", quoted = FALSE, en
       quoted = TRUE,
       env = env
     )
-  } else {
-    eval(expr, envir = env)
   }
+
+  # Set up download/popout widgets
+  register_output_widgets(
+    render_expr = parsed_expr,
+    render_env = env,
+    outputId = outputId,
+    download_type = download_type,
+    download_function = download_function,
+    output_opts = output_opts,
+    extension = extension,
+    description = description,
+    session = session
+  )
+
+  # Evaluate the full render call and assign to session output
+  render_function <- eval(expr, envir = env)
+  if (!is.null(session)) {
+    session$output[[outputId]] <- render_function
+  }
+
+  invisible(NULL)
 }

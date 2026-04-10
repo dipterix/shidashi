@@ -1,4 +1,4 @@
-ui_info_box_basic <- function(){
+ui_info_box_basic <- function() {
   tagList(
     column(width = 3L,
            infobox_with_code(
@@ -13,25 +13,25 @@ ui_info_box_basic <- function(){
   )
 }
 
-ui_info_box_advanced <- function(){
+ui_info_box_advanced <- function() {
 
   tagList(
     column(width = 3L,
            infobox_with_code(
              info_box(icon = "cogs",
-                      span(class = "info-box-text", 'Configurations'),
+                      span(class = "info-box-text", "Configurations"),
                       span(class = "info-box-number", "With icon")))
            ),
     column(width = 3L,
            infobox_with_code(
              info_box(icon = "thumbs-up",
                       class_icon = "bg-green",
-                      span(class = "info-box-text", 'Likes'),
+                      span(class = "info-box-text", "Likes"),
                       span(class = "info-box-number", "Colored icon")))
            ),
     column(width = 3L,
            infobox_with_code(
-             info_box(span(class = "info-box-text", 'Calendars'),
+             info_box(span(class = "info-box-text", "Calendars"),
                       span(class = "info-box-number", "4 items"),
                       icon = "calendar-alt",
                       class = "bg-yellow", class_icon = NULL)
@@ -39,8 +39,8 @@ ui_info_box_advanced <- function(){
     ),
     column(width = 3L,
            infobox_with_code(
-             info_box(span(class = "info-box-text", 'Yes!'),
-                      span(class = "info-box-number", 'Colored differently'), icon = "star",
+             info_box(span(class = "info-box-text", "Yes!"),
+                      span(class = "info-box-number", "Colored differently"), icon = "star",
                       class = "bg-yellow")
            )
     ),
@@ -61,11 +61,11 @@ ui_info_box_advanced <- function(){
 
 }
 
-server_info_box <- function(input, output, session, ...){
+server_info_box <- function(input, output, session, ...) {
 
   output$infobox_progress <- renderProgress({
     val <- input$infobox_make_progress %% 5
-    if(val == 2){
+    if (val == 2) {
       stop("Click again")
     }
     list(
@@ -76,7 +76,7 @@ server_info_box <- function(input, output, session, ...){
 
   observeEvent(input$infobox_make_progress_alt, {
     progress <- shiny_progress(title = "Alternative Procedure", max = 10, outputId = "infobox_progress")
-    for(i in 1:10){
+    for (i in 1:10) {
       progress$inc(sprintf("Step %s", i))
       Sys.sleep(1)
     }

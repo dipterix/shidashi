@@ -214,6 +214,7 @@ class ShidashiApp {
     this._dummy.dispatchEvent(event);
     this.ensureShiny(() => {
       if (typeof this._shiny.onInputChange !== 'function') return;
+      // console.log(event);
       this._shiny.onInputChange('@shidashi_event@', {
         type: type,
         message: message,
@@ -825,6 +826,62 @@ class ShidashiApp {
     return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // ---------- Stream fetch ----------
+
+  /**
+   * Fetch a binary stream file written by R's stream_to_js() with no cache.
+   *
+   * Wire format: [ endianFlag: 1 byte ] [ headerLen: 4 bytes uint32 ] [ header: JSON ] [ body ]
+   *   endianFlag: 0x01 = little-endian
+   *   header JSON contains at minimum: { data_type: "raw"|"json"|"int32"|"float32"|"float64" }
+   *
+   * @param {string} id - Stream identifier (matches the id used in R's stream_path())
+   * @returns {Promise<{type: string, header: object, data: ArrayBuffer|object|Int32Array|Float32Array|Float64Array}>}
+   */
+  async fetchStreamData(id) {
+    const url = 'stream/' + encodeURIComponent(id) + '.bin?_t=' + Date.now();
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error('fetchStreamData: HTTP ' + response.status + ' for stream id "' + id + '"');
+    }
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength < 5) {
+      throw new Error('fetchStreamData: response too short (' + buffer.byteLength + ' bytes) for stream id "' + id + '"');
+    }
+    const view = new DataView(buffer);
+    const littleEndian = view.getUint8(0) === 0x01;
+    const headerLen = view.getUint32(1, littleEndian);
+    if (buffer.byteLength < 5 + headerLen) {
+      throw new Error('fetchStreamData: truncated header for stream id "' + id + '"');
+    }
+    const headerBytes = new Uint8Array(buffer, 5, headerLen);
+    const header = JSON.parse(new TextDecoder().decode(headerBytes));
+    const dataType = header.data_type;
+    // body must be copied out of the shared buffer so typed array constructors work on aligned memory
+    const bodyBuffer = buffer.slice(5 + headerLen);
+    let data;
+    switch (dataType) {
+      case 'raw':
+        data = bodyBuffer;
+        break;
+      case 'json':
+        data = JSON.parse(new TextDecoder().decode(bodyBuffer));
+        break;
+      case 'int32':
+        data = new Int32Array(bodyBuffer);
+        break;
+      case 'float32':
+        data = new Float32Array(bodyBuffer);
+        break;
+      case 'float64':
+        data = new Float64Array(bodyBuffer);
+        break;
+      default:
+        throw new Error('fetchStreamData: unknown data_type "' + dataType + '" for stream id "' + id + '"');
+    }
+    return { type: dataType, header, data };
+  }
+
   /**
    * Capture a <canvas> element as a data URL.
    * Handles WebGL canvases whose drawing buffer may have been cleared
@@ -881,6 +938,51 @@ class ShidashiApp {
     } catch (e) {
       return null;
     }
+  }
+
+  /**
+   * Capture an <svg> element as a PNG data URL (async).
+   * Serialises the SVG, draws it onto an offscreen canvas via Image,
+   * and resolves with the PNG data URL. Returns a Promise.
+   * Resolves to null if capture fails.
+   */
+  _captureSVG(svgEl) {
+    return new Promise((resolve) => {
+      try {
+        const clone = svgEl.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+        const w = svgEl.clientWidth  || parseInt(svgEl.getAttribute('width'))  || 400;
+        const h = svgEl.clientHeight || parseInt(svgEl.getAttribute('height')) || 300;
+        clone.setAttribute('width', w);
+        clone.setAttribute('height', h);
+
+        const svgString = new XMLSerializer().serializeToString(clone);
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = w * scale;
+            canvas.height = h * scale;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      } catch (e) {
+        resolve(null);
+      }
+    });
   }
 
   // ---------- Card tool click delegation ----------
@@ -973,6 +1075,19 @@ class ShidashiApp {
     // Detect iframe context — hide module header when embedded
     if (window.self !== window.top) {
       document.body.classList.add('in-iframe');
+    }
+
+    // Listen for postMessage from child iframes (e.g. switch_module)
+    if (window.self === window.top) {
+      window.addEventListener('message', (evt) => {
+        if (evt.origin !== window.location.origin) return;
+        const data = evt.data;
+        if (data?.type === 'shidashi.switch_module' && data?.module_id) {
+          if (this.sidebar) this.sidebar.setActiveByModule(data.module_id);
+          if (this.iframeManager) this.iframeManager.openTabByModule(data.module_id);
+          this._reportActiveModule(data.module_id);
+        }
+      });
     }
 
     // Initialize iframe manager
@@ -1125,6 +1240,11 @@ class ShidashiApp {
       const shidashiBtn = evt.target.closest('[data-shidashi-action="shidashi-button"]');
       if (shidashiBtn) {
         evt.preventDefault();
+
+        if ( shidashiBtn.classList.contains("disabled") ) {
+          return;
+        }
+
         const eventData = {};
         // Collect data-shidashi-* attributes as event payload
         for (const attr of shidashiBtn.attributes) {
@@ -1134,7 +1254,12 @@ class ShidashiApp {
           }
         }
         eventData.id = shidashiBtn.id || '';
-        this.broadcastEvent('button.click', eventData);
+        eventData.type = eventData.type || 'button.click';
+
+        if (eventData.dynamic === "true") {
+          eventData.message = Date.now();
+        }
+        this.broadcastEvent(eventData.type, eventData);
         return;
       }
     });
@@ -1424,6 +1549,24 @@ class ShidashiApp {
       }
     });
 
+    this.shinyHandler('switch_module', (params) => {
+      if (!params.module_id) return;
+      // If inside an iframe, forward to parent via postMessage
+      if (window.self !== window.top) {
+        try {
+          window.parent.postMessage({
+            type: 'shidashi.switch_module',
+            module_id: params.module_id
+          }, window.location.origin);
+          return;
+        } catch (e) { /* cross-origin safety */ }
+      }
+      // Top-level: handle directly
+      if (this.sidebar) this.sidebar.setActiveByModule(params.module_id);
+      if (this.iframeManager) this.iframeManager.openTabByModule(params.module_id);
+      this._reportActiveModule(params.module_id);
+    });
+
     this.shinyHandler('shutdown_session', (params) => {
       // Close the window or navigate away
       if (params.url) {
@@ -1504,6 +1647,17 @@ class ShidashiApp {
       }
     });
 
+    // params: { inputId, value, priority }
+    this.shinyHandler('set_shiny_input', (params) => {
+      if (params.inputId && window.Shiny) {
+        const opts = {};
+        if (params.priority === 'event') {
+          opts.priority = 'event';
+        }
+        window.Shiny.setInputValue(params.inputId, params.value, opts);
+      }
+    });
+
     // --- Drawer handlers ---
 
     this.shinyHandler('drawer_open', (params) => {
@@ -1541,6 +1695,72 @@ class ShidashiApp {
         if (this._activeModuleId) {
           this._reportActiveModule(this._activeModuleId);
         }
+      }
+    });
+
+    // --- Output widget overlay (download/popout icons) ---
+
+    this.shinyHandler('register_output_widgets', (params) => {
+      // params: { outputId, widgets: ["download","popout"], download_type, token }
+      const outputId = params.outputId;
+      if (!outputId) return;
+
+      const outputEl = document.getElementById(outputId);
+      if (!outputEl) return;
+
+      const parent = outputEl.parentElement;
+      if (!parent) return;
+
+      let container;
+
+      if (parent.classList.contains('shidashi-output-widget-wrapper')) {
+        // Widget was pre-initialized (e.g. by stream-viz _createControls).
+        // Find the existing container rather than creating a new one.
+        container = parent.querySelector('.shidashi-output-widget-container');
+      }
+
+      if (!container) {
+        // Make the parent position-relative so the absolutely-positioned
+        // widget overlay is anchored correctly. The container is inserted
+        // as a sibling *before* the shiny output element so Shiny's
+        // render cycle (which clears the output element) won't destroy it.
+        parent.classList.add('shidashi-output-widget-wrapper');
+
+        container = document.createElement('div');
+        container.className = 'shidashi-output-widget-container';
+        parent.insertBefore(container, outputEl);
+      }
+
+      const widgets = params.widgets || [];
+
+      // Dedup guard: only add icons that don't already exist in the container
+      if (widgets.includes('download') && !container.querySelector('.shidashi-output-widget-icon[title="Download"]')) {
+        const downloadBtn = document.createElement('a');
+        downloadBtn.className = 'shidashi-output-widget-icon';
+        downloadBtn.title = 'Download';
+        downloadBtn.href = '#';
+        downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>';
+        downloadBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (window.Shiny) {
+            Shiny.setInputValue(outputId + '__download_trigger', Date.now(), { priority: 'event' });
+          }
+        });
+        container.appendChild(downloadBtn);
+      }
+
+      if (widgets.includes('popout') && !container.querySelector('.shidashi-output-widget-icon[title="Open in new window"]')) {
+        const popoutBtn = document.createElement('a');
+        popoutBtn.className = 'shidashi-output-widget-icon';
+        popoutBtn.title = 'Open in new window';
+        popoutBtn.href = '#';
+        popoutBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/></svg>';
+        popoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const token = params.token || '';
+          window.open('?module=standalone_viewer&outputId=' + encodeURIComponent(outputId) + '&token=' + encodeURIComponent(token));
+        });
+        container.appendChild(popoutBtn);
       }
     });
 
@@ -1693,6 +1913,36 @@ class ShidashiApp {
           return;
         }
         // fall through
+      }
+
+      // Check for SVG element (e.g. stream-viz D3 output) — rasterise to PNG
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        this._captureSVG(svgEl).then((dataUrl) => {
+          if (dataUrl) {
+            const parts = dataUrl.split(',');
+            const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+            Shiny.setInputValue(inputId, {
+              request_id: requestId,
+              type: 'image',
+              html: '',
+              image_data: parts[1] || '',
+              image_type: mime,
+              note: ''
+            }, { priority: 'event' });
+          } else {
+            // SVG rasterisation failed — fall back to innerHTML
+            Shiny.setInputValue(inputId, {
+              request_id: requestId,
+              type: 'html',
+              html: el.innerHTML,
+              image_data: '',
+              image_type: '',
+              note: el.outerHTML
+            }, { priority: 'event' });
+          }
+        });
+        return;
       }
 
       const img = el.querySelector('img[src^="data:"]');

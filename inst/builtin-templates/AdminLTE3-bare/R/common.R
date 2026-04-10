@@ -1,27 +1,27 @@
 library(shiny)
-page_title <- function(complete = TRUE){
-  if(complete){
+page_title <- function(complete = TRUE) {
+  if (complete) {
     "Shiny Dashboard Template - Barebone"
   } else {
     "ShiDashi"
   }
 }
-page_logo <- function(size = c("normal", "small", "large")){
+page_logo <- function(size = c("normal", "small", "large")) {
   # Relative path to your logo icon in www/
   "shidashi/img/icon.png"
 }
-page_loader <- function(){
+page_loader <- function() {
   # if no loader is needed, then return NULL
   shiny::div(
     class = "preloader flex-column justify-content-center align-items-center",
     shiny::img(
       class = "animation__shake",
       src = page_logo("large"),
-      alt = "Logo", height="60", width="60"
+      alt = "Logo", height = "60", width = "60"
     )
   )
 }
-body_class <- function(){
+body_class <- function() {
   c(
     #--- Fix the navigation banner ---
     #"layout-navbar-fixed",
@@ -49,7 +49,7 @@ body_class <- function(){
 
   )
 }
-nav_class <- function(){
+nav_class <- function() {
   c(
     "main-header",
     "navbar",
@@ -59,4 +59,4 @@ nav_class <- function(){
   )
 }
 
-module_breadcrumb <- function(){}
+module_breadcrumb <- function() {}

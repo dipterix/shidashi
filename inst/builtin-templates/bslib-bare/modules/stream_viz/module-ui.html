@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ module_title() }}</title>
+
+  {{ shidashi::include_view("header.html") }}
+
+</head>
+<body class="{{ shidashi::guess_body_class(body_class()) }}">
+
+<nav class="{{ paste(nav_class(), collapse = ' ') }}">
+  <ul class="navbar-nav">
+    <li class="nav-item">
+      <a class="nav-link fw-semibold">{{ module_title() }}</a>
+    </li>
+  </ul>
+</nav>
+
+<div class="container-fluid py-3">
+
+  {{ ui_stream_viz_controls() }}
+  {{ ui_stream_viz_plot() }}
+
+</div>
+
+{{ shidashi::module_drawer() }}
+{{ shidashi::back_top_button("wave-square") }}
+
+{{ shidashi::include_view("footer.html") }}
+</body>
+</html>

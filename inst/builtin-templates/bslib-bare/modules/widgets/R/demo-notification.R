@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-ui_notification <- function(){
+ui_notification <- function() {
   column(
     width = 6L,
     actionButton(ns("notif_1"), "Default notification", width = "auto"),
@@ -15,7 +15,7 @@ ui_notification <- function(){
   )
 }
 
-server_notification <- function(input, output, session, ...){
+server_notification <- function(input, output, session, ...) {
   observeEvent(input$notif_1, {
     show_notification("This is a default notification. It automatically hides itself after 5 seconds, or you can close it via `x` button.")
   })
@@ -101,7 +101,7 @@ server_notification <- function(input, output, session, ...){
     )
     on.exit({ clear_notifications(class = "notif_7_autoclose") })
     progress <- shiny_progress(title = "Running", max = 10, outputId = "notif_7_prg")
-    for(i in 1:10){
+    for (i in 1:10) {
       Sys.sleep(0.5)
       progress$inc(detail = paste("Channel", i))
     }

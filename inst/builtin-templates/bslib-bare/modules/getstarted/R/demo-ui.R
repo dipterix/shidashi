@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-ui_render <- function(){
+ui_render <- function() {
   column(
     width = 12L,
     h2("Render your first project", class = "shidashi-anchor"),
@@ -16,16 +16,16 @@ ui_render <- function(){
       column(
         6L,
         tags$pre(
-          class = 'no-padding bg-gray-90 pre-compact',
+          class = "no-padding bg-gray-90 pre-compact",
           tags$code(
             class = "r",
             'library(shidashi)
 
 # Set root path to your project folder
-shidashi::template_settings$set(root_path = \'<your project folder>\')
+shidashi::template_settings$set(root_path = "<your project folder>")
 
 # Render project
-shidashi::render(host = \'127.0.0.1\', port = 8310L)'
+shidashi::render(host = "127.0.0.1", port = 8310L)'
           )
         )
       )
@@ -44,6 +44,5 @@ shidashi::render(host = \'127.0.0.1\', port = 8310L)'
   )
 }
 
-server_demo <- function(input, output, session, ...){
-  event_data <- register_session_events(session)
+server_demo <- function(input, output, session, ...) {
 }

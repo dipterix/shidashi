@@ -50,7 +50,7 @@
 #'   request = list(QUERY_STRING = "/?module=module_id"))
 #' env <- module_data$environment
 #'
-#' if (interactive()){
+#' if (interactive()) {
 #'
 #' # get module title
 #' env$module_title()
@@ -65,7 +65,7 @@
 #'
 #' @export
 module_info <- function(root_path = template_root(),
-                        settings_file = "modules.yaml"){
+                        settings_file = "modules.yaml") {
   settings <- yaml::read_yaml(file.path(root_path, settings_file))
   # settings <- yaml::read_yaml('modules.yaml')
   groups <- names(settings$groups)
@@ -77,9 +77,9 @@ module_info <- function(root_path = template_root(),
   groups <- unique(groups)
   group_level <- factor(groups, levels = groups, ordered = TRUE)
 
-  module_tbl <- do.call('rbind', lapply(modules_ids, function(mid){
+  module_tbl <- do.call("rbind", lapply(modules_ids, function(mid) {
     x <- modules[[mid]]
-    y <- x[!names(x) %in% c('order', 'group', 'label', 'icon', 'badge', 'module', 'hidden')]
+    y <- x[!names(x) %in% c("order", "group", "label", "icon", "badge", "module", "hidden")]
     y$module <- mid
     url <- httr2::url_modify("https://dipterix.org/?module=", query = y)
     if (length(x$group) == 1 && x$group %in% group_level) {
@@ -204,7 +204,32 @@ active_module <- function(
 }
 
 
-load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()){
+#' @rdname module_info
+#' @description \code{switch_module} programmatically switches the active
+#' module in the dashboard UI.
+#' It sends a \code{shidashi.switch_module} message to the JavaScript
+#' front-end.  When called from a module running inside an \verb{iframe}, the
+#' handler automatically forwards the request to the parent window via
+#' \code{postMessage} so that the sidebar highlight, tab bar, and \verb{iframe}
+#' all update correctly.
+#' @param module_id character string; the target module identifier (must
+#'   match an entry in \file{modules.yaml}).
+#' @export
+switch_module <- function(
+    module_id,
+    session = shiny::getDefaultReactiveDomain()) {
+  if (is.null(session)) {
+    stop("`switch_module`: must be called within a Shiny reactive context")
+  }
+  session$sendCustomMessage(
+    "shidashi.switch_module",
+    list(module_id = module_id)
+  )
+  invisible()
+}
+
+
+load_module_resource <- function(root_path = template_root(), module_id = NULL, env = parent.frame()) {
   if (length(module_id) > 1) {
     stop("length of `module_id` must not exceed one.")
   }
@@ -219,7 +244,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
   module_info <- list(
     id = module_id,
-    server = function(input, output, session, ...){},
+    server = function(input, output, session, ...) {},
     template_path = NULL
   )
 
@@ -250,7 +275,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
   }
 
   if (length(module_id) == 1) {
-    module_root <- file.path(root_path, 'modules', module_id)
+    module_root <- file.path(root_path, "modules", module_id)
     module_info$template_path <- file.path(module_root, "module-ui.html")
 
     if (dir.exists(module_root)) {
@@ -258,7 +283,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
       re$has_module <- TRUE
       env$ns <- shiny::NS(module_id)
       env$.module_id <- module_id
-      env$module_title <- function(){
+      env$module_title <- function() {
         modules <- module_info()
         modules$label[modules$id == module_id]
       }
@@ -275,7 +300,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 
       agent_conf <- load_agent_conf(root_path = root_path, module_id = module_id)
 
-      r_folder <- file.path(module_root, 'R')
+      r_folder <- file.path(module_root, "R")
       if (dir.exists(r_folder)) {
         fs <- list.files(r_folder, pattern = "\\.R$", ignore.case = TRUE,
                          recursive = FALSE, include.dirs = FALSE,
@@ -303,7 +328,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
                                                        env = env)
       # Store agent config in module env for chatbot_ui / back_top_button
 
-      module_handler <- file.path(root_path, 'modules', module_id, 'server.R')
+      module_handler <- file.path(root_path, "modules", module_id, "server.R")
       if (file.exists(module_handler)) {
         # server_env <- new.env(parent = env)
         server_env <- env
@@ -325,13 +350,14 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
         body(server_function) <- bquote({
           local({
             shidashi <- asNamespace("shidashi")
-            shidashi$register_session_mcp(session = session)
-            registry <- shidashi$globals_mcp_session_registry()
+            shidashi$register_session(session = session)
+            registry <- shidashi$globals_session_registry()
             entry <- registry$get(session$token)
 
             # Build MCP tools
             tools <- .mcptools_maker(session)
-            entry$tools <- tools$as_list()
+            entry$tools$reset()
+            entry$tools$mset(.list = tools$as_list())
             registry$set(session$token, entry)
 
             # Set agent mode early so MCP can filter tools even if
@@ -378,20 +404,21 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
 load_module <- function(
   root_path = template_root(),
   request = list(QUERY_STRING = "/"),
-  env = parent.frame()){
+  env = parent.frame()) {
 
   force(env)
   query_str <- request$QUERY_STRING
   if (length(query_str) != 1) {
-    query_str <- '/'
+    query_str <- "/"
   }
   query_list <- shiny::parseQueryString(query_str)
   module_id <- query_list$module
   shared_id <- query_list$shared_id
   shared_id <- tolower(shared_id)
   shared_id <- gsub("[^a-z0-9_]", "", shared_id)
-  if (length(shared_id) != 1 || nchar(shared_id) ) {
-    shared_id <- rand_string(26)
+  if (length(shared_id) != 1 || nchar(shared_id) == 0) {
+    shared_id <- getOption("shidashi.shared_id",
+                          default = rand_string(26))
   }
 
   env$.request <- request

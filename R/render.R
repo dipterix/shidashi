@@ -19,7 +19,7 @@
 #'
 #' template_root()
 #'
-#' if(interactive()){
+#' if(interactive()) {
 #'   render()
 #' }
 #'
@@ -32,13 +32,13 @@ render <- function(
   launch_browser = TRUE,
   as_job = TRUE,
   test_mode = getOption("shiny.testmode", FALSE)
-){
-  if(!dir.exists(root_path)){
+) {
+  if (!dir.exists(root_path)) {
     stop("`root_path` cannot be found: ", root_path)
   }
   root_path <- normalizePath(root_path, mustWork = TRUE, winslash = "/")
 
-  if(!prelaunch_quoted) {
+  if (!prelaunch_quoted) {
     prelaunch <- substitute(prelaunch)
   }
 
@@ -64,17 +64,17 @@ render <- function(
   # root_path regardless of working directory or how the app is launched.
   writeLines(
     c(
-      sprintf("shidashi::template_settings$set('root_path' = '%s')", root_path),
+      sprintf('shidashi::template_settings$set("root_path" = "%s")', root_path),
       "shidashi::adminlte_ui()"
     ),
     file.path(root_path, "ui.R")
   )
 
-  if(!as_job || system.file(package = 'rstudioapi') == '' ||
+  if (!as_job || system.file(package = "rstudioapi") == "" ||
      !rstudioapi::isAvailable(version_needed = "1.4.1717",
-                              child_ok = FALSE)){
+                              child_ok = FALSE)) {
 
-    shidashi::template_settings$set('root_path' = root_path)
+    shidashi::template_settings$set("root_path" = root_path)
     eval(prelaunch, envir = new.env(parent = globalenv()))
 
     # Use shinyAppDir so that ui.R / server.R are loaded normally, then
@@ -102,7 +102,7 @@ render <- function(
       'options("crayon.colors" = 256)\n',
       deparse(prelaunch),
       "\n",
-      sprintf("app <- shidashi:::register_mcp_route(shiny::shinyAppDir('%s'))", root_path),
+      sprintf("app <- shidashi:::register_mcp_route(shiny::shinyAppDir(\"%s\"))", root_path),
       deparse(run_call)
     )
     writeLines(
@@ -141,24 +141,24 @@ render <- function(
 #' }
 #' @export
 include_view <- function(file, ..., .env = parent.frame(),
-                         .root_path = template_root()){
+                         .root_path = template_root()) {
   tryCatch({
-    file <- normalizePath(file.path(.root_path, 'views', file),
+    file <- normalizePath(file.path(.root_path, "views", file),
                           mustWork = TRUE)
-  }, error = function(e){
+  }, error = function(e) {
     stop(call. = NULL, "Cannot find views/", file)
   })
-  list2env(list(.env = .env), envir=.GlobalEnv)
+  list2env(list(.env = .env), envir = .GlobalEnv)
   args <- NULL
-  if(is.environment(.env$env)) {
+  if (is.environment(.env$env)) {
     args <- get0("@args", envir = .env$env, ifnotfound = NULL)
   }
-  if(!is.list(args)) {
+  if (!is.list(args)) {
     args <- as.list(.env)
   }
   # more_args <- list(...)
-  # for(nm in names(more_args)){
-  #   if(nm != ""){
+  # for(nm in names(more_args)) {
+  #   if (nm != "") {
   #     args[[nm]] <- more_args[[nm]]
   #   }
   # }

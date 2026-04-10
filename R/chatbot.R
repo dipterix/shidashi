@@ -233,8 +233,8 @@ chatbot_server <- function(input, output, session,
     return(invisible(NULL))
   }
 
-  # Observe shidashi button events
-  event_data <- register_session_events(session)
+  # Register session for event bus (theme, button events, etc.)
+  shidashi::register_session(session)
 
   # Module ID from the calling moduleServer namespace
   module_id <- session$ns(NULL)
@@ -321,21 +321,67 @@ chatbot_server <- function(input, output, session,
           if (!is_token_valid(local_data$get("callback_token"))) {
             return(invisible(NULL))
           }
-          tryCatch({
-            # if (!is.null(result@request) && endsWith(result@request@name, "shiny_query_ui")) {
-            #   return(invisible(NULL))
-            # }
+          if (length(result@error)) {
+            try({
+              shinychat::chat_append(id = id, session = session, result)
+            }, silent = TRUE)
+            return()
+          }
+
+          if (is.list(result@value)) {
+            value_list <- result@value
+            unwrap <- FALSE
+          } else {
+            value_list <- list(result@value)
+            unwrap <- TRUE
+          }
+
+          value_list <- lapply(value_list, function(value) {
             if (
-              S7::S7_inherits(result@value, ellmer::ContentImage)
+              S7::S7_inherits(value, ellmer::ContentImage)
             ) {
-              img_type <- result@value@type
-              img_data <- result@value@data
-              result <- sprintf("<img src='data:%s;base64,%s' style='max-width:100%%' />", img_type, img_data)
+              img_type <- value@type
+              img_data <- value@data
+              value <- sprintf(
+                "<img src='data:%s;base64,%s' style='max-width:100%%' />",
+                img_type, img_data)
+              class(value) <- "html"
             }
+            value
+          })
+
+          if (unwrap) {
+            result@value <- value_list[[1]]
+          } else {
+            result@value <- value_list
+          }
+
+          # Try to append the entire result
+          try({
             shinychat::chat_append(id = id, session = session, result)
-          }, error = function(e) {
-            print(result)
-            warning(e)
+            return()
+          }, silent = TRUE)
+
+          # Ultimate fallback
+          lapply(value_list, function(value) {
+            tryCatch({
+              if (inherits(value, "html")) {
+                shinychat::chat_append(id = id, session = session, value)
+              } else {
+                result@value <- value
+                shinychat::chat_append(id = id, session = session, result)
+              }
+            }, error = function(e) {
+              # print(result)
+              shinychat::chat_append(
+                id = id,
+                session = session,
+                paste0(
+                  "<p><span style='font-size: x-small; font-style: italic;'>",
+                  "(Tool request result omitted)</span></p>"
+                )
+              )
+            })
           })
           return()
         })
@@ -400,8 +446,9 @@ chatbot_server <- function(input, output, session,
 
     res$cost <- tryCatch(
       local_chat$get_cost(),
-      error = function(e)
+      error = function(e) {
         NA_real_
+      }
     )
     res
   }

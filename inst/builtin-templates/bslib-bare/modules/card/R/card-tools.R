@@ -1,5 +1,5 @@
 
-ui_card_tools <- function(){
+ui_card_tools <- function() {
   shiny::tagList(
     shiny::column( width = 2L, card_with_code(
       card(
@@ -13,9 +13,9 @@ ui_card_tools <- function(){
         div(
           class = "padding-20",
           p(
-            'Add badges to the top-right corner. ',
-            'Use "|" to indicate the badge classes; ',
-            'for example: "badge-info", "badge-warning"...'),
+            "Add badges to the top-right corner. ",
+            "Use \"|\" to indicate the badge classes; ",
+            "for example: \"badge-info\", \"badge-warning\"..."),
           hr(),
           p("Use `resizable = TRUE` to make card resizable.")
         )
@@ -42,11 +42,11 @@ ui_card_tools <- function(){
           card_tool(inputId = ns("card_tool_modal"), widget = "custom",
                     title = "Show alert", icon = "bell")
         ),
-        'Click the bell icon (',
+        "Click the bell icon (",
         as_icon("bell"),
-        ') at the top-right corner to show a pop-up alert', br(),
+        ") at the top-right corner to show a pop-up alert", br(),
         "The reaction requires server-side shiny observer. ",
-        "Go to 'server.R', add:",
+        "Go to \"server.R\", add:",
         html_highlight_code(
           observeEvent(input$card_tool_modal, {
             shiny::showModal(shiny::modalDialog(

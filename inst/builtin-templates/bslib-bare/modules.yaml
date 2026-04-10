@@ -11,6 +11,10 @@ groups:
     icon: "clone"
     order: 25
     open: true
+  Widgets:
+    icon: "puzzle-piece"
+    order: 29
+    open: true
   Agents:
     icon: "robot"
     order: 45
@@ -41,6 +45,11 @@ modules:
     icon: "plug"
     label: "MCP Setup Guide"
     group: "Agents"
+  output_widgets:
+    order: 30
+    icon: "external-link-alt"
+    label: "Output Widgets"
+    group: "Widgets"
   demo:
     order: 51
     icon: "chart-bar"
@@ -53,3 +62,16 @@ modules:
     order: 53
     icon: "exclamation-triangle"
     label: "Error 500"
+  stream_viz:
+    order: 31
+    icon: "wave-square"
+    label: "Stream Viz"
+    group: "Widgets"
+  session_events:
+    order: 32
+    icon: "broadcast-tower"
+    label: "Session Events"
+    group: "Widgets"
+  standalone_viewer:
+    hidden: yes
+    order: 99

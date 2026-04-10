@@ -116,11 +116,7 @@ ui_live_demo <- function() {
         title = "Output",
         tools = list(card_tool(widget = "maximize")),
         class_body = "min-height-400",
-        shidashi::register_output(
-          outputId = "live_scatter",
-          description = "Scatter plot controlled by live_npoints, live_color, and live_title",
-          expr = plotOutput(ns("live_scatter"), height = "350px")
-        )
+        plotOutput(ns("live_scatter"), height = "350px")
       )
     )
   )
@@ -269,10 +265,10 @@ my_tool <- shidashi::mcp_wrapper(function(session) {
           tags$pre(
             class = "bg-gray-90 pre-compact",
             tags$code(
-'modules/mymodule/skills/analyze/
+"modules/mymodule/skills/analyze/
 ├── SKILL.md        # Defines tool name, args, descriptions
 └── scripts/
-    └── run.R       # The actual script'
+    └── run.R       # The actual script"
             )
           ),
           tags$p("Example ", tags$code("SKILL.md"), ":"),
@@ -303,27 +299,31 @@ script: scripts/run.R
 # ===========================================================================
 
 server_aiagent <- function(input, output, session, ...) {
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
 
-  output$live_scatter <- renderPlot({
-    theme <- shidashi::get_theme(event_data)
-    n <- input$live_npoints %||% 100
-    col <- input$live_color %||% "steelblue"
-    title <- input$live_title %||% "Scatter Plot"
+  shidashi::register_output(
+    renderPlot({
+      theme <- shidashi::get_theme()
+      n <- input$live_npoints %||% 100
+      col <- input$live_color %||% "steelblue"
+      title <- input$live_title %||% "Scatter Plot"
 
-    set.seed(42)
-    x <- rnorm(n)
-    y <- x + rnorm(n, sd = 0.5)
+      set.seed(42)
+      x <- rnorm(n)
+      y <- x + rnorm(n, sd = 0.5)
 
-    par(
-      bg = theme$background, fg = theme$foreground,
-      col.main = theme$foreground,
-      col.axis = theme$foreground,
-      col.lab = theme$foreground
-    )
-    plot(x, y, pch = 19, col = col, main = title,
-         xlab = "X", ylab = "Y")
-  })
+      par(
+        bg = theme$background, fg = theme$foreground,
+        col.main = theme$foreground,
+        col.axis = theme$foreground,
+        col.lab = theme$foreground
+      )
+      plot(x, y, pch = 19, col = col, main = title,
+           xlab = "X", ylab = "Y")
+    }),
+    outputId = "live_scatter",
+    description = "Scatter plot controlled by live_npoints, live_color, and live_title"
+  )
 }
 
 
@@ -333,11 +333,9 @@ server_aiagent <- function(input, output, session, ...) {
 
 trigger_refresh <- shidashi::mcp_wrapper(
   function(session) {
-    ns <- session$ns
-    shared_data <- shidashi::register_session_id(session)
     ellmer::tool(
       fun = function() {
-        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        shidashi::fire_event(session$ns("refresh"), Sys.time(), session = session)
         "Refresh triggered."
       },
       name = "trigger_refresh",

@@ -1,7 +1,7 @@
 library(shiny)
 library(shidashi)
 
-ui_prerequisite <- function(){
+ui_prerequisite <- function() {
   column(
     width = 7L,
     h2("Pre-requisite for this tutorial", class = "shidashi-anchor"),

@@ -18,13 +18,13 @@
 template_settings <- local({
   map <- fastmap::fastmap()
   list(
-    get = function(name, default = NULL){
+    get = function(name, default = NULL) {
       map$get(name, missing = default)
     },
-    set = function(...){
+    set = function(...) {
       map$mset(...)
     },
-    list = function(){
+    list = function() {
       map$as_list()
     }
   )
@@ -40,20 +40,20 @@ template_settings_get <- template_settings$get
 
 #' @rdname template_settings
 #' @export
-template_root <- function(){
+template_root <- function() {
   path <- template_settings$get(
-    name = 'root_path',
+    name = "root_path",
     default = NULL
   )
-  if(!length(path)) {
-    if(template_settings$get("dev.debug", FALSE)){
-      path <- './inst/builtin-templates/bslib-bare/'
+  if (!length(path)) {
+    if (template_settings$get("dev.debug", FALSE)) {
+      path <- "./inst/builtin-templates/bslib-bare/"
     } else {
-      path <- file.path(R_user_dir('shidashi', which = "data"),
+      path <- file.path(R_user_dir("shidashi", which = "data"),
                         c("bslib-bare", "AdminLTE3", "AdminLTE3-bare"))
       path <- path[file.exists(path)]
-      if(!length(path)){
-        path <- file.path(R_user_dir('shidashi', which = "data"), "bslib-bare")
+      if (!length(path)) {
+        path <- file.path(R_user_dir("shidashi", which = "data"), "bslib-bare")
         create_barebone_bslib(path)
       } else {
         path <- path[[1]]

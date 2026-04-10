@@ -8,7 +8,7 @@
 #' @return 'HTML' tag
 #' @examples
 #'
-#' if(interactive()){
+#' if(interactive()) {
 #' as_icon("bookmark", class = "far")
 #' as_icon("bookmark", class = "fas")
 #'
@@ -17,19 +17,19 @@
 #' }
 #'
 #' @export
-as_icon <- function(icon = NULL, class = "fas"){
+as_icon <- function(icon = NULL, class = "fas") {
   class <- combine_class(class)
 
-  if(!length(icon) || (is.character(icon) && icon == "")){
+  if (!length(icon) || (is.character(icon) && icon == "")) {
     icon <- ""
   } else {
-    if(inherits(icon, "shiny.tag")) {
+    if (inherits(icon, "shiny.tag")) {
       icon$attribs$class <- combine_class(icon$attribs$class, class)
     } else {
       icon <- shiny::icon(icon, class = class)
     }
     # remove class fa
-    if ( !"fa" %in% class ){
+    if ( !"fa" %in% class ) {
       icon$attribs$class <- remove_html_class(icon$attribs$class, "fa")
     }
   }
@@ -60,31 +60,32 @@ as_icon <- function(icon = NULL, class = "fas"){
 #'
 #'
 #' @export
-as_badge <- function(badge = NULL){
-  if(!length(badge) || nchar(badge) == 0){
-    badge <- ''
+as_badge <- function(badge = NULL) {
+  if (!length(badge) || nchar(badge) == 0) {
+    badge <- ""
   } else {
-    if(inherits(badge, "shiny.tag")) {
+    if (inherits(badge, "shiny.tag")) {
       badge$attribs$class <- combine_class(badge$attribs$class, "right badge")
     } else {
       badge <- strsplit(badge, "\\|")[[1]]
-      if(length(badge) > 1){
-        badge <- shiny::span(class=paste("right badge", badge[[2]]), badge[[1]])
+      if (length(badge) > 1) {
+        badge <- shiny::span(class = paste("right badge", badge[[2]]), badge[[1]])
       } else {
-        badge <- shiny::span(class=paste("right badge"), badge[[1]])
+        badge <- shiny::span(class = paste("right badge"), badge[[1]])
       }
     }
   }
   badge
 }
 
+
 menu_item <- function(
   text, href = "#", icon = NULL, active = FALSE, badge = NULL,
-  target = "_blank", root_path = template_root()){
+  target = "_blank", root_path = template_root()) {
 
   icon <- as_icon(icon, class = "nav-icon fas")
   badge <- as_badge(badge)
-  module <- ''
+  module <- ""
   if (startsWith(href, "#")) {
     target <- "_self"
   } else if (startsWith(href, "?module=")) {
@@ -96,7 +97,7 @@ menu_item <- function(
     }
   }
   template_path <- file.path(root_path, "views", "menu-item.html")
-  # if(!file.exists(template_path)){
+  # if(!file.exists(template_path)) {
   #   template_path <- system.file('snippets', 'menu-item.html', package = 'shidashi')
   # }
   shiny::htmlTemplate(
@@ -108,13 +109,13 @@ menu_item <- function(
 
 menu_item_dropdown <- function(
   text, ..., .list = NULL, icon = NULL, active = FALSE,
-  badge = NULL, root_path = template_root()){
+  badge = NULL, root_path = template_root()) {
 
   sub_items <- c(shiny::tagList(...), .list)
   icon <- as_icon(icon, class = "nav-icon fas")
   badge <- as_badge(badge)
   template_path <- file.path(root_path, "views", "menu-item-dropdown.html")
-  # if(!file.exists(template_path)){
+  # if(!file.exists(template_path)) {
   #   template_path <- system.file('snippets', 'menu-item-dropdown.html', package = 'shidashi')
   # }
   shiny::htmlTemplate(

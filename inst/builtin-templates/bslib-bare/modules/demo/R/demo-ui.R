@@ -4,7 +4,7 @@ library(ggplot2)
 library(ggExtra)
 library(plyr)
 
-ui_demo_summary <- function(){
+ui_demo_summary <- function() {
   fluidRow(
     column(
       width = 3L,
@@ -44,7 +44,7 @@ ui_demo_summary <- function(){
   )
 }
 
-ui_demo_monthly <- function(){
+ui_demo_monthly <- function() {
   fluidRow(
     column(
       width = 9L,
@@ -56,9 +56,9 @@ ui_demo_monthly <- function(){
         tools = list(
           as_badge(sprintf("%s|bg-primary", Sys.Date())),
           card_tool(widget = "flip", title = "See details"),
-          card_tool(widget = 'collapse'),
-          card_tool(widget = 'link', href = "https://github.com/dipterix/shidashi"),
-          card_tool(widget = 'maximize')
+          card_tool(widget = "collapse"),
+          card_tool(widget = "link", href = "https://github.com/dipterix/shidashi"),
+          card_tool(widget = "maximize")
         ),
         flip_box(
           class = "fill",
@@ -129,7 +129,7 @@ ui_demo_monthly <- function(){
         title = "Goal Completion",
         class_body = "height-300",
         tools = list(
-          card_tool(widget = 'collapse')
+          card_tool(widget = "collapse")
         ),
         footer = fluidRow(
           column(
@@ -156,30 +156,30 @@ ui_demo_monthly <- function(){
           h6(class = "text-center", "Goal Completion"),
           progressOutput(ns("sales_report_prog1"), description = "",
                          "Add Products to Cart",
-                         span(class="float-end", "123/150"),
-                         value = 123/150 * 100),
+                         span(class = "float-end", "123/150"),
+                         value = 123 / 150 * 100),
           progressOutput(ns("sales_report_prog2"), description = "",
                          "Complete Purchase",
                          class = "bg-red",
-                         span(class="float-end", "310/400"),
-                         value = 310/400 * 100),
+                         span(class = "float-end", "310/400"),
+                         value = 310 / 400 * 100),
           progressOutput(ns("sales_report_prog3"), description = "",
                          "Visit Premium Page",
                          class = "bg-success",
-                         span(class="float-end", "480/800"),
-                         value = 480/800 * 100),
+                         span(class = "float-end", "480/800"),
+                         value = 480 / 800 * 100),
           progressOutput(ns("sales_report_prog4"), description = "",
                          "Inquiries",
                          class = "bg-yellow",
-                         span(class="float-end", "250/500"),
-                         value = 250/500 * 100)
+                         span(class = "float-end", "250/500"),
+                         value = 250 / 500 * 100)
         )
       )
     )
   )
 }
 
-ui_demo_details <- function(){
+ui_demo_details <- function() {
   fluidRow(
     column(
       width = 4L,
@@ -189,11 +189,7 @@ ui_demo_details <- function(){
         body_main = flip_box(
           front = div(
             class = "fill-width height-450 min-height-450 resize-vertical",
-            shidashi::register_output(
-              plotOutput(ns("iris_plot"), height = "100%"),
-              outputId = "iris_plot",
-              description = "Scatter plot of iris, thresholded by input `iris_threshold`"
-            )
+            plotOutput(ns("iris_plot"), height = "100%")
           ),
           back = tableOutput(ns("iris_plot_data"))
         ),
@@ -226,21 +222,20 @@ ui_demo_details <- function(){
         ),
         "Summary" = div(
           class = "fill position-absolute overflow-auto",
-          tableOutput(ns('summary_table'))
+          tableOutput(ns("summary_table"))
         )
       )
     )
   )
 }
 
-server_demo <- function(input, output, session, ...){
+server_demo <- function(input, output, session, ...) {
 
-  shared_data <- shidashi::register_session_id(session)
-  event_data <- register_session_events(session)
+  shidashi::register_session(session)
   local_data <- reactiveValues()
 
   output$sales_report <- renderPlot({
-    theme <- shidashi::get_theme(event_data)
+    theme <- shidashi::get_theme()
     par(bg = theme$background, fg = theme$foreground,
         col.lab = theme$foreground, col.main = theme$foreground,
         col.axis = theme$foreground,
@@ -268,7 +263,7 @@ server_demo <- function(input, output, session, ...){
     data(iris)
     iris[iris$Petal.Width > input$iris_threshold,
          c("Petal.Length", "Petal.Width", "Species")]
-  }, striped = TRUE, spacing = 's', width = '100%')
+  }, striped = TRUE, spacing = "s", width = "100%")
 
   generate_ggtheme <- function(
     theme,
@@ -285,7 +280,7 @@ server_demo <- function(input, output, session, ...){
     title = element_text(color = theme$foreground),
     text = element_text(color = theme$foreground),
     line = element_line(color = theme$foreground),
-    ...){
+    ...) {
     ggplot2::theme(
       panel.background = panel.background,
       plot.background = plot.background,
@@ -302,24 +297,29 @@ server_demo <- function(input, output, session, ...){
     )
   }
 
-  output$iris_plot <- renderPlot({
-    data(iris)
-    theme <- shidashi::get_theme(event_data)
-    ggtheme <- generate_ggtheme(theme)
+  shidashi::register_output(
+    renderPlot({
+      data(iris)
+      theme <- shidashi::get_theme()
+      ggtheme <- generate_ggtheme(theme)
 
-    iris <- iris[iris$Petal.Width > input$iris_threshold, ]
+      iris <- iris[iris$Petal.Width > input$iris_threshold, ]
 
-    validate(
-      need(nrow(iris) > 0, "No data point selected")
-    )
+      validate(
+        need(nrow(iris) > 0, "No data point selected")
+      )
 
-    ggplot(data=iris) +
-      aes(x=Sepal.Length, y=Petal.Length, color=Species) +
-      geom_point() +
-      geom_rug(col="steelblue",alpha=0.1, linewidth=1.5) + ggtheme
-  })
+      ggplot(data = iris) +
+        aes(x = Sepal.Length, y = Petal.Length, color = Species) +
+        geom_point() +
+        geom_rug(col = "steelblue", alpha = 0.1, linewidth = 1.5) + ggtheme
+    }),
+    outputId = "iris_plot",
+    description = "Scatter plot of iris, thresholded by input `iris_threshold`",
+    download_type = "image"
+  )
 
-  run_analysis <- function(){
+  run_analysis <- function() {
     show_notification(
       title = "Generating analysis...",
       subtitle = "This might take a while",
@@ -327,12 +327,12 @@ server_demo <- function(input, output, session, ...){
       close = FALSE,
       autohide = FALSE,
       progressOutput(ns("data_gen_pro"), description = "Loading data...",
-                     size = 'xs', class = "bg-yellow")
+                     size = "xs", class = "bg-yellow")
     )
     on.exit({ clear_notifications() })
 
     progress <- shiny_progress("", max = 10, outputId = "data_gen_pro")
-    for(i in 1:10){
+    for (i in 1:10) {
       progress$inc(sprintf("step %s", i), message = ifelse(
         i > 5, "Analyze data", "Loading data"
       ))
@@ -340,11 +340,11 @@ server_demo <- function(input, output, session, ...){
     }
 
     local_data$data <- data.frame(
-      name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20),
-              rep('D', 100),
-              sample(LETTERS, 20000, replace = TRUE)),
-      value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1),
-               rnorm(20, 25, 4), rnorm(100, 12, 1), rnorm(20000, 15, 30) )
+      name = c(rep("A", 500), rep("B", 500), rep("B", 500), rep("C", 20),
+               rep("D", 100),
+               sample(LETTERS, 20000, replace = TRUE)),
+      value = c(rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1),
+                rnorm(20, 25, 4), rnorm(100, 12, 1), rnorm(20000, 15, 30) )
     )
   }
 
@@ -352,21 +352,19 @@ server_demo <- function(input, output, session, ...){
     run_analysis()
   })
 
-  observeEvent(shared_data$reactives[[ns("refresh")]], {
-    if(shared_data$reactives[[ns("refresh")]] > 0){
-      run_analysis()
-    }
+  observeEvent(shidashi::get_event(session$ns("refresh"), session = session), {
+    run_analysis()
   })
 
   output$distibution_plot <- renderPlot({
     validate(
       need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
     )
-    theme <- shidashi::get_theme(event_data)
+    theme <- shidashi::get_theme()
 
     data <- local_data$data
 
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x){
+    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
       data.frame(
         name = x$name[[1]],
         num = nrow(x)
@@ -377,15 +375,22 @@ server_demo <- function(input, output, session, ...){
 
     ggtheme <- generate_ggtheme(
       theme,
-      legend.position="none",
+      legend.position = "none",
       axis.line.y.left = element_blank(),
       axis.text = element_text(color = theme$foreground)
     )
     ggplot(merged) +
-      aes(myaxis, value, fill=name) +
-      geom_violin(width=1) +
-      geom_boxplot(width=0.1, color="grey", alpha=0.2) +
-      geom_jitter(height = 0, width = 0.1, size = 0.1, alpha = 0.2) +
+      aes(myaxis, value, fill = name) +
+      geom_violin(width = 1) +
+      geom_boxplot(width = 0.1,
+                   color = "grey",
+                   alpha = 0.2) +
+      geom_jitter(
+        height = 0,
+        width = 0.1,
+        size = 0.1,
+        alpha = 0.2
+      ) +
       ggtheme +
       xlab("")
   })
@@ -396,7 +401,7 @@ server_demo <- function(input, output, session, ...){
     )
     data <- local_data$data
 
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x){
+    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
       data.frame(
         name = x$name[[1]],
         num = nrow(x)
@@ -416,15 +421,9 @@ server_demo <- function(input, output, session, ...){
 trigger_refresh <- shidashi::mcp_wrapper(
   function(session) {
 
-    # Capture the session's namespace function
-    ns <- session$ns
-
-    shared_data <- shidashi::register_session_id(session)
-
-
     ellmer::tool(
       fun = function() {
-        shared_data$reactives[[ns("refresh")]] <- Sys.time()
+        shidashi::fire_event(session$ns("refresh"), Sys.time(), session = session)
         "Refresh triggered successfully. The analysis is being regenerated."
       },
       name = "trigger_refresh",

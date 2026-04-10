@@ -3,15 +3,15 @@ library(shiny)
 # Debug
 if (FALSE) {
   template_settings$set(
-    'root_path' = "inst/builtin-templates/bslib-bare/"
+    "root_path" = "inst/builtin-templates/bslib-bare/"
   )
 }
 
-server <- function(input, output, session){
+server <- function(input, output, session) {
 
-  shared_data <- shidashi::register_session_id(session)
-  shared_data$enable_broadcast()
-  shared_data$enable_sync()
+  shidashi::stream_init(session)
+  shidashi::enable_input_broadcast(session)
+  shidashi::enable_input_sync(session)
 
   # Load and dispatch module server on navigation (register first)
   shiny::observeEvent(session$clientData$url_search, {
@@ -26,7 +26,7 @@ server <- function(input, output, session){
         if (is.na(group_name)) {
           group_name <- "<no group>"
         }
-        if (system.file(package = "logger") != '') {
+        if (system.file(package = "logger") != "") {
           logger::log_info("Loading - { module_table$label[1] } ({group_name}/{ module_table$id })")
         }
         shiny::moduleServer(resource$module$id, resource$module$server, session = session)

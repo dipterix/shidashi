@@ -28,7 +28,7 @@ flex_container <- function(
   justify = c("flex-start", "center", "flex-end", "space-around", "space-between"),
   align_box = c("stretch", "flex-start", "center", "flex-end", "baseline"),
   align_content = c("stretch", "flex-start", "flex-end", "space-between", "space-around", "center")
-){
+) {
   call <- match.call(expand.dots = FALSE)
   style1 <- style
   style <- list()
@@ -50,7 +50,7 @@ flex_container <- function(
 
   style$display <- "flex"
   style <- paste(names(style), as.vector(style), sep = ":", collapse = "; ")
-  if(length(style1)){
+  if (length(style1)) {
     style <- paste0(style, "; ", style1)
   }
 
@@ -66,17 +66,17 @@ flex_item <- function(
   align = c("flex-start", "flex-end", "center"),
   class = NULL,
   .class = "fill-width padding-5"
-){
+) {
   l <- list()
-  if(length(align) == 1){
+  if (length(align) == 1) {
     align <- match.arg(align)
     l[["align-self"]] <- align
   }
-  l[['order']] <- order
-  l[['flex']] <- flex
+  l[["order"]] <- order
+  l[["flex"]] <- flex
 
   style1 <- paste(names(l), as.vector(l), sep = ":", collapse = "; ")
-  if(length(style)){
+  if (length(style)) {
     style1 <- paste0(style1, "; ", style)
   }
 
@@ -92,7 +92,7 @@ flex_item <- function(
 
 #' @rdname flex_container
 #' @export
-flex_break <- function(..., class = NULL){
+flex_break <- function(..., class = NULL) {
   class <- combine_class(class, "flex-break")
   shiny::div(class = class, ...)
 }
@@ -105,7 +105,7 @@ flex_break <- function(..., class = NULL){
 #' that fires a \code{"button.click"} shidashi-event with
 #' \code{type = "open_drawer"}.
 #' Module server code (or \code{\link{chatbot_server}}) can observe
-#' this event via \code{\link{register_session_events}} and call
+#' this event via \code{\link{get_event}} and call
 #' \code{\link{drawer_open}} / \code{shiny::renderUI} to fill the
 #' drawer with content.
 #'
@@ -129,10 +129,10 @@ flex_break <- function(..., class = NULL){
 #' @export
 back_top_button <- function(icon = "chevron-up", title = "Jump to",
                             open_drawer = TRUE, drawer_icon = "ellipsis") {
-  if(!length(title)){
+  if (!length(title)) {
     title <- NULL
   } else {
-    title <- shiny::h6(class="dropdown-header", title)
+    title <- shiny::h6(class = "dropdown-header", title)
   }
 
   # ---- Optional drawer button (fires shidashi-event, no logic) ----
@@ -163,7 +163,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
       ),
       shiny::tags$button(
         type = "button",
-        class = "btn btn-default dropdown-toggle dropdown-toggle-split border-left-1" ,
+        class = "btn btn-default dropdown-toggle dropdown-toggle-split border-left-1",
         # AdminLTE3
         "data-toggle" = "dropdown",
         # bs5
@@ -190,7 +190,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
 #'
 #' @examples
 #'
-#' server <- function(input, output, session){
+#' server <- function(input, output, session) {
 #'
 #'   # Add class `hidden` to element with ID `elemid`
 #'   add_class("#elemid", "hidden")
@@ -201,7 +201,7 @@ back_top_button <- function(icon = "chevron-up", title = "Jump to",
 #'
 #' @export
 add_class <- function(selector, class,
-                      session = shiny::getDefaultReactiveDomain()){
+                      session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.add_class", list(
     selector = selector,
     class = class
@@ -211,7 +211,7 @@ add_class <- function(selector, class,
 #' @rdname add-remove-html-class
 #' @export
 remove_class <- function(selector, class,
-                         session = shiny::getDefaultReactiveDomain()){
+                         session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.remove_class", list(
     selector = selector,
     class = class
@@ -229,7 +229,7 @@ remove_class <- function(selector, class,
 #' @return No value is returned (called for side effect).
 #' @export
 open_url <- function(url, target = "_blank",
-                     session = shiny::getDefaultReactiveDomain()){
+                     session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.open_url", list(
     url = url,
     target = target

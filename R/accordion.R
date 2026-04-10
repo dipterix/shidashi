@@ -17,22 +17,22 @@ accordion_item <- function(
   parentId = rand_string(prefix = "accordion-"),
   itemId = rand_string(prefix = "accordion-item-"),
   style_header = NULL, style_body = NULL,
-  root_path = template_root()){
+  root_path = template_root()) {
 
   body <- shiny::tagList(...)
 
-  template_path <- file.path(root_path, 'views', 'accordion-item.html')
+  template_path <- file.path(root_path, "views", "accordion-item.html")
 
-  if(length(footer)){
+  if (length(footer)) {
     footer <- shiny::div(
       class = "card-footer",
       footer
     )
   } else {
-    footer <- ''
+    footer <- ""
   }
 
-  if(length(title) >= 1){
+  if (length(title) >= 1) {
     data_title <- trimws(as.character(title[[1]])[[1]])
   } else {
     data_title <- ""
@@ -101,21 +101,21 @@ accordion <- function(
   ..., id = rand_string(prefix = "accordion-"),
   class = NULL, style_header = NULL,
   style_body = NULL, env = parent.frame(), extras = list(),
-  root_path = template_root()){
+  root_path = template_root()) {
 
   call <- match.call(expand.dots = FALSE)
 
   force(root_path)
   parentId <- id
 
-  items <- unname(lapply(call[['...']], function(item){
+  items <- unname(lapply(call[["..."]], function(item) {
     item[["parentId"]] <- parentId
     item[["root_path"]] <- root_path
 
-    if(!is.null(style_header)){
+    if (!is.null(style_header)) {
       item[["style_header"]] <- style_header
     }
-    if(!is.null(style_body)){
+    if (!is.null(style_body)) {
       item[["style_body"]] <- style_body
     }
     eval(item, envir = env)
@@ -145,11 +145,11 @@ accordion_operate <- function(
     session = shiny::getDefaultReactiveDomain()) {
 
   method <- match.arg(method)
-  if(missing(item_title) && missing(itemId)) {
+  if (missing(item_title) && missing(itemId)) {
     stop("accordion_operate: either accordion item title or id must be specified")
   }
 
-  if(missing(itemId)) {
+  if (missing(itemId)) {
     selector <- sprintf("#%s .card-accordion-header [data-title='%s']", session$ns(id), item_title)
   } else {
     itemId <- session$ns(itemId)

@@ -21,14 +21,21 @@ register_output(
   outputId,
   description = "",
   quoted = FALSE,
-  env = parent.frame()
+  env = parent.frame(),
+  ...,
+  output_opts = list(),
+  download_function = NULL,
+  download_type = c("image", "htmlwidget", "threeBrain", "no-download", "data",
+    "stream_viz"),
+  extension = NULL,
+  session = shiny::getDefaultReactiveDomain()
 )
 }
 \arguments{
-\item{expr}{a call expression that creates a \code{shiny} input or
-output widget, e.g.
-\code{shiny::textInput(inputId = ns("x"), label = "X")} or
-\code{shiny::plotOutput(ns("plot1"), height = "100\%")}.}
+\item{expr}{For \code{register_input}: a call expression that creates
+a \code{shiny} input widget.
+For \code{register_output}: a render function call such as
+\code{renderPlot(\{...\})}.}
 
 \item{inputId}{character string.  The \code{shiny} input ID
 (without the module namespace prefix).}
@@ -52,19 +59,44 @@ with \code{substitute()}.}
 
 \item{outputId}{character string.  The \code{shiny} output ID
 (without the module namespace prefix).}
+
+\item{...}{reserved for future use.}
+
+\item{output_opts}{a named list of extra options for the output
+(e.g. width, height defaults).}
+
+\item{download_function}{a custom download handler function.  When
+\code{download_type = "data"}, this function receives the file path
+and writes the download content.}
+
+\item{download_type}{character string.  One of \code{"image"},
+\code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.}
+
+\item{extension}{character vector of allowed file extension for
+download, or \code{NULL}.}
+
+\item{session}{the \code{shiny} session object.  For
+\code{register_output}, defaults to
+\code{shiny::getDefaultReactiveDomain()}.}
 }
 \value{
-The evaluated UI element produced by \code{expr}.  The
-  input or output specification is registered as a side effect.
+\code{register_input} returns the evaluated UI element.
+  \code{register_output} is called for its side effects (assigning
+  the render function and registering widgets) and returns \code{NULL}
+  invisibly.
 }
 \description{
-Wrap \code{shiny} input and output constructors to register metadata
-so that \verb{MCP} (Model Context Protocol) agent tools can discover, read,
-and update them at runtime.  When called inside a module loaded by
-\code{shidashi}, the input/output specification is recorded as a side
-effect and the UI element is returned.  When called outside that
-context (e.g. in a plain Shiny app), the functions fall back to simply
-evaluating \code{expr}.
+Register \code{shiny} inputs and outputs for \verb{MCP} (Model Context
+Protocol) agent access.
+
+\code{register_input()} wraps a \code{shiny} input constructor to
+register metadata.  It evaluates \code{expr} and returns the UI element.
+
+\code{register_output()} is a server-side function that registers a
+render function call (e.g. \code{renderPlot(\{...\})}), assigns it to
+\code{session$output}, registers the \verb{MCP} output spec, and sets
+up download-widget handlers.  The UI overlay icons are injected
+entirely by \verb{JS}.
 }
 \examples{
 \dontrun{
@@ -82,10 +114,12 @@ register_input(
   description = "Filter threshold for the plot"
 )
 
+# inside a shidashi module server function:
 register_output(
-  expr = shiny::plotOutput(ns("my_plot"), height = "100\%"),
+  expr = renderPlot(\{ plot(iris) \}),
   outputId = "my_plot",
-  description = "Scatter plot of filtered data"
+  description = "Scatter plot of iris data",
+  download_type = "image"
 )
 }
 }

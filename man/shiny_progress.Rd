@@ -43,7 +43,7 @@ Wrapper of shiny progress that can run without shiny
 
 {
   progress <- shiny_progress("Procedure A", max = 10)
-  for(i in 1:10){
+  for(i in 1:10) {
     progress$inc(sprintf("Step \%s", i))
     Sys.sleep(0.1)
   }
@@ -51,7 +51,7 @@ Wrapper of shiny progress that can run without shiny
 
 }
 
-if(interactive()){
+if(interactive()) {
   library(shiny)
 
   ui <- fluidPage(
@@ -64,7 +64,7 @@ if(interactive()){
     observeEvent(input$click, {
       progress <- shiny_progress("Procedure B", max = 10,
                                  shiny_auto_close = TRUE)
-      for(i in 1:10){
+      for(i in 1:10) {
         progress$inc(sprintf("Step \%s", i))
         Sys.sleep(0.1)
       }

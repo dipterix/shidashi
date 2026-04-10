@@ -87,7 +87,7 @@ R_user_dir <- function(package, which = c("data", "config", "cache")) {
 }
 
 set_attr_call <- function(x, call, collapse = "\n", ...) {
-  if(!is.character(call)){
+  if (!is.character(call)) {
     call <- deparse(call)
   }
   call <- paste(call, collapse = collapse, ...)
@@ -95,18 +95,18 @@ set_attr_call <- function(x, call, collapse = "\n", ...) {
   x
 }
 
-combine_class <- function(...){
+combine_class <- function(...) {
   s <- paste(c(...), collapse = " ", sep = " ")
   s <- unlist(strsplit(s, " "))
   s <- unique(s)
-  s <- s[!s %in% '']
+  s <- s[!s %in% ""]
   paste(s, collapse = " ")
 }
-remove_html_class <- function(target, class){
+remove_html_class <- function(target, class) {
   if (!length(target)) { return("") }
   s <- unlist(strsplit(target, " "))
   s <- unique(s)
-  s <- s[!s %in% c('', class)]
+  s <- s[!s %in% c("", class)]
   paste(s, collapse = " ")
 }
 
@@ -114,12 +114,12 @@ remove_html_class <- function(target, class){
 #' @param cls the class string of the \code{<body>} tag in \code{'index.html'}
 #' @return The proposed class for \code{<body>} tag
 #' @export
-guess_body_class <- function(cls){
-  if(missing(cls)){
+guess_body_class <- function(cls) {
+  if (missing(cls)) {
     cls <- "fancy-scroll-y darm-mode"
   } else {
-    cls <- unlist(strsplit(paste(cls, collapse = ' '), " "))
-    combine_class(cls[startsWith(cls, "fancy-scroll-") | cls %in% 'dark-mode'])
+    cls <- unlist(strsplit(paste(cls, collapse = " "), " "))
+    combine_class(cls[startsWith(cls, "fancy-scroll-") | cls %in% "dark-mode"])
   }
 }
 
@@ -136,7 +136,7 @@ guess_body_class <- function(cls){
 #' get_construct_string(x)
 #'
 #' @export
-get_construct_string <- function(x){
+get_construct_string <- function(x) {
   attr(x, "shidashi.code")
 }
 
@@ -167,21 +167,26 @@ get_construct_string <- function(x){
 #'
 #' @export
 format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
-                          width.cutoff = 80L, indent = 2, wrap=TRUE,
-                          args.newline = TRUE, blank = FALSE, ...){
-  if(!quoted){
+                          width.cutoff = 80L, indent = 2, wrap = TRUE,
+                          args.newline = TRUE, blank = FALSE, ...) {
+  if (!quoted) {
     expr <- substitute(expr)
   }
 
-  if(length(expr) !=1 || !is.character(expr)){
+  if (length(expr) != 1 ||
+      !is.character(expr)) {
     expr <- paste(deparse(expr), collapse = "\n")
   }
 
-  if(reformat){
+  if (reformat) {
     expr <- formatR::tidy_source(
-      text = expr, output = FALSE,
-      width.cutoff = width.cutoff, indent = indent, wrap=wrap,
-      args.newline = args.newline, blank = blank,
+      text = expr,
+      output = FALSE,
+      width.cutoff = width.cutoff,
+      indent = indent,
+      wrap = wrap,
+      args.newline = args.newline,
+      blank = blank,
       ...
     )$text.tidy
   }
@@ -193,12 +198,12 @@ format_text_r <- function(expr, quoted = FALSE, reformat = TRUE,
 html_highlight_code <- function(
   expr, class = NULL, quoted = FALSE,
   reformat = TRUE, copy_on_click = TRUE,
-  width.cutoff = 80L, indent = 2, wrap=TRUE,
+  width.cutoff = 80L, indent = 2, wrap = TRUE,
   args.newline = TRUE, blank = FALSE,
-  ..., hover = c("overflow-visible-on-hover", "overflow-auto")){
+  ..., hover = c("overflow-visible-on-hover", "overflow-auto")) {
 
   hover <- match.arg(hover)
-  if(!quoted){
+  if (!quoted) {
     expr <- substitute(expr)
   }
   expr <- format_text_r(expr = expr, quoted = TRUE,
@@ -236,7 +241,7 @@ html_highlight_code <- function(
 show_ui_code <- function(
   x, class = NULL, code_only = FALSE,
   as_card = FALSE, card_title = "", class_body = "bg-gray-70",
-  width.cutoff = 80L, indent = 2, wrap=TRUE,
+  width.cutoff = 80L, indent = 2, wrap = TRUE,
   args.newline = TRUE, blank = FALSE, copy_on_click = TRUE,
   ...)
 {
@@ -260,7 +265,7 @@ show_ui_code <- function(
   )
 
 
-  if(as_card){
+  if (as_card) {
     res <- card(
       title = card_title, class_body = class_body,
       tools = clipboardOutput(
@@ -268,10 +273,63 @@ show_ui_code <- function(
         as_card_tool = TRUE),
       footer = res,
       class_foot = "display-block bg-gray-90 no-padding code-display fill-width",
-      if(code_only){ NULL }else{x}
+      if (code_only) {
+        NULL
+      } else {
+        x
+      }
     )
   }
   res
+}
+
+
+truc_string <- function(x, max_char, annot = "(truncated)", side = c("end", "begin", "both"), collapse = "\n") {
+  side <- match.arg(side)
+
+  # x <- "asdbkawjhrgfbqwierkfbwlairefb"
+  # max_char <- 10
+  # side <- "end"
+  # annot = "(truncated)"
+
+  if (side == "both" && max_char < nchar(annot) + 10) {
+    side <- "end"
+  }
+
+  annot <- switch(
+    side,
+    both = sprintf("|...%s...|", annot),
+    end = sprintf("|...%s", annot),
+    begin = sprintf("%s...|", annot)
+  )
+
+  alen <- nchar(annot)
+
+  max_char <- max(max_char, nchar(annot) + 2)
+
+  x <- trimws(paste(x, collapse = collapse))
+  xlen <- nchar(x)
+  if (xlen <= max_char) {
+    return(x)
+  }
+
+  tlen <- max_char - alen
+
+  switch(
+    side,
+    both = {
+      n_pre <- ceiling(tlen / 2)
+      n_post <- tlen - n_pre
+      sprintf("%s%s%s", substr(x, 1L, n_pre), annot, substr(x, xlen - n_post + 1, xlen))
+    },
+    end = {
+      sprintf("%s%s", substr(x, 1L, tlen), annot)
+    },
+    begin = {
+      sprintf("%s%s", annot, substr(x, xlen - tlen + 1L, xlen))
+    }
+  )
+
 }
 
 
@@ -280,3 +338,85 @@ show_ui_code <- function(
 drop_null <- function(x) {
   as.list(x[!vapply(x, is.null, FALSE)])
 }
+
+#' @name html_class
+#' @title Combine, add, or remove 'HTML' classes
+#' @description Combine 'HTML' classes to produce nice, clean 'HTML' class
+#' string via \code{combine_html_class}, or to remove a class via
+#' \code{remove_html_class}
+#' @param ... one or more characters, classes to combine; duplicated classes
+#' will be removed
+#' @param target characters, class list
+#' @param class one or more characters, classes to be removed from \code{target}
+#' @return A character string of new 'HTML' class
+#' @examples
+#'
+#' # Combine classes "a b c d e"
+#' combine_html_class("a", "b  a", c("c", " d", "b"), list("e ", "a"))
+#'
+#' # Remove class
+#' remove_html_class("a b   c  e", c("b", "c "))
+#'
+#' @export
+combine_html_class <- function(...) {
+  s <- paste(c(...), collapse = " ", sep = " ")
+  s <- unlist(strsplit(s, " "))
+  s <- unique(s)
+  s <- s[!s %in% ""]
+  paste(s, collapse = " ")
+}
+
+#' @rdname html_class
+#' @export
+remove_html_class <- function(target, class) {
+  if (!length(target)) {
+    return("")
+  }
+  s <- unlist(strsplit(target, " "))
+  s <- unique(s)
+  class <- unlist(strsplit(class, " "))
+  s <- s[!s %in% c("", class)]
+  paste(s, collapse = " ")
+}
+
+#' Escape HTML strings
+#' @description Escape HTML strings so that they will be displayed
+#' 'as-is' in websites.
+#' @param s characters
+#' @param space whether to also escape white space, default is true.
+#' @return An R string
+#' @examples
+#'
+#' html_asis("<a><----> <b>")
+#'
+#' @export
+html_asis <- function(s, space = TRUE) {
+  if (space) {
+    pattern <- "&|<|>| |\t" # or "&|<|>|'|\"|\r|\n"
+    specials <- list(
+      "&" = "&amp;",
+      "<" = "&lt;",
+      ">" = "&gt;",
+      # "'" = "&#39;",
+      # '"' = "&quot;",
+      # "\r" = "&#13;",
+      # "\n" = "&#10;",
+      " " = "&nbsp;",
+      "\t" = "&nbsp;&nbsp;&nbsp;&nbsp;"
+    )
+  } else {
+    pattern <- "&|<|>|"
+    specials <- list("&" = "&amp;", "<" = "&lt;", ">" = "&gt;")
+  }
+
+  s <- enc2utf8(as.character(s))
+  if (any(grepl(pattern, s, useBytes = TRUE))) {
+    for (chr in names(specials)) {
+      s <- gsub(chr, specials[[chr]], s, fixed = TRUE, useBytes = TRUE)
+    }
+  }
+  Encoding(s) <- "UTF-8"
+  shiny::HTML(s)
+}
+
+

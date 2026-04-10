@@ -3,5 +3,5 @@
   # Make sure at least one template exists
   tryCatch({
     template_root()
-  }, error = function(e){})
+  }, error = function(e) {})
 }

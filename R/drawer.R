@@ -6,7 +6,7 @@
 #' @return No value is returned (called for side effect).
 #'
 #' @examples
-#' server <- function(input, output, session){
+#' server <- function(input, output, session) {
 #'   # Open the drawer
 #'   drawer_open()
 #'
@@ -18,19 +18,19 @@
 #' }
 #'
 #' @export
-drawer_open <- function(session = shiny::getDefaultReactiveDomain()){
+drawer_open <- function(session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.drawer_open", list())
 }
 
 #' @rdname drawer
 #' @export
-drawer_close <- function(session = shiny::getDefaultReactiveDomain()){
+drawer_close <- function(session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.drawer_close", list())
 }
 
 #' @rdname drawer
 #' @export
-drawer_toggle <- function(session = shiny::getDefaultReactiveDomain()){
+drawer_toggle <- function(session = shiny::getDefaultReactiveDomain()) {
   session$sendCustomMessage("shidashi.drawer_toggle", list())
 }
 

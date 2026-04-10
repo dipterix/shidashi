@@ -1,4 +1,4 @@
-ui_progress <- function(){
+ui_progress <- function() {
   tagList(
     column(
       width = 12L,
@@ -45,7 +45,7 @@ ui_progress <- function(){
   )
 }
 
-server_progress <- function(input, output, session, ...){
+server_progress <- function(input, output, session, ...) {
 
   data <- fastmap::fastmap()
   data$set("progress", 0)
@@ -53,7 +53,7 @@ server_progress <- function(input, output, session, ...){
   output$prog_1 <- renderProgress({
     print(input$prog_btn1)
     progress <- data$get("progress") + 10
-    if(progress > 100){ progress <- 0 }
+    if (progress > 100) { progress <- 0 }
     data$set("progress", progress)
     list(
       value = progress,
@@ -63,7 +63,7 @@ server_progress <- function(input, output, session, ...){
 
   observeEvent(input$prog_btn2, {
     progress <- shiny_progress(title = "Method 2", max = 10, outputId = "prog_1")
-    for(i in 1:10){
+    for (i in 1:10) {
       progress$inc(sprintf("step - %d", i))
       Sys.sleep(0.3)
     }
@@ -83,7 +83,7 @@ server_progress <- function(input, output, session, ...){
     )
     on.exit({ clear_notifications(class = "notif_7_autoclose") })
     progress <- shiny_progress(title = "Running", max = 10, outputId = "notif_7_prg")
-    for(i in 1:10){
+    for (i in 1:10) {
       Sys.sleep(0.5)
       progress$inc(detail = paste("Channel", i))
     }
