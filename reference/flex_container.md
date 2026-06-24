@@ -65,6 +65,7 @@ flex_break(..., class = NULL)
 ## Examples
 
 ``` r
+
 x <- flex_container(
   style = "position:absolute;height:100vh;top:0;left:0;width:100%",
   flex_item(style = 'background-color:black;'),

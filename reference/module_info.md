@@ -156,6 +156,7 @@ the function falls back to `current_module()`.
 ## Examples
 
 ``` r
+
 library(shiny)
 module_info()
 #>                   id   group           label                 icon badge
@@ -188,7 +189,7 @@ module_info()
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x55ffcdd26dd0>
+#> <environment: 0x559b7f5e3c68>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -207,8 +208,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x55ffc7e9e958>
-#> <environment: 0x55ffc7e95030>
+#> <bytecode: 0x559b85eb9a60>
+#> <environment: 0x559b85ebea30>
 #> 
 #> $module$template_path
 #> NULL

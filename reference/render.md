@@ -60,6 +60,7 @@ This functions runs a 'shiny' application, and returns the job id if
 ## Examples
 
 ``` r
+
 template_root()
 #> [1] "/home/runner/.local/share/R/shidashi/bslib-bare"
 

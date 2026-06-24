@@ -56,13 +56,13 @@ later called with an explicit `shared_id`, it can update the entry.
 
 ### Step 5: Update all callers (~44 references)
 
-| File                  | Lines                        | Change                                                                                                                                 |
-|-----------------------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| R/globals.R           | 295                          | `globals_mcp_session_registry()` → `globals_session_registry()`                                                                        |
-| R/modules.R           | 328-329                      | `register_session_mcp` → `register_session`, `globals_mcp_session_registry` → `globals_session_registry`                               |
-| R/mcp-handler.R       | 8 accessor refs + self-calls | All `globals_mcp_session_registry()` → `globals_session_registry()`, plus renamed helpers in `onSessionEnded` callback and sweep calls |
-| R/mcp-wrapper.R       | 1093                         | `mcp_get_shiny_entry` → `get_session_entry`                                                                                            |
-| R/standalone-viewer.R | 32                           | `mcp_get_shiny_entry` → `get_session_entry`                                                                                            |
+| File | Lines | Change |
+|----|----|----|
+| R/globals.R | 295 | `globals_mcp_session_registry()` → `globals_session_registry()` |
+| R/modules.R | 328-329 | `register_session_mcp` → `register_session`, `globals_mcp_session_registry` → `globals_session_registry` |
+| R/mcp-handler.R | 8 accessor refs + self-calls | All `globals_mcp_session_registry()` → `globals_session_registry()`, plus renamed helpers in `onSessionEnded` callback and sweep calls |
+| R/mcp-wrapper.R | 1093 | `mcp_get_shiny_entry` → `get_session_entry` |
+| R/standalone-viewer.R | 32 | `mcp_get_shiny_entry` → `get_session_entry` |
 
 ### Step 6: Keep MCP-specific helpers in mcp-handler.R (no rename)
 
@@ -130,13 +130,13 @@ individual helpers.
 
 ## Replacement Map
 
-| Old                                                                                      | New                                                                                                                     |
-|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| `shared_data <- register_session_id(session)` + `.enable_broadcast()` + `.enable_sync()` | `shidashi::enable_input_broadcast(session)` + `shidashi::enable_input_sync(session)`                                    |
-| `event_data <- register_session_events(session)` + `get_theme(event_data)`               | `shidashi::register_session(session)` + [`get_theme()`](https://dipterix.org/shidashi/reference/fire_event.md) (no arg) |
-| `get_event(key, …, event_data=event_data)`                                               | `get_event(key, session=session)`                                                                                       |
-| `shared_data$reactives[[ns("x")]] <- val` (MCP tool)                                     | `shidashi::fire_event(session$ns("x"), val, session=session)`                                                           |
-| `observeEvent(shared_data$reactives[[ns("x")]], {…})`                                    | `observeEvent(shidashi::get_event(session$ns("x"), session=session), {…})`                                              |
+| Old | New |
+|----|----|
+| `shared_data <- register_session_id(session)` + `.enable_broadcast()` + `.enable_sync()` | `shidashi::enable_input_broadcast(session)` + `shidashi::enable_input_sync(session)` |
+| `event_data <- register_session_events(session)` + `get_theme(event_data)` | `shidashi::register_session(session)` + [`get_theme()`](https://dipterix.org/shidashi/reference/fire_event.md) (no arg) |
+| `get_event(key, …, event_data=event_data)` | `get_event(key, session=session)` |
+| `shared_data$reactives[[ns("x")]] <- val` (MCP tool) | `shidashi::fire_event(session$ns("x"), val, session=session)` |
+| `observeEvent(shared_data$reactives[[ns("x")]], {…})` | `observeEvent(shidashi::get_event(session$ns("x"), session=session), {…})` |
 
 ## Files Changed
 

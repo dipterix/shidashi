@@ -90,6 +90,7 @@ Several packages depend on shidashi (notably `ravedash` and
 ## Testing
 
 ``` r
+
 devtools::load_all()
 tmp <- file.path(tempdir(), "test-bslib")
 unlink(tmp, recursive = TRUE)

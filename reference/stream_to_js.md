@@ -45,6 +45,7 @@ Invisibly returns `abspath`.
 
 **Wire format**
 
+
       [endianFlag: 1 byte]  [headerLen: uint32 LE]  [header: UTF-8 JSON]  [body]
 
 `endianFlag` is always `0x01` (little-endian). `header` is a JSON object

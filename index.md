@@ -14,6 +14,7 @@ You can install the released version of shidashi from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
+
 install.packages("shidashi")
 ```
 
@@ -22,6 +23,7 @@ install.packages("shidashi")
 The demo app requires to install the following extra packages
 
 ``` r
+
 install.packages(c("ggExtra", "rmarkdown"))
 ```
 
@@ -29,6 +31,7 @@ Once you have installed these packages, run the following command from
 R:
 
 ``` r
+
 library(shidashi)
 project <- file.path(tools::R_user_dir('shidashi', which = "data"), "AdminLTE3")
 

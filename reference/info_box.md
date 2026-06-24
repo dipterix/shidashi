@@ -50,6 +50,7 @@ info_box(
 ## Examples
 
 ``` r
+
 library(shiny)
 library(shidashi)
 

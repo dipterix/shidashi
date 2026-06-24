@@ -8,9 +8,11 @@ code fills it dynamically via
 
 Typical usage in a `module-ui.html` template:
 
+
       {{ shidashi::module_drawer() }}
 
 Then in the module server:
+
 
       output$shidashi_drawer <- shiny::renderUI({
         shiny::tagList(

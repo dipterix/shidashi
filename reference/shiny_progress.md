@@ -61,6 +61,7 @@ a list of functions that controls the progress
 ## Examples
 
 ``` r
+
 {
   progress <- shiny_progress("Procedure A", max = 10)
   for(i in 1:10) {

@@ -2,6 +2,8 @@
 
 ## shidashi 0.2.0
 
+CRAN release: 2026-04-10
+
 ### New Features
 
 - Added `stream_viz` `htmlwidgets` widget for real-time multi-channel

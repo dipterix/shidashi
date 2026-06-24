@@ -77,6 +77,7 @@ internally.
 ## Examples
 
 ``` r
+
 library(shiny)
 library(shidashi)
 progressOutput("sales_report_prog1",

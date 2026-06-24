@@ -25,6 +25,7 @@ Quoted `R` expressions that can generate the 'HTML' tags
 ## Examples
 
 ``` r
+
 x <- info_box("Message")
 get_construct_string(x)
 #> [1] "info_box(\"Message\")"

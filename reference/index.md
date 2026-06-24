@@ -160,6 +160,9 @@
 - [`render()`](https://dipterix.org/shidashi/reference/render.md) :
   Render a 'shidashi' project
 
+- [`renderPlot2()`](https://dipterix.org/shidashi/reference/renderPlot2.md)
+  : Shiny render plot function with automated theme switcher
+
 - [`renderStreamViz()`](https://dipterix.org/shidashi/reference/renderStreamViz.md)
   : Render a streaming widget
 

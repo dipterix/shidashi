@@ -27,6 +27,7 @@ as_icon(icon = NULL, class = "fas")
 ## Examples
 
 ``` r
+
 if(interactive()) {
 as_icon("bookmark", class = "far")
 as_icon("bookmark", class = "fas")

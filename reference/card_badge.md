@@ -63,6 +63,7 @@ set_card_badge(
 ## Examples
 
 ``` r
+
 library(shidashi)
 
 # UI: a Bootstrap badge with green background

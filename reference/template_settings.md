@@ -14,10 +14,6 @@ template_settings_get(name, default = NULL)
 template_root()
 ```
 
-## Format
-
-An object of class `list` of length 3.
-
 ## Arguments
 
 - ...:
@@ -46,6 +42,7 @@ should be a path pointing to the template folder.
 ## Examples
 
 ``` r
+
 # Get current website root path
 
 template_root()

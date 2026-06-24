@@ -77,6 +77,7 @@ html_highlight_code(
 ## Examples
 
 ``` r
+
 s <- format_text_r(print(local({a<-1;a+1})))
 cat(s)
 #> print(

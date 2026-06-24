@@ -73,6 +73,7 @@ card_tabset(
 ## Examples
 
 ``` r
+
 library(shiny)
 library(shidashi)
 

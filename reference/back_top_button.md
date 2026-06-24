@@ -53,6 +53,7 @@ back_top_button(
 ## Examples
 
 ``` r
+
 back_top_button()
 #> <div class="shidashi-back-to-top">
 #>   <a type="button" class="btn btn-default btn-drawer-toggle" href="#" data-shidashi-action="drawer-toggle" title="Open panel">

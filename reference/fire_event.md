@@ -86,6 +86,7 @@ functions).
 
 ``` r
 
+
 library(shiny)
 server <- function(input, output, session) {
   # fire an event

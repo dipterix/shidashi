@@ -154,6 +154,7 @@ ended.
 
 ### Session life-cycle
 
+
     init_app()                       # global.R, once per app start
         |
         v
@@ -171,6 +172,7 @@ ended.
 ## Examples
 
 ``` r
+
 library(shiny)
 
 # --- Basic usage in a module server ---

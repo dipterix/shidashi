@@ -25,6 +25,7 @@ An R string
 ## Examples
 
 ``` r
+
 html_asis("<a><----> <b>")
 #> &lt;a&gt;&lt;----&gt;&nbsp;&lt;b&gt;
 ```

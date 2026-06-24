@@ -53,6 +53,7 @@ session, and returns nothing
 ## Examples
 
 ``` r
+
 # More examples are available in demo
 
 library(shiny)

@@ -33,6 +33,7 @@ message, and the text after the `"|"` becomes the class string.
 ## Examples
 
 ``` r
+
 # Basic usage
 as_badge("New")
 #> <span class="right badge">New</span>

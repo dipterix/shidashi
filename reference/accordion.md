@@ -95,6 +95,7 @@ accordion_operate(
 
 ``` r
 
+
 if(interactive()) {
 
   library(shiny)

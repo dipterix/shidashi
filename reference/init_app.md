@@ -25,5 +25,6 @@ Nothing.
 ## Examples
 
 ``` r
+
 init_app(env = new.env())
 ```
