@@ -430,6 +430,45 @@ register_session <- function(session) {
     session$sendCustomMessage("shidashi.get_theme", list())
   }
 
+  if (!entry$handlers$has("theme_handler")) {
+    root_session <- session$rootScope()
+
+    entry$handlers$set("theme_handler", shiny::bindEvent(
+      shiny::observe(
+        {
+          tryCatch(
+            {
+              theme <- entry$events[["theme.changed"]]
+              if (!is.list(theme)) { return() }
+
+              # Unfortunate we cannot set it back since the state has to remain changed
+              theme <- list(fg = theme$foreground %||% "#000000",
+                            bg = theme$background %||% "#FFFFFF")
+              do.call("par", list(
+                fg = theme$fg,
+                bg = theme$bg,
+                col = theme$fg,
+                col.axis = theme$fg,
+                col.lab = theme$fg,
+                col.main = theme$fg,
+                col.sub = theme$fg
+              ))
+            },
+            error = function(e) {}
+          )
+        },
+        domain = root_session,
+
+        # Set priority = 1 before rendering
+        priority = 1L
+      ),
+      entry$events[["theme.changed"]],
+      ignoreNULL = TRUE, ignoreInit = TRUE
+    ))
+
+    session$sendCustomMessage("shidashi.get_theme", list())
+  }
+
   # broadcast_handler — stored in session's registry entry handlers
   if (!entry$handlers$has("broadcast_handler")) {
     entry$handlers$set("broadcast_handler", shiny::observe(

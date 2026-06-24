@@ -111,22 +111,22 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 
   if (verbose) {
     snippet <- paste0(
-      '{\n',
-      '  "servers": {\n',
-      '    "shidashi": {\n',
-      '      "type": "stdio",\n',
-      '      "command": "node",\n',
-      '      "args": ["', dest, '"]\n',
-      '    }\n',
-      '  }\n',
-      '}'
+      "{\n",
+      "  \"servers\": {\n",
+      "    \"shidashi\": {\n",
+      "      \"type\": \"stdio\",\n",
+      "      \"command\": \"node\",\n",
+      "      \"args\": [\"", dest, "\"]\n",
+      "    }\n",
+      "  }\n",
+      "}"
     )
     message(
       "\nPaste the following into your .vscode/mcp.json",
       " (or equivalent MCP settings):\n\n",
       snippet,
       "\n\nTo target a specific shidashi session, append its port as an extra arg:\n",
-      '  "args": ["', dest, '", "<port>"]\n'
+      "  \"args\": [\"", dest, "\", \"<port>\"]\n"
     )
   }
 
@@ -1280,7 +1280,102 @@ register_output <- function(
   render_function <- eval(expr, envir = env)
   if (!is.null(session)) {
     session$output[[outputId]] <- render_function
+
+    # Also add hook functions
+    switch(
+      download_type,
+      "threeBrain" = {
+
+        if (system.file(package = "threeBrain") != "") {
+          shidashi <- asNamespace("shidashi")
+
+          shiny::bindEvent(
+            shiny::observe(
+              bquote({
+                tryCatch(
+                  expr = {
+
+                    shidashi <- asNamespace("shidashi")
+                    theme <- shidashi$get_theme()
+                    if (!is.list(theme) ||
+                        length(theme$background) != 1 ||
+                        !is.character(theme$background)) {
+                      return()
+                    }
+                    bgcolor <- substr(grDevices::adjustcolor(theme$background), 1, 7)
+
+                    threeBrain <- asNamespace("threeBrain")
+                    proxy <- threeBrain$brain_proxy(outputId = .(outputId))
+                    proxy$set_background(bgcolor)
+
+                  },
+                  error = function(e) {},
+                  warning = function(e) {}
+                )
+              }),
+              quoted = TRUE,
+              env = env,
+              priority = -1L,
+              domain = session
+            ),
+            shidashi$get_theme(),
+            ignoreNULL = TRUE,
+            ignoreInit = TRUE
+          )
+        } # // if (system.file(package = "threeBrain") != "")
+      },
+      {
+        # Default
+      }
+    )
   }
 
   invisible(NULL)
 }
+
+
+#' @title Shiny render plot function with automated theme switcher
+#' @description
+#' A wrapper around \code{\link[shiny]{renderPlot}}, but with themes
+#' automatically set via \code{\link[graphics]{par}}; only supports
+#' base plots. For \pkg{ggplot2}, please manually call
+#' \code{\link{get_theme}} to get the theme.
+#'
+#' @param expr,env,quoted,... passed to \code{\link[shiny]{renderPlot}}
+#' @returns See \code{\link[shiny]{renderPlot}}
+#'
+#' @examples
+#'
+#' server <- function(input, output, session) {
+#'
+#'   output$plot <- renderPlot2({
+#'     plot(rnorm(100))
+#'   })
+#'
+#' }
+#'
+#' @export
+renderPlot2 <- function(expr, ..., env = parent.frame(), quoted = FALSE) {
+  func <- shiny::exprToFunction(expr, env, quoted)
+  shiny::renderPlot({
+    .theme <- shidashi::get_theme()
+    if (is.list(.theme)) {
+      .theme <- list(fg = .theme$foreground %||% "#000000",
+                     bg = .theme$background %||% "#FFFFFF")
+      .oldpar <- graphics::par(
+        fg = .theme$fg,
+        bg = .theme$bg,
+        col = .theme$fg,
+        col.axis = .theme$fg,
+        col.lab = .theme$fg,
+        col.main = .theme$fg,
+        col.sub = .theme$fg
+      )
+      on.exit({
+        graphics::par(.oldpar)
+      }, add = TRUE)
+    }
+    func()
+  }, ...)
+}
+
