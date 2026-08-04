@@ -148,6 +148,9 @@ repository](https://github.com/dipterix/shidashi-templates/).
   [`renderClipboard()`](https://dipterix.org/shidashi/reference/clipboardOutput.md)
   : Generates outputs that can be written to clipboards with one click
 
+- [`colormapSelectInput()`](https://dipterix.org/shidashi/reference/colormapSelectInput.md)
+  : A shiny color picker
+
 - [`drawer_open()`](https://dipterix.org/shidashi/reference/drawer.md)
   [`drawer_close()`](https://dipterix.org/shidashi/reference/drawer.md)
   [`drawer_toggle()`](https://dipterix.org/shidashi/reference/drawer.md)

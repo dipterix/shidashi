@@ -1,5 +1,11 @@
 # Changelog
 
+## shidashi 0.2.1
+
+- Added a color picker widget using vanilla `shiny` select input;
+- Added base theme for plots and viewers that are registered output,
+  such as `plotOutput2`;
+
 ## shidashi 0.2.0
 
 CRAN release: 2026-04-10
