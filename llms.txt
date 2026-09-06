@@ -219,6 +219,10 @@ repository](https://github.com/dipterix/shidashi-templates/).
   [`clear_notifications()`](https://dipterix.org/shidashi/reference/notification.md)
   : The 'Bootstrap' notification
 
+- [`objectListInput()`](https://dipterix.org/shidashi/reference/objectListInput.md)
+  [`updateObjectListInput()`](https://dipterix.org/shidashi/reference/objectListInput.md)
+  : A re-orderable list of objects as a shiny input
+
 - [`open_url()`](https://dipterix.org/shidashi/reference/open_url.md) :
   Open a URL in a new browser tab
 

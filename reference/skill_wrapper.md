@@ -37,7 +37,7 @@ skill_wrapper(skill_path)
 
 A function with class `c("shidashi_skill_wrapper", "function")` that
 returns an
-[`ellmer::ToolDef`](https://ellmer.tidyverse.org/reference/tool.html)
+[`ellmer::ToolDef`](https://ellmer.tidyverse.org/reference/ToolDef.html)
 object.
 
 ## Details
