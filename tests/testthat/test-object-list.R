@@ -67,21 +67,21 @@ test_that("plugins and evaluated options follow the sortable/removable flags", {
 })
 
 test_that("the dropdown is suppressed and the row renderer is evaluated", {
-  opts <- config("objects", choices = "a")
+  opts <- config("objects", choices = "a", allow_readd = FALSE)
   expect_false(opts$openOnFocus)
   expect_false(opts$create)
   expect_true(grepl("object-list-label", opts$render, fixed = TRUE))
 
-  html <- rendered("objects", choices = "a")
+  html <- rendered("objects", choices = "a", allow_readd = FALSE)
   expect_true(grepl('data-eval="[&quot;render&quot;,&quot;onInitialize&quot;]"',
                     html, fixed = TRUE))
 })
 
 test_that("allow_readd switches between the list-only and drop-down modes", {
-  list_only <- rendered("objects", choices = "a")
+  list_only <- rendered("objects", choices = "a", allow_readd = FALSE)
   expect_true(grepl('class="shidashi-object-list list-only"', list_only, fixed = TRUE))
-  expect_false(config("objects", choices = "a")$openOnFocus)
-  expect_null(config("objects", choices = "a")$onDropdownOpen)
+  expect_false(config("objects", choices = "a", allow_readd = FALSE)$openOnFocus)
+  expect_null(config("objects", choices = "a", allow_readd = FALSE)$onDropdownOpen)
 
   readd <- rendered("objects", choices = "a", allow_readd = TRUE)
   expect_true(grepl('class="shidashi-object-list"', readd, fixed = TRUE))
@@ -97,13 +97,22 @@ test_that("allow_readd switches between the list-only and drop-down modes", {
   expect_true(opts$persist)
 })
 
+test_that("the drop-down mode is the default", {
+  # the tests above spell `allow_readd` out, so the default is pinned here
+  expect_true(config("objects", choices = "a")$openOnFocus)
+  # only a container's class attribute separates the two with a space; the
+  # stylesheet always spells the modifier `.shidashi-object-list.list-only`
+  expect_false(grepl("shidashi-object-list list-only",
+                     rendered("objects", choices = "a"), fixed = TRUE))
+})
+
 test_that("the placeholder is drawn without touching the inner text field", {
   # list-only mode collapses the text field, so the placeholder travels as a
   # custom property that the stylesheet renders through `content`
-  html <- rendered("objects", placeholder = "Nothing here")
+  html <- rendered("objects", placeholder = "Nothing here", allow_readd = FALSE)
   expect_true(grepl("--object-list-placeholder:&#39;Nothing here&#39;;",
                     html, fixed = TRUE))
-  expect_null(config("objects")$placeholder)
+  expect_null(config("objects", allow_readd = FALSE)$placeholder)
 
   # the drop-down mode keeps the field, so selectize can draw it natively
   expect_equal(config("objects", placeholder = "Nothing here",
@@ -115,12 +124,13 @@ test_that("the placeholder is drawn without touching the inner text field", {
                               allow_readd = TRUE), fixed = TRUE))
 
   # quotes and newlines must not break out of the CSS string
-  tricky <- rendered("objects", placeholder = "It's\nempty")
+  tricky <- rendered("objects", placeholder = "It's\nempty", allow_readd = FALSE)
   expect_true(grepl("--object-list-placeholder:&#39;It\\&#39;s empty&#39;;",
                     tricky, fixed = TRUE))
 
   expect_false(grepl("--object-list-placeholder:",
-                     rendered("objects", placeholder = NULL), fixed = TRUE))
+                     rendered("objects", placeholder = NULL,
+                              allow_readd = FALSE), fixed = TRUE))
 })
 
 test_that("unnamed choices fall back to their value as the label", {
