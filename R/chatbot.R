@@ -388,11 +388,12 @@ chatbot_server <- function(input, output, session,
 
         # Send provider/model info to the status bar
         provider <- chat$get_provider()
+        model_str <- chat$get_model()
         session$sendCustomMessage(
           "shidashi.update_chat_status",
           list(
             id     = session$ns(paste0(id, "-status-model")),
-            text   = sprintf("%s/%s", provider@name, provider@model),
+            text   = sprintf("%s/%s", provider@name, model_str),
             status = "ready"
           )
         )
