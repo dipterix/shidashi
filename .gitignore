@@ -14,3 +14,4 @@ junk
 .vscode
 inst/builtin-templates/*/www/stream/**
 TODO.md
+**/Rplots.pdf

@@ -335,6 +335,18 @@ truc_string <- function(x, max_char, annot = "(truncated)", side = c("end", "beg
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
+# A fastmap with a class. `fastmap::fastmap()` returns an unclassed list, so
+# `inherits(x, "fastmap")` is always FALSE; create every map with
+# `new_fastmap()` and test it with `is_shidashi_fastmap()`.
+new_fastmap <- function(missing_default = NULL) {
+  structure(fastmap::fastmap(missing_default = missing_default),
+            class = "shidashi-fastmap")
+}
+
+is_shidashi_fastmap <- function(x) {
+  inherits(x, "shidashi-fastmap")
+}
+
 drop_null <- function(x) {
   as.list(x[!vapply(x, is.null, FALSE)])
 }

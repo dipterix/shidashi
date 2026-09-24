@@ -82,7 +82,7 @@ server_standalone_viewer <- function(input, output, session, ...) {
     }
   }
 
-  local_data <- fastmap::fastmap()
+  local_data <- new_fastmap()
 
   # Use the module's reactive domain so reactive expressions in the
   # render function can access module inputs/reactives
