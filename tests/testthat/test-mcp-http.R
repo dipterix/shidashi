@@ -35,7 +35,7 @@ test_that("initialize returns instructions and no session id", {
   expect_null(res$headers[["Mcp-Session-Id"]])
   body <- mcp_body(res)
   expect_match(body$result$instructions, "_module")
-  expect_match(body$result$instructions, "Never ask the user to answer in the browser")
+  expect_match(body$result$instructions, "in this\\s+conversation")
   expect_identical(body$result$serverInfo$name, "shidashi")
 })
 
@@ -371,7 +371,7 @@ test_that("agents are told to stay in the default module", {
     jsonrpc = "2.0", id = 1, method = "initialize", params = list()
   ))))$result$instructions
   expect_match(instructions, "default module")
-  expect_match(instructions, "Do not reuse")
+  expect_match(instructions, "do not reuse a handle", ignore.case = TRUE)
 
   tools <- mcp_body(app$httpHandler(mcp_request(list(
     jsonrpc = "2.0", id = 1, method = "tools/list"
@@ -401,4 +401,12 @@ test_that("shidashi_tools lists the app's tools with their schemas", {
   )))
   hello <- listed[[match("tool__hello", listed_names)]]
   expect_identical(app_tools[[match("tool__hello", app_names)]], hello)
+})
+
+test_that("mcp_call_active() is on only while an MCP tool call runs", {
+  expect_false(mcp_call_active())
+  mcp_call_active(TRUE)
+  expect_true(mcp_call_active())
+  mcp_call_active(FALSE)
+  expect_false(mcp_call_active())
 })

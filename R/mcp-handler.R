@@ -13,34 +13,50 @@
 # Set while an MCP tool call runs, so the shared tool wrapper can skip
 # the chat's mode checks and confirmation dialogs. A flag rather than an
 # argument: a chat model cannot set it.
-.mcp_call_state <- new.env(parent = emptyenv())
+mcp_call_active <- local({
 
-mcp_call_active <- function() {
-  isTRUE(.mcp_call_state$active)
-}
+  # Must be NULL to avoid embedding environment in the build package
+  active <- FALSE
+
+  function(v) {
+    if (!missing(v)) {
+      active <<- isTRUE(v)
+    }
+    active
+  }
+  
+})
+
 
 # Instructions sent to agents on `initialize`. With `app_id = NULL` the text
 # names no app; the stdio proxy uses that variant (see setup_mcp_proxy).
 mcp_server_instructions <- function(app_id = mcp_app_id()) {
   first <- if (length(app_id)) {
-    sprintf("This server drives a shidashi dashboard (app `%s`).", app_id)
+    sprintf("This server drives a shiny dashboard (app `%s`)", app_id)
   } else {
-    "This server drives a shidashi dashboard."
+    "This server drives a shiny dashboard"
   }
   paste(
     first,
-    "Call `shidashi_sessions` first: it says what the app is for, which",
-    "modules are open, and which one is the default module.",
-    "Tools run in the default module: the module the user pinned, otherwise",
-    "the one they used most recently. Working in the default module is",
-    "always recommended, so leave out `_module` unless the user asks for a",
-    "different module or the tool is not available in the default one.",
-    "Unless user asked explicitly, do not reuse a handle from earlier calls: ",
-    "the user may have switched or pinned another module since. ",
-    "If a result's note says the requested handle is different from the current one,",
-    "double-check with the user.",
-    "Every result ends with a note naming the module it ran on.",
-    "Tools marked destructive change the user's work: ask the user for in this",
+    "via `shidashi` (Github `dipterix/shidashi`) package. ",
+    "The shidashi package offers a MCP server framework for shiny apps. ",
+    "The tools offered by each app is different. ",
+    "Call `shidashi_sessions` first: it says what this app is for, which " ,
+    "modules are open, and which one is the default module. ",
+    "\n\n",
+    "## General rules:\n",
+    "1. Each shidashi app contains multiple separately operated modules (sub-apps). ",
+    "By default, tools run in the default module chosen by the following criteria: ",
+    "the module the user pinned, otherwise ",
+    "the one they used most recently. Working in the default module is" ,
+    "always recommended: this can be done by leaving out `_module` argument. \n",
+    "2. Unless the user asks for a different module or the tool is not available in the default one, ",
+    "do not reuse a handle from earlier calls: since ",
+    "the user may have switched or pinned another module (they have switched to a new module but you are still operating on the old module). ",
+    "3. If a result's note says the requested handle is different from the current one, ",
+    "double-check with the user. ",
+    "Every result ends with a note naming the module it ran on. \n",
+    "4. Tools marked destructive change the user's work: ask the user for in this ",
     "conversation for confirmation before calling them."
   )
 }
@@ -208,8 +224,8 @@ mcp_call_tool <- function(tool_name, arguments, scope = list(),
     result
   }
 
-  .mcp_call_state$active <- TRUE
-  on.exit(.mcp_call_state$active <- FALSE, add = TRUE)
+  mcp_call_active(TRUE)
+  on.exit(mcp_call_active(FALSE), add = TRUE)
   result <- ellmer_tool_call(tool_obj, arguments, provider = get_mcp_provider())
   if (promises::is.promise(result)) {
     return(promises::then(result, add_note))

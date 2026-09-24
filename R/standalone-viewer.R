@@ -119,7 +119,7 @@ server_standalone_viewer <- function(input, output, session, ...) {
   # Use the standalone viewer's own domain so the observer fires
   # in the same flush cycle as the input update (avoids cross-session
   # timing issues with event-type inputs).
-  shiny::observe({
+  safe_observe({
     inputs <- shiny::reactiveValuesToList(root_session$input)
     nms <- names(inputs)
     nms <- nms[startsWith(nms, ns2("")) & !startsWith(nms, "@")]
@@ -140,7 +140,7 @@ server_standalone_viewer <- function(input, output, session, ...) {
         local_data$set(nm, sig)
       }
     }
-  }, domain = root_session, autoDestroy = TRUE)
+  }, domain = root_session, autoDestroy = TRUE, label = "standalone viewer inputs")
 
   invisible()
 }

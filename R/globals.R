@@ -423,13 +423,13 @@ register_session <- function(session) {
     root_session <- session$rootScope()
 
     entry$handlers$set("event_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         event <- root_session$input[["@shidashi_event@"]]
         if (!length(event) || !is.list(event)) { return() }
         if (length(event$type) != 1 || is.na(event$type) || !is.character(event$type)) { return() }
         if (!nzchar(event$type)) { return() }
         entry$events[[event$type]] <- event$message
-      }, domain = root_session),
+      }, domain = root_session, label = "session events"),
       root_session$input[["@shidashi_event@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE
     ))
@@ -441,7 +441,7 @@ register_session <- function(session) {
     root_session <- session$rootScope()
 
     entry$handlers$set("theme_handler", shiny::bindEvent(
-      shiny::observe(
+      safe_observe(
         {
           tryCatch(
             {
@@ -467,7 +467,8 @@ register_session <- function(session) {
         domain = root_session,
 
         # Set priority = 1 before rendering
-        priority = 1L
+        priority = 1L,
+        label = "theme update"
       ),
       entry$events[["theme.changed"]],
       ignoreNULL = TRUE, ignoreInit = TRUE
@@ -482,9 +483,9 @@ register_session <- function(session) {
     root_session <- session$rootScope()
     activity <- entry$activity
     entry$handlers$set("focus_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         activity$focused_at <- Sys.time()
-      }, domain = root_session),
+      }, domain = root_session, label = "MCP focus report"),
       root_session$input[["@shidashi_focus@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE
     ))
@@ -493,12 +494,12 @@ register_session <- function(session) {
   if (!entry$handlers$has("pin_handler")) {
     root_session <- session$rootScope()
     entry$handlers$set("pin_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         mcp_set_pin(
           token = token,
           pinned = isTRUE(root_session$input[["@shidashi_ai_pin@"]])
         )
-      }, domain = root_session),
+      }, domain = root_session, label = "MCP pin toggle"),
       root_session$input[["@shidashi_ai_pin@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE
     ))
@@ -506,7 +507,7 @@ register_session <- function(session) {
 
   # broadcast_handler — stored in session's registry entry handlers
   if (!entry$handlers$has("broadcast_handler")) {
-    entry$handlers$set("broadcast_handler", shiny::observe(
+    entry$handlers$set("broadcast_handler", safe_observe(
       {
         inputs <- shiny::reactiveValuesToList(session$input)
         nms <- names(inputs)
@@ -531,14 +532,15 @@ register_session <- function(session) {
       },
       domain = session,
       priority = -100000,
-      suspended = TRUE
+      suspended = TRUE,
+      label = "input broadcast"
     ))
   }
 
   if (!entry$handlers$has("input_sync_handler")) {
     root_session <- session$rootScope()
     entry$handlers$set("input_sync_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         try(
           silent = TRUE,
           {
@@ -569,7 +571,7 @@ register_session <- function(session) {
             })
           }
         )
-      }, suspended = TRUE, domain = root_session, priority = -100000),
+      }, suspended = TRUE, domain = root_session, priority = -100000, label = "input sync"),
       root_session$input[["@shidashi@"]],
       ignoreNULL = TRUE, ignoreInit = TRUE
     ))

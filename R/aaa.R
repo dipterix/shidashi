@@ -347,6 +347,28 @@ is_shidashi_fastmap <- function(x) {
   inherits(x, "shidashi-fastmap")
 }
 
+# Like `shiny::observe()`, but an error in the body is reported as a warning
+# instead of ending the user's session. `req()` and `validate()` stay silent,
+# as they do in a plain observer. Use it for every observer in the package.
+safe_observe <- function(x, env = parent.frame(), quoted = FALSE, ...,
+                         label = NULL) {
+  if (!quoted) {
+    x <- substitute(x)
+  }
+  where <- label %||% "an observer"
+  on_error <- function(e) {
+    if (!inherits(e, "shiny.silent.error")) {
+      warning(sprintf("[shidashi] %s failed: %s", where, conditionMessage(e)),
+              call. = FALSE)
+    }
+    invisible()
+  }
+  shiny::observe(
+    bquote(tryCatch(.(x), error = .(on_error))),
+    env = env, quoted = TRUE, ..., label = label
+  )
+}
+
 drop_null <- function(x) {
   as.list(x[!vapply(x, is.null, FALSE)])
 }

@@ -462,7 +462,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     # A reply for an unknown id (for example after the timeout) is ignored.
     local({
       shiny::bindEvent(
-        shiny::observe({
+        safe_observe({
           res <- as.list(session$input[["@shiny_query_ui_result@"]])
           rid <- res$request_id
           if (length(rid) != 1 || !query_requests$has(rid)) {
@@ -471,7 +471,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           entry <- query_requests$get(rid)
           query_requests$remove(rid)
           entry$resolve(res)
-        }, domain = session, priority = 101),
+        }, domain = session, priority = 101, label = "MCP query_ui reply"),
         session$input[["@shiny_query_ui_result@"]],
         ignoreNULL = TRUE, ignoreInit = FALSE
       )
@@ -608,12 +608,17 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
 
 
     # The browser's answer as tool content: an image (with the note, if
-    # any) or the HTML (with the note appended). The note is an optional
-    # free-text annotation from the JS side (e.g. outerHTML context, a
-    # not-found message, or hidden-element content); agents interpret it.
-    query_ui_content <- function(res) {
-      note <- res$note %||% ""
-      if (length(res$image_data) == 1 && nzchar(res$image_data)) {
+    # any) or the trimmed HTML (with the note appended). The note is a short
+    # annotation from the JS side (e.g. the element's opening tag, a
+    # not-found message, or that the element is hidden); agents interpret it.
+    query_ui_content <- function(res, transform_image = TRUE,
+                                 max_chars = 10000L) {
+      note <- mcp_trim_html(res$note %||% "", max_chars = 500L)
+      if (identical(res$type, "not_found")) {
+        stop(note, call. = FALSE)
+      }
+      has_image <- length(res$image_data) == 1 && nzchar(res$image_data)
+      if (transform_image && has_image) {
         img <- ellmer::ContentImageInline(
           type = res$image_type %||% "image/png",
           data = res$image_data
@@ -623,7 +628,10 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         }
         return(img)
       }
-      html <- res$html %||% ""
+      html <- mcp_trim_html(res$html %||% "", max_chars = max_chars)
+      if (!nzchar(html)) {
+        return(note)
+      }
       if (nzchar(note)) {
         html <- paste(c(html, "\n\n<!-- NOTE: ", note, "-->"), collapse = "\n")
       }
@@ -633,21 +641,43 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     shiny_query_ui <- ellmer::tool(
       name = "shiny_query_ui",
       description = paste(
-        "Get the content of a UI element by CSS selector: its HTML, or an",
-        "image when the element is a canvas or holds only an image. The",
-        "browser answers within a few seconds. A note may be added with",
-        "more context (for example the outerHTML, or that nothing matched)."
+        "Get the content of a UI element by CSS selector. By default a plot,",
+        "canvas, SVG, or single image comes back as a picture; pass",
+        "`transform_image = false` to get the element's HTML instead. Long",
+        "HTML is trimmed (image data and scripts are shortened); use a more",
+        "specific selector, or `max_chars`, to see more. The browser answers",
+        "within a few seconds, and a short note may add context."
       ),
       arguments = list(
         css_selector = ellmer::type_string(
           description = "A CSS selector to query (e.g. '#my_output', '.card-body', 'div[data-id=\"plot\"]').",
           required = TRUE
+        ),
+        transform_image = ellmer::type_boolean(
+          description = paste(
+            "Optional, default true: return plots, canvases, SVGs, and",
+            "single images as a picture. Set false to get HTML only."
+          ),
+          required = FALSE
+        ),
+        max_chars = ellmer::type_integer(
+          description = paste(
+            "Optional: the most HTML characters to return (default 10000).",
+            "Longer HTML is trimmed, with a note saying so."
+          ),
+          required = FALSE
         )
       ),
-      fun = function(css_selector) {
+      fun = function(css_selector, transform_image = TRUE, max_chars = NULL) {
         # Returns a promise: the MCP call (or the chat's tool call) waits on
         # it while R keeps running, so the browser's answer can arrive. The
         # observer above resolves it; a timer rejects it if nothing arrives.
+        transform_image <- !identical(as.logical(transform_image)[1], FALSE)
+        max_chars <- suppressWarnings(as.integer(max_chars)[1])
+        if (length(max_chars) != 1 || is.na(max_chars) || max_chars < 1) {
+          max_chars <- as.integer(getOption("shidashi.query_ui_max_chars",
+                                            10000L))
+        }
         request_id <- rand_string()
         timeout <- getOption("shidashi.query_ui_timeout", 15)
 
@@ -659,25 +689,36 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         session$sendCustomMessage("shidashi.query_ui", list(
           selector = css_selector,
           request_id = request_id,
-          input_id = session$ns("@shiny_query_ui_result@")
+          input_id = session$ns("@shiny_query_ui_result@"),
+          transform_image = transform_image
         ))
 
+        # An error in a `later` callback would surface in the event loop, so
+        # the timeout is guarded like an observer
         later::later(function() {
-          if (!query_requests$has(request_id)) {
-            return()
-          }
-          entry <- query_requests$get(request_id)
-          query_requests$remove(request_id)
-          entry$reject(simpleError(sprintf(
-            paste(
-              "The browser did not answer within %s s: the selector `%s`",
-              "may match nothing, or the module page is not open."
-            ),
-            format(timeout), css_selector
-          )))
+          tryCatch({
+            if (!query_requests$has(request_id)) {
+              return()
+            }
+            entry <- query_requests$get(request_id)
+            query_requests$remove(request_id)
+            entry$reject(simpleError(sprintf(
+              paste(
+                "The browser did not answer within %s s: the selector `%s`",
+                "may match nothing, or the module page is not open."
+              ),
+              format(timeout), css_selector
+            )))
+          }, error = function(e) {
+            warning("[shidashi] shiny_query_ui timeout failed: ",
+                    conditionMessage(e), call. = FALSE)
+          })
         }, delay = timeout)
 
-        promises::then(answer, query_ui_content)
+        promises::then(answer, function(res) {
+          query_ui_content(res, transform_image = transform_image,
+                           max_chars = max_chars)
+        })
       }
     )
 
@@ -743,6 +784,49 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     tool_generator = wrapper
   )
 
+}
+
+# Make HTML cheaper for an agent to read: shorten long data URIs, drop
+# script and style bodies, remove whitespace between tags, and cut at a tag
+# boundary when longer than `max_chars`, saying how much was cut.
+mcp_trim_html <- function(html, max_chars = 10000L) {
+  html <- paste(as.character(html), collapse = "\n")
+  if (!nzchar(html)) {
+    return(html)
+  }
+
+  uris <- gregexpr("data:[^,\"'\\s)]*,[^\"'\\s)<>]{100,}", html, perl = TRUE)
+  regmatches(html, uris) <- lapply(regmatches(html, uris), function(found) {
+    vapply(found, function(uri) {
+      comma <- regexpr(",", uri, fixed = TRUE)
+      sprintf("%s...(%d characters omitted)", substr(uri, 1, comma),
+              nchar(uri) - comma)
+    }, "")
+  })
+
+  html <- gsub("(?is)(<(script|style)\\b[^>]*>).*?(</\\2\\s*>)",
+               "\\1...(omitted)\\3", html, perl = TRUE)
+  html <- gsub(">\\s+<", "><", html, perl = TRUE)
+  html <- gsub("\\s{2,}", " ", html, perl = TRUE)
+  html <- trimws(html)
+
+  total <- nchar(html)
+  if (total <= max_chars) {
+    return(html)
+  }
+  kept <- substr(html, 1, max_chars)
+  tag_ends <- gregexpr(">", kept, fixed = TRUE)[[1]]
+  last_tag_end <- max(tag_ends)
+  if (last_tag_end > 0 && max_chars - last_tag_end <= 200) {
+    kept <- substr(kept, 1, last_tag_end)
+  }
+  sprintf(
+    paste(
+      "%s\n<!-- [shidashi] trimmed: showing %d of %d characters. Use a more",
+      "specific selector, or a larger max_chars. -->"
+    ),
+    kept, nchar(kept), total
+  )
 }
 
 find_expr <- function(call, env) {
@@ -828,7 +912,7 @@ register_output_widgets <- function(
     modal_prefix <- paste0(outputId, "__dlmodal_")
 
     shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         # Build modal UI based on download_type
         modal_ui <- switch(
           download_type,
@@ -922,7 +1006,7 @@ register_output_widgets <- function(
           easyClose = TRUE,
           footer = shiny::modalButton("Cancel")
         ), session = session)
-      }, domain = session),
+      }, domain = session, label = "output download dialog"),
       input[[paste0(outputId, "__download_trigger")]],
       ignoreNULL = TRUE, ignoreInit = TRUE
     )
@@ -1228,7 +1312,7 @@ register_output <- function(
           shidashi <- asNamespace("shidashi")
 
           shiny::bindEvent(
-            shiny::observe(
+            safe_observe(
               bquote({
                 tryCatch(
                   expr = {
@@ -1254,7 +1338,8 @@ register_output <- function(
               quoted = TRUE,
               env = env,
               priority = -1L,
-              domain = session
+              domain = session,
+              label = "threeBrain background"
             ),
             shidashi$get_theme(),
             ignoreNULL = TRUE,
