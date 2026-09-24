@@ -198,10 +198,13 @@ discover_scripts <- function(skill_dir) {
 #' @param parsed Output of \code{parse_skill_md()}.
 #' @param ref_files Character vector from \code{discover_references()}.
 #' @param script_files Character vector from \code{discover_scripts()}.
+#' @param load_name Name of the tool that reads the skill; defaults to
+#'   \code{skill_load__<name>}.
 #' @return A single character string with the condensed summary.
 #' @keywords internal
 #' @noRd
-build_condensed_summary <- function(parsed, ref_files, script_files) {
+build_condensed_summary <- function(parsed, ref_files, script_files,
+                                    load_name = NULL) {
   parts <- character()
 
   parts <- c(parts, paste0("## ", parsed$name))
@@ -223,7 +226,13 @@ build_condensed_summary <- function(parsed, ref_files, script_files) {
   }
 
   parts <- c(parts, "")
-  parts <- c(parts, "You MUST call action='readme' first to read the full instructions, then retry your intended action.")
+  parts <- c(parts, sprintf(
+    paste(
+      "You MUST call `%s` with action='readme' first to read the full",
+      "instructions, then retry your intended action."
+    ),
+    load_name %||% sprintf("skill_load__%s", parsed$name)
+  ))
 
   paste(parts, collapse = "\n")
 }

@@ -81,6 +81,7 @@ test_that("build_condensed_summary produces expected structure", {
   summ <- build_condensed_summary(parsed, refs, scripts)
   expect_type(summ, "character")
   expect_match(summ, "action='readme'", fixed = TRUE)
+  expect_match(summ, "`skill_load__greet`", fixed = TRUE)
   expect_match(summ, "greet", fixed = TRUE)
 })
 

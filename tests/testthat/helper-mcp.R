@@ -121,6 +121,40 @@ add_mini_tool <- function(root, name, category = "exploratory",
   invisible(root)
 }
 
+# Add a skill to the mini template: its folder in agents/skills, and a
+# `skills:` section in the agents.yaml of `modules` (call it once per
+# module). `scripts` maps script names to their category; each script
+# prints "<script> ran".
+add_mini_skill <- function(root, name, scripts = character(),
+                           modules = "alpha") {
+  skill_dir <- file.path(root, "agents", "skills", name)
+  dir.create(file.path(skill_dir, "scripts"), recursive = TRUE,
+             showWarnings = FALSE)
+  writeLines(c(
+    "---", sprintf("name: %s", name),
+    sprintf("description: %s skill", name), "---", "",
+    "## Instructions", "", "Nothing to see."
+  ), file.path(skill_dir, "SKILL.md"))
+  entry <- c("skills:", sprintf("- name: %s", name), "  enabled: yes")
+  if (length(scripts)) {
+    entry <- c(entry, "  scripts:")
+  }
+  for (script in names(scripts)) {
+    writeLines(sprintf("cat('%s ran')", script),
+               file.path(skill_dir, "scripts", script))
+    entry <- c(entry,
+               sprintf("  - name: %s", script),
+               "    category:",
+               sprintf("    - %s", scripts[[script]]),
+               "    enabled: yes")
+  }
+  for (module_id in modules) {
+    cat(entry, sep = "\n", append = TRUE,
+        file = file.path(root, "modules", module_id, "agents.yaml"))
+  }
+  invisible(root)
+}
+
 # Open a module the way the dashboard does: a (mock) session registered in
 # the session registry, holding the module's real permission-wrapped tools.
 # Returns the session token.

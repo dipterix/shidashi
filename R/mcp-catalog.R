@@ -79,17 +79,21 @@ mcp_harvest_module <- function(module_id, root_path = template_root()) {
 # Schema for a tool that could not be harvested: `agents/tool-schema.yaml`
 # for tools, the skill folder for skills. Returns NULL when unknown.
 mcp_fallback_schema <- function(tool_name, root_path = template_root()) {
-  if (startsWith(tool_name, "skill__")) {
-    skill_name <- sub("^skill__", "", tool_name)
-    skill_dir <- file.path(root_path, "agents", "skills", skill_name)
+  skill_parts <- regmatches(
+    tool_name, regexec("^skill_(load|run)__(.+)$", tool_name)
+  )[[1L]]
+  if (length(skill_parts)) {
+    role <- skill_parts[[2L]]
+    skill_dir <- file.path(root_path, "agents", "skills", skill_parts[[3L]])
     if (!file.exists(file.path(skill_dir, "SKILL.md"))) {
       return(NULL)
     }
-    skill_tool <- tryCatch(skill_wrapper(skill_dir)(), error = function(e) NULL)
+    # A skill without scripts has no run tool
+    skill_tool <- tryCatch(skill_wrapper(skill_dir)()[[role]],
+                           error = function(e) NULL)
     if (!inherits(skill_tool, "ellmer::ToolDef")) {
       return(NULL)
     }
-    skill_tool@name <- tool_name
     skill_tool <- wrap_tools_with_permissions(tool = skill_tool, session = NULL)
     return(ellmer_tool_schema(skill_tool))
   }
@@ -134,7 +138,9 @@ mcp_template_fingerprint <- function(root_path = template_root()) {
 }
 
 # Per-tool settings from a module's agents.yaml, keyed by MCP tool name:
-# `enabled`, `category`, and (for skills) `scripts`
+# `enabled`, `category`, and (for skill run tools) `scripts`. Reading a
+# skill (`skill_load__`) never changes anything, whatever the skill's
+# category; its scripts decide whether running it (`skill_run__`) does.
 mcp_module_tool_settings <- function(root_path, module_id) {
   conf <- load_agent_conf(root_path = root_path, module_id = module_id)
   settings <- list()
@@ -148,7 +154,12 @@ mcp_module_tool_settings <- function(root_path, module_id) {
   }
   for (item in conf$skills) {
     if (length(item$name) != 1L) next
-    settings[[sprintf("skill__%s", item$name)]] <- list(
+    settings[[sprintf("skill_load__%s", item$name)]] <- list(
+      enabled  = item$enabled,
+      category = "exploratory",
+      scripts  = list()
+    )
+    settings[[sprintf("skill_run__%s", item$name)]] <- list(
       enabled  = item$enabled,
       category = as.character(unlist(item$category)),
       scripts  = as.list(item$scripts)
@@ -215,6 +226,13 @@ mcp_apply_hints <- function(schema, hints) {
     )
   }
   schema
+}
+
+# The name a tool gets when modules disagree on it, e.g. `tool__hello` in
+# module `beta` is listed as `tool__beta__hello`
+mcp_qualified_tool_name <- function(tool_name, module_id) {
+  sub("^(tool|skill_load|skill_run)__", sprintf("\\1__%s__", module_id),
+      tool_name)
 }
 
 mcp_build_catalog <- function(root_path) {
@@ -306,9 +324,7 @@ mcp_build_catalog <- function(root_path) {
     )
     for (variant in tool_variants) {
       for (module_id in variant$modules) {
-        qualified_name <- sub(
-          "^(tool|skill)__", sprintf("\\1__%s__", module_id), tool_name
-        )
+        qualified_name <- mcp_qualified_tool_name(tool_name, module_id)
         schema <- variant$schema
         schema$name <- qualified_name
         tools[[qualified_name]] <- list(

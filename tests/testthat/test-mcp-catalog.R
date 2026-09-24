@@ -94,7 +94,8 @@ test_that("the bundled template harvests the built-in shiny tools", {
   expect_true(harvested$ok)
   expect_true(all(c(
     "tool__shiny_input_info", "tool__shiny_input_update",
-    "tool__shiny_query_ui", "tool__hello_world", "skill__greet"
+    "tool__shiny_query_ui", "tool__hello_world", "skill_load__greet",
+    "skill_run__greet"
   ) %in% names(harvested$tools)))
 })
 
@@ -167,9 +168,12 @@ test_that("skills with destructive scripts name those scripts", {
   # the bundled modules each define their own `trigger_refresh`, which the
   # catalog reports as a conflict when every module loads
   catalog <- suppressWarnings(mcp_catalog(root_path = root, refresh = TRUE))
-  greet <- catalog$tools$skill__greet$schema
+  greet <- catalog$tools$skill_run__greet$schema
   expect_true(greet$annotations$destructiveHint)
   expect_match(greet$description, "`greet.R`", fixed = TRUE)
+  # reading the skill is never destructive
+  expect_identical(catalog$tools$skill_load__greet$schema$annotations,
+                   list(readOnlyHint = TRUE, destructiveHint = FALSE))
   expect_true(
     catalog$tools$tool__shiny_input_update$schema$annotations$destructiveHint
   )
@@ -196,4 +200,51 @@ test_that("catalog is built once and then served from the cache", {
   writeLines("# changed", file.path(root, "agents", "tools", "extra.R"))
   mcp_catalog(root_path = root)
   expect_identical(builds, 2L)
+})
+
+test_that("skill load tools are read-only; run tools follow their scripts", {
+  app_env <- local_mcp_app()
+  root <- use_template_root(make_mini_template())
+  # alpha marks wipe.R destructive; beta (which fails to load) does not
+  # offer it at all
+  add_mini_skill(root, "tidy",
+                 scripts = c(peek.R = "exploratory", wipe.R = "destructive"),
+                 modules = "alpha")
+  add_mini_skill(root, "tidy", scripts = c(peek.R = "exploratory"),
+                 modules = "beta")
+
+  catalog <- mcp_catalog(root_path = root)
+  load <- catalog$tools$skill_load__tidy
+  expect_setequal(load$modules, c("alpha", "beta"))
+  expect_identical(load$schema$annotations,
+                   list(readOnlyHint = TRUE, destructiveHint = FALSE))
+  expect_false(grepl("Ask the user", load$schema$description, fixed = TRUE))
+  expect_false("args" %in% names(load$schema$inputSchema$properties))
+
+  run <- catalog$tools$skill_run__tidy
+  expect_setequal(run$modules, c("alpha", "beta"))
+  expect_identical(run$schema$annotations,
+                   list(readOnlyHint = FALSE, destructiveHint = TRUE))
+  expect_match(run$schema$description, "before running them: `wipe.R`.",
+               fixed = TRUE)
+  expect_false("action" %in% names(run$schema$inputSchema$properties))
+})
+
+test_that("a skill without scripts lists only its load tool", {
+  app_env <- local_mcp_app()
+  root <- use_template_root(make_mini_template())
+  add_mini_skill(root, "notes", modules = c("alpha", "beta"))
+
+  catalog <- mcp_catalog(root_path = root)
+  expect_true("skill_load__notes" %in% names(catalog$tools))
+  expect_false("skill_run__notes" %in% names(catalog$tools))
+})
+
+test_that("module-qualified names keep the tool type", {
+  expect_identical(mcp_qualified_tool_name("tool__hello", "beta"),
+                   "tool__beta__hello")
+  expect_identical(mcp_qualified_tool_name("skill_load__greet", "beta"),
+                   "skill_load__beta__greet")
+  expect_identical(mcp_qualified_tool_name("skill_run__greet", "beta"),
+                   "skill_run__beta__greet")
 })

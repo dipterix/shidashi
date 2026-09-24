@@ -2,7 +2,7 @@
 % Please edit documentation in R/skill-wrapper.R
 \name{skill_wrapper}
 \alias{skill_wrapper}
-\title{Wrap a Skill Directory as an \verb{MCP} Tool Generator}
+\title{Wrap a Skill Directory as \verb{MCP} Tool Generators}
 \usage{
 skill_wrapper(skill_path)
 }
@@ -12,37 +12,40 @@ Can be absolute or relative to the project root.}
 }
 \value{
 A function with class \code{c("shidashi_skill_wrapper", "function")}
-  that returns an \code{ellmer::ToolDef} object.
+  that returns a list with elements \code{load} (an
+  \code{ellmer::ToolDef}) and \code{run} (an \code{ellmer::ToolDef}, or
+  \code{NULL} when the skill has no scripts).
 }
 \description{
-Creates a closure that produces an
-\code{ellmer::tool} dispatching on an \code{action} enumerator:
+Creates a closure that produces two \code{ellmer::tool} objects for a
+skill:
 \describe{
-  \item{\code{readme}}{Returns the full \verb{SKILL.md} instructions. Must be
-    called first to unlock other actions.}
-  \item{\code{reference}}{Returns content from a reference file in the
-    skill directory (gated behind \code{readme}).}
-  \item{\code{script}}{Executes a script in the \code{scripts/}
-    subdirectory via \code{processx::run()} (gated behind \code{readme}).}
+  \item{\code{skill_load__<name>}}{Reads the skill. Its \code{action}
+    argument is \code{readme} (the full \verb{SKILL.md} instructions, the
+    default) or \code{reference} (content from a reference file in the
+    skill directory). It never changes anything.}
+  \item{\code{skill_run__<name>}}{Executes a script in the
+    \code{scripts/} subdirectory via \code{processx::run()}. Only created
+    when the skill has scripts.}
 }
 }
 \details{
-The returned tool enforces a soft gate: calling \code{reference} or
-  \code{script} before \code{readme} is allowed, but if the call
-  errors the message is augmented with a condensed summary (~200
-  tokens) instructing the AI to read the full instructions first.
-  This minimizes token waste (the summary is only sent on failure).
+The two tools share a soft gate: reading a reference or running a
+  script before the \code{readme} is allowed, but if the call errors the
+  message is augmented with a condensed summary (~200 tokens) instructing
+  the AI to read the full instructions first. This minimizes token waste
+  (the summary is only sent on failure).
 
   The gate state is per-instance: each call to the wrapper produces
-  a closure with an independent \code{readme_unlocked} flag.
+  a pair of tools with an independent \code{readme_unlocked} flag.
 }
 \examples{
 skill_dir <- system.file(
   "builtin-templates/bslib-bare/agents/skills/greet",
   package = "shidashi"
 )
-wrapper  <- skill_wrapper(skill_dir)
-tool_def <- wrapper()
-cat(tool_def(action = "readme"))
+wrapper <- skill_wrapper(skill_dir)
+tools <- wrapper()
+cat(tools$load(action = "readme"))
 
 }

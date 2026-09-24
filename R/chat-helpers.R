@@ -230,32 +230,43 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
     })
 
     # ---- Process skill wrappers (Phase 4) ----
+    # Each skill gives `skill_load__<name>` (reads the skill; never changes
+    # anything) and, when it has scripts, `skill_run__<name>`
     lapply(names(skill_wrappers), function(sname) {
       wrapper <- skill_wrappers[[sname]]
-      skill_tool <- tryCatch(
+      skill_tools <- tryCatch(
         wrapper(),
         error = function(e) {
-          warning("Failed to create skill tool '", sname, "': ",
+          warning("Failed to create skill tools '", sname, "': ",
                   conditionMessage(e))
           NULL
         }
       )
-      if (!inherits(skill_tool, "ellmer::ToolDef")) {
-        return()
-      }
       skill_conf <- agent_conf$skills[[sname]]
-      skill_tool@annotations$shidashi_type <- "skill"
-      skill_tool@annotations$shidashi_enabled <- skill_conf$enabled
-      skill_tool@annotations$shidashi_category <- c("skill", as.character(skill_conf$category))
-      skill_tool@annotations$shidashi_module_id <- module_id
-      skill_tool@annotations$shidashi_skill_scripts <- structure(
+      skill_scripts <- structure(
         as.list(skill_conf$scripts),
         names = vapply(skill_conf$scripts, function(x) {
           x[["name"]]
         }, FUN.VALUE = "")
       )
-      skill_tool@name <- sprintf("skill__%s", sname)
-      tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
+      for (role in c("load", "run")) {
+        skill_tool <- skill_tools[[role]]
+        if (!inherits(skill_tool, "ellmer::ToolDef")) {
+          next
+        }
+        skill_tool@annotations$shidashi_type <- sprintf("skill_%s", role)
+        skill_tool@annotations$shidashi_enabled <- skill_conf$enabled
+        skill_tool@annotations$shidashi_category <- if (role == "load") {
+          c("skill", "exploratory")
+        } else {
+          c("skill", as.character(skill_conf$category))
+        }
+        skill_tool@annotations$shidashi_module_id <- module_id
+        if (role == "run") {
+          skill_tool@annotations$shidashi_skill_scripts <- skill_scripts
+        }
+        tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
+      }
     })
 
     tool_map
@@ -328,10 +339,13 @@ wrap_tools_with_permissions <- function(tool, session) {
 
     category <- shidashi_category
 
-    # For skill scripts
-    if (length(skill_scripts_permission) > 0 && identical(shidashi_type, "skill") && identical(args$action, "script")) {
+    # For skill scripts: the script's own settings apply on top of the skill's
+    if (length(skill_scripts_permission) > 0 && identical(shidashi_type, "skill_run")) {
       file_name <- args$file_name
       if (length(file_name) == 1 && nzchar(file_name)) {
+        category <- unique(c(
+          category, get_script_category(skill_scripts_permission, file_name)
+        ))
         script_permission <- as.list(skill_scripts_permission[[file_name]])
         if (
           length(script_permission) > 0 &&
@@ -379,8 +393,9 @@ wrap_tools_with_permissions <- function(tool, session) {
     }
 
     # policy == "ask": Ask user for confirmation
-    # Extract short tool name (strip type prefix like "tool__" or "skill__")
-    short_name <- sub("^(tool|skill)__", "", tool_name)
+    # Extract short tool name (strip type prefix like "tool__" or
+    # "skill_run__")
+    short_name <- sub("^(tool|skill_load|skill_run)__", "", tool_name)
 
     confirm_result <- mcp_tool_ask_user(
       arguments = list(
