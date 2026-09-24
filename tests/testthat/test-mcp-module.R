@@ -40,7 +40,7 @@ test_that("resolver ignores the shell page and closed sessions", {
   expect_identical(res$token, open)
 })
 
-test_that("handles are module ids unless a module is open more than once", {
+test_that("handles always carry the token prefix", {
   app_env <- local_mcp_app()
   single <- fake_module_session("demo")
   first <- fake_module_session("aiagent")
@@ -50,7 +50,7 @@ test_that("handles are module ids unless a module is open more than once", {
   handles <- vapply(open, `[[`, "", "handle")
   names(handles) <- vapply(open, `[[`, "", "token")
 
-  expect_identical(handles[[single]], "demo")
+  expect_identical(handles[[single]], paste0("demo@", substr(single, 1, 6)))
   expect_identical(handles[[first]], paste0("aiagent@", substr(first, 1, 6)))
   expect_identical(handles[[second]], paste0("aiagent@", substr(second, 1, 6)))
 })
@@ -116,12 +116,12 @@ test_that("pinning a module unpins every other open module", {
 
 test_that("resolver reports the module a call would use without _module", {
   app_env <- local_mcp_app()
-  fake_module_session("demo", "tool__x", pinned = TRUE)
+  demo <- fake_module_session("demo", "tool__x", pinned = TRUE)
   other <- fake_module_session("aiagent", "tool__x")
 
   res <- mcp_resolve_module("tool__x", module = "aiagent")
   expect_identical(res$token, other)
-  expect_identical(res$default_handle, "demo")
+  expect_identical(res$default_handle, paste0("demo@", substr(demo, 1, 6)))
   expect_identical(res$default_reason, "pinned")
 
   res <- mcp_resolve_module("tool__x")
@@ -136,6 +136,7 @@ test_that("only_modules limits the candidates and the default", {
 
   res <- mcp_resolve_module("tool__x", only_modules = "aiagent")
   expect_identical(res$token, aiagent)
-  expect_identical(res$default_handle, "aiagent")
+  expect_identical(res$default_handle,
+                   paste0("aiagent@", substr(aiagent, 1, 6)))
   expect_identical(res$reason, "most recently opened")
 })

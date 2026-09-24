@@ -101,7 +101,7 @@ test_that("tools/call runs on the resolved module and names it", {
   app_env <- local_mcp_app()
   use_template_root(make_mini_template())
   app <- mcp_test_app()
-  fake_module_session("alpha", "tool__hello")
+  alpha <- fake_module_session("alpha", "tool__hello")
 
   res <- app$httpHandler(mcp_request(list(
     jsonrpc = "2.0", id = 7, method = "tools/call",
@@ -113,7 +113,8 @@ test_that("tools/call runs on the resolved module and names it", {
   expect_false(body$result$isError)
   texts <- vapply(body$result$content, `[[`, "", "text")
   expect_true("tool__hello" %in% texts)
-  expect_true(any(grepl("ran on alpha", texts, fixed = TRUE)))
+  expect_true(any(grepl(paste("ran on", test_handle("alpha", alpha)), texts,
+                        fixed = TRUE)))
 })
 
 test_that("tools/call says so when no module is open", {
@@ -150,7 +151,7 @@ test_that("shidashi_sessions lists open modules and the default", {
   app_env <- local_mcp_app()
   use_template_root(make_mini_template())
   app <- mcp_test_app()
-  fake_module_session("alpha", "tool__hello", pinned = TRUE)
+  alpha <- fake_module_session("alpha", "tool__hello", pinned = TRUE)
 
   res <- app$httpHandler(mcp_request(list(
     jsonrpc = "2.0", id = 1, method = "tools/call",
@@ -159,7 +160,7 @@ test_that("shidashi_sessions lists open modules and the default", {
   info <- jsonlite::fromJSON(mcp_body(res)$result$content[[1]]$text,
                              simplifyVector = FALSE)
   expect_identical(info$app$app_id, mcp_app_id())
-  expect_identical(info$default_module$handle, "alpha")
+  expect_identical(info$default_module$handle, test_handle("alpha", alpha))
   expect_identical(info$default_module$reason, "pinned")
   expect_identical(info$open_modules[[1]]$module_id, "alpha")
   expect_null(info$open_modules[[1]]$mode)
@@ -260,8 +261,9 @@ test_that("a module in the URL limits every call to that module", {
   app_env <- local_mcp_app()
   use_template_root(make_mini_template())
   app <- mcp_test_app()
-  fake_module_session("alpha", "tool__hello", pinned = TRUE)
+  alpha <- fake_module_session("alpha", "tool__hello", pinned = TRUE)
   beta <- fake_module_session("beta", "tool__hello")
+  beta_note <- paste("ran on", test_handle("beta", beta))
 
   call_hello <- function(path) {
     res <- app$httpHandler(mcp_request(list(
@@ -272,11 +274,14 @@ test_that("a module in the URL limits every call to that module", {
   }
 
   texts <- call_hello("/mcp/beta")
-  expect_true(any(grepl("ran on beta", texts, fixed = TRUE)))
+  expect_true(any(grepl(beta_note, texts, fixed = TRUE)))
   texts <- call_hello(paste0("/mcp/", substr(beta, 1, 8)))   # token prefix
-  expect_true(any(grepl("ran on beta", texts, fixed = TRUE)))
+  expect_true(any(grepl(beta_note, texts, fixed = TRUE)))
   texts <- call_hello("/mcp")
-  expect_true(any(grepl("ran on alpha (pinned)", texts, fixed = TRUE)))
+  expect_true(any(grepl(
+    sprintf("ran on %s (pinned)", test_handle("alpha", alpha)),
+    texts, fixed = TRUE
+  )))
 })
 
 test_that("_module pointing away from the pinned module is refused", {
@@ -305,19 +310,25 @@ test_that("_module pointing away from the last-used module runs with a warning",
   app_env <- local_mcp_app()
   use_template_root(make_mini_template())
   app <- mcp_test_app()
-  fake_module_session("alpha", "tool__hello", focused_at = Sys.time())
-  fake_module_session("beta", "tool__hello")
+  alpha <- fake_module_session("alpha", "tool__hello", focused_at = Sys.time())
+  beta <- fake_module_session("beta", "tool__hello")
 
   res <- mcp_call(app, "tool__hello", list(`_module` = "beta"))
   expect_false(res$isError)
   expect_true("tool__hello" %in% res$texts)
-  expect_true(any(grepl(paste(
-    "ran on beta (requested handle is different from the current active",
-    "handle alpha, last used"
+  expect_true(any(grepl(sprintf(
+    paste(
+      "ran on %s (requested handle is different from the current active",
+      "handle %s, last used"
+    ),
+    test_handle("beta", beta), test_handle("alpha", alpha)
   ), res$texts, fixed = TRUE)))
 
   res <- mcp_call(app, "tool__hello")
-  expect_true(any(grepl("ran on alpha (last used)", res$texts, fixed = TRUE)))
+  expect_true(any(grepl(
+    sprintf("ran on %s (last used)", test_handle("alpha", alpha)),
+    res$texts, fixed = TRUE
+  )))
 })
 
 test_that("a module-qualified tool runs in its module even when another is pinned", {
@@ -335,12 +346,14 @@ test_that("a module-qualified tool runs in its module even when another is pinne
   ), file.path(root, "modules", "beta", "R", "hello.R"))
   app <- mcp_test_app()
   fake_module_session("alpha", "tool__hello", pinned = TRUE)
-  fake_module_session("beta", "tool__hello")
+  beta <- fake_module_session("beta", "tool__hello")
 
   res <- suppressWarnings(mcp_call(app, "tool__beta__hello"))
   expect_false(res$isError)
-  expect_true(any(grepl("ran on beta (most recently opened)", res$texts,
-                        fixed = TRUE)))
+  expect_true(any(grepl(
+    sprintf("ran on %s (most recently opened)", test_handle("beta", beta)),
+    res$texts, fixed = TRUE
+  )))
 })
 
 test_that("shidashi_sessions shows the app's welcome text and no paths", {

@@ -9,6 +9,11 @@ local_mcp_app <- function() {
   app_env
 }
 
+# The handle `shidashi_sessions` and the run notes use for a fake session
+test_handle <- function(module_id, token) {
+  paste0(module_id, "@", substr(token, 1L, 6L))
+}
+
 # Register a fake open module in the session registry and return its
 # token. `tools` are tool names; each fake tool returns its own name.
 fake_module_session <- function(

@@ -14,8 +14,8 @@
 # Nothing about the agent connection is remembered between calls.
 
 # All open modules, each as a list with token, handle, module_id, entry.
-# The handle is the module id, or `<module id>@<token prefix>` when the
-# module is open more than once.
+# The handle is always `<module id>@<token prefix>`, so it stays the same
+# when the user opens the module again in another tab.
 mcp_open_modules <- function() {
   registry <- globals_session_registry()
   entries <- lapply(registry$keys(), get_session_entry)
@@ -29,12 +29,7 @@ mcp_open_modules <- function() {
 
   module_ids <- vapply(entries, function(entry) entry$namespace, "")
   tokens <- vapply(entries, function(entry) entry$shiny_session$token, "")
-  duplicated_module <- module_ids %in% module_ids[duplicated(module_ids)]
-  handles <- ifelse(
-    duplicated_module,
-    paste0(module_ids, "@", substr(tokens, 1L, 6L)),
-    module_ids
-  )
+  handles <- paste0(module_ids, "@", substr(tokens, 1L, 6L))
 
   lapply(seq_along(entries), function(ii) {
     list(
