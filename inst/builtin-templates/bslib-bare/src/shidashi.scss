@@ -1283,6 +1283,15 @@ body.shidashi-card-maximized {
     }
   }
 
+  // AI agent pin toggle (added by JS for modules with agent tools)
+  .btn-ai-pin {
+    &.active, &.active:hover, &.active:focus {
+      background-color: var(--bs-primary, #{$primary});
+      border-color: var(--bs-primary, #{$primary});
+      color: #fff;
+    }
+  }
+
   // Go-top button (chevron-up)
   .btn-go-top {
     order: 1; // appears on top in column-reverse

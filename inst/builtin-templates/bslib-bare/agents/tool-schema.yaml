@@ -1,12 +1,19 @@
 # agents/tool-schema.yaml
 #
-# Pre-listed tool schemas for MCP clients that do not support
-# dynamic deferred tools. These schemas are advertised in `tools/list`
-# even before a Shiny session is bound. Calling the tools still
-# requires a bound session.
+# Optional settings for AI agents that use this app through MCP.
 #
-# Skills (agents/skills/) are auto-discovered and do NOT need to be
-# listed here.
+# `welcome`: a short text telling agents what the app is for. Agents see it
+# in the `shidashi_sessions` tool.
+#
+# `tools`: optional fallback schemas for the MCP tool list.
+#
+# shidashi builds the MCP tool list by loading each module's tools without
+# a browser, so most tools need no entry here. A schema listed here is used
+# only when a module that lists the tool in its agents.yaml fails to load
+# (for example, because a package it needs is not installed).
+#
+# Skills (agents/skills/) are discovered automatically and do NOT need to
+# be listed here.
 #
 # Format follows the MCP tool schema:
 #   tools:
@@ -19,6 +26,11 @@
 #             type: <string|number|boolean|array|object>
 #             description: <string>
 #         required: [<param>, ...]
+
+welcome: >
+  Demo dashboard shipped with shidashi. The "AI Agent Demo" module
+  (aiagent) has a scatter plot whose title, point color, and number of
+  points agents can read and change.
 
 tools:
 - name: hello_world

@@ -360,8 +360,16 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             entry$tools$mset(.list = tools$as_list())
             registry$set(session$token, entry)
 
-            # Set agent mode early so MCP can filter tools even if
-            # the chat drawer is never opened
+            # Show the AI agent pin toggle on pages that have agent tools
+            if (entry$tools$size() > 0L) {
+              session$sendCustomMessage("shidashi.ai_pin_state", list(
+                pinned = isTRUE(entry$activity$pinned)
+              ))
+            }
+
+            # Set agent mode early so the chat's tool calls see the module's
+            # default mode even if the chat drawer is never opened (modes do
+            # not apply to MCP calls)
             shidashi$globals_set_agent_mode(
               module_id = .(module_id),
               mode = .(default_mode)
