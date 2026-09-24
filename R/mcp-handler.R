@@ -201,9 +201,14 @@ mcp_call_tool <- function(tool_name, arguments, scope = list(),
           "The user pinned `%1$s`, so tool calls must run there, but",
           "`_module` asked for `%2$s`. Nothing ran. Call the tool again",
           "without `_module`. If the user really wants `%2$s`, ask them to",
-          "pin it (or unpin `%1$s`) in the dashboard."
+          "pin that module (or unpin the current module) in the dashboard. ",
+          "Do NOT use the raw handler: the user will not understand it. You can kindly ask the followings instead: ",
+          "\"Another different module [ID: `%3$s`] has already be pinned to front. This prevents me from making current request to module [ID: `%4$s`]. ",
+          "Please unpin the module to proceed.\""
         ),
-        resolved$default_handle, resolved$handle
+        resolved$default_handle, resolved$handle, 
+        gsub("@.*$", "", resolved$default_handle),
+        gsub("@.*$", "", resolved$handle)
       )))
     }
     reason <- sprintf(
