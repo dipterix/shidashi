@@ -127,7 +127,8 @@ mcp_write_app_record <- function(port, appdir, host = "127.0.0.1",
 # `appdir` are given, also announce the app to the stdio proxy.
 register_mcp_route <- function(app, port = NULL, appdir = NULL,
                                host = "127.0.0.1",
-                               records_dir = mcp_app_records_dir()) {
+                               records_dir = mcp_app_records_dir(),
+                              server_name = "shidashi") {
   if (length(port) == 1L && length(appdir) == 1L) {
     mcp_write_app_record(port = port, appdir = appdir, host = host,
                          records_dir = records_dir)
@@ -135,7 +136,7 @@ register_mcp_route <- function(app, port = NULL, appdir = NULL,
 
   default_handler <- app$httpHandler
   app$httpHandler <- function(req) {
-    response <- mcp_route_request(req)
+    response <- mcp_route_request(req, server_name = server_name)
     if (!is.null(response)) {
       return(response)
     }
@@ -150,7 +151,7 @@ register_mcp_route <- function(app, port = NULL, appdir = NULL,
 }
 
 # Handle a request under /mcp; NULL for any other path
-mcp_route_request <- function(req) {
+mcp_route_request <- function(req, server_name = "shidashi") {
   path <- req$PATH_INFO
   if (!is.character(path) || length(path) != 1L ||
       !grepl("^/mcp(/|$)", path)) {
@@ -172,9 +173,9 @@ mcp_route_request <- function(req) {
       200L, "application/json",
       jsonlite::toJSON(list(
         status  = "ok",
-        server  = "shidashi",
+        server  = server_name,
         app_id  = mcp_app_id(),
-        message = "shidashi MCP endpoint active. Use POST with JSON-RPC 2.0."
+        message = sprintf("%s MCP endpoint active. Use POST with JSON-RPC 2.0.", server_name)
       ), auto_unbox = TRUE)
     ),
     shiny::httpResponse(405L, "text/plain", "Method Not Allowed")

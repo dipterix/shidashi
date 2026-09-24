@@ -12,6 +12,7 @@
 #' @param prelaunch expression to execute before launching the session; the
 #' expression will execute in a brand new session
 #' @param prelaunch_quoted whether the expression is quoted; default is false
+#' @param server_name server name to show in the \verb{MCP} route
 #' @return This functions runs a 'shiny' application, and returns the job id
 #' if 'RStudio' is available.
 #'
@@ -31,7 +32,8 @@ render <- function(
   prelaunch_quoted = FALSE,
   launch_browser = TRUE,
   as_job = TRUE,
-  test_mode = getOption("shiny.testmode", FALSE)
+  test_mode = getOption("shiny.testmode", FALSE),
+  server_name = "shidashi"
 ) {
   if (!dir.exists(root_path)) {
     stop("`root_path` cannot be found: ", root_path)
@@ -83,7 +85,7 @@ render <- function(
     # chain the MCP handler in front of Shiny's built-in httpHandler.
     app <- register_mcp_route(shiny::shinyAppDir(root_path),
                               port = mcp_port, appdir = root_path,
-                              host = mcp_host)
+                              host = mcp_host, server_name = server_name)
     do.call(shiny::runApp, c(
       list(appDir = app, launch.browser = launch_browser, test.mode = test_mode),
       dots
@@ -107,8 +109,8 @@ render <- function(
       deparse(prelaunch),
       "\n",
       sprintf(
-        "app <- shidashi:::register_mcp_route(shiny::shinyAppDir(\"%s\"), port = %d, appdir = \"%s\", host = \"%s\")",
-        root_path, as.integer(mcp_port), root_path, mcp_host
+        "app <- shidashi:::register_mcp_route(shiny::shinyAppDir(\"%s\"), port = %d, appdir = \"%s\", host = \"%s\", server_name = \"%s\")",
+        root_path, as.integer(mcp_port), root_path, mcp_host, server_name
       ),
       deparse(run_call)
     )
