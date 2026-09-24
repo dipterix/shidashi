@@ -261,7 +261,7 @@ chatbot_server <- function(input, output, session,
   stop_btn_id <- paste0(id, "-stop")
 
   # ---- Local state (fastmap for non-reactive mutable state) ----
-  local_data <- fastmap::fastmap()
+  local_data <- new_fastmap()
   local_data$set("chat_token", NULL)
   local_data$set("is_streaming", FALSE)
 

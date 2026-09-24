@@ -191,14 +191,21 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
   # create a tool-generating function
   tool_gen_fun <- function(session) {
 
-    tool_map <- fastmap::fastmap()
+    tool_map <- new_fastmap()
     lapply(tools, function(tool) {
       toolset <- list()
       if (inherits(tool, "ellmer::ToolDef")) {
         toolset <- list(tool)
       } else {
-        # generator
-        toolset <- tool(session = session)
+        # generator; a failing generator must not take the other tools down
+        toolset <- tryCatch(
+          tool(session = session),
+          error = function(e) {
+            warning("A tool generator in module `", module_id, "` failed: ",
+                    conditionMessage(e), call. = FALSE)
+            list()
+          }
+        )
         if (inherits(toolset, "ellmer::ToolDef")) {
           toolset <- list(toolset)
         }
@@ -278,25 +285,36 @@ wrap_tools_with_permissions <- function(tool, session) {
 
   wrapper_fn <- function(...) {
 
-    agent_mode <- globals_get_agent_mode(module_id = module_id)
+    # Agent modes and the confirmation policy belong to the in-dashboard
+    # chat. An MCP call only respects tools turned off in agents.yaml; the
+    # agent follows the tool's hints and asks the user in its own chat.
+    via_mcp <- mcp_call_active()
 
-    if (identical(agent_mode, "None")) {
-      # Agent mode is None
-      stop("Agent mode is [None]. All tools & skills are disabled")
-    }
+    if (via_mcp) {
+      if (is.null(shidashi_permission) || isFALSE(shidashi_permission)) {
+        stop("This tool is turned off in the module's agents.yaml.")
+      }
+    } else {
+      agent_mode <- globals_get_agent_mode(module_id = module_id)
 
-    if (is.null(shidashi_permission)) {
-      stop("This tool is disabled under current agent permission mode.")
-    }
+      if (identical(agent_mode, "None")) {
+        # Agent mode is None
+        stop("Agent mode is [None]. All tools & skills are disabled")
+      }
 
-    if (
-      !isTRUE(shidashi_permission) &&
-        !agent_mode %in% as.character(unlist(shidashi_permission))
-    ) {
-      stop(
-        "This tool is only enabled under the following agent modes: ",
-        paste(as.character(unlist(shidashi_permission)), collapse = ", ")
-      )
+      if (is.null(shidashi_permission)) {
+        stop("This tool is disabled under current agent permission mode.")
+      }
+
+      if (
+        !isTRUE(shidashi_permission) &&
+          !agent_mode %in% as.character(unlist(shidashi_permission))
+      ) {
+        stop(
+          "This tool is only enabled under the following agent modes: ",
+          paste(as.character(unlist(shidashi_permission)), collapse = ", ")
+        )
+      }
     }
 
     cl <- match.call()
@@ -319,8 +337,13 @@ wrap_tools_with_permissions <- function(tool, session) {
           length(script_permission) > 0 &&
           !isTRUE(script_permission$enabled)
         ) {
-          if (isFALSE(script_permission$enabled) ||
-              !isTRUE(agent_mode %in% script_permission$enabled)) {
+          if (via_mcp) {
+            if (is.null(script_permission$enabled) ||
+                isFALSE(script_permission$enabled)) {
+              stop("This script is turned off in the module's agents.yaml.")
+            }
+          } else if (isFALSE(script_permission$enabled) ||
+                     !isTRUE(agent_mode %in% script_permission$enabled)) {
             stop("While skill is permitted, this specific script is disabled under current agent permission mode.")
           }
         }
@@ -330,7 +353,8 @@ wrap_tools_with_permissions <- function(tool, session) {
     # Determine if this specific call is destructive
     needs_confirm <- any(c("destructive", "needs_confirmation") %in% category)
 
-    if (!needs_confirm) {
+    # MCP calls never wait on a dialog in the browser
+    if (via_mcp || !needs_confirm) {
       return(do.call(original_fn, args))
     }
 
