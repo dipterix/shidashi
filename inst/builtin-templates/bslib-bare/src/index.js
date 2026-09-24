@@ -207,6 +207,76 @@ class ShidashiApp {
     });
   }
 
+  // ---------- AI agent targeting (MCP) ----------
+
+  /**
+   * Tell Shiny that the user is using this module page, so AI agent tool
+   * calls without an explicit target run here. Reported on interaction
+   * (throttled), when the dashboard shell activates this tab, and on load
+   * when the page is visible. Module pages only; the shell is not a target.
+   */
+  _initFocusReporting() {
+    let lastReport = 0;
+    const report = (force) => {
+      const now = Date.now();
+      if (!force && now - lastReport < 2000) return;
+      lastReport = now;
+      this.ensureShiny((shiny) => {
+        shiny.setInputValue('@shidashi_focus@', now, { priority: 'event' });
+      });
+    };
+    ['pointerdown', 'keydown', 'focusin'].forEach((type) => {
+      document.addEventListener(type, () => report(false),
+                                { capture: true, passive: true });
+    });
+    window.addEventListener('message', (evt) => {
+      if (evt.origin !== window.location.origin) return;
+      if (evt.data?.type === 'shidashi.module_activated') report(true);
+    });
+    // Hidden iframes (inactive tabs) have no size
+    if (document.visibilityState === 'visible' &&
+        window.innerWidth > 0 && window.innerHeight > 0) {
+      report(true);
+    }
+  }
+
+  /**
+   * Show the pin toggle next to the floating buttons and reflect its state.
+   * A pinned tab receives AI agent tool calls even when the user works in
+   * another tab; pinning one tab unpins the others (handled in R).
+   */
+  _setAiPinState(pinned) {
+    let container = document.querySelector('.shidashi-back-to-top');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'shidashi-back-to-top';
+      document.body.appendChild(container);
+    }
+    let btn = container.querySelector('.btn-ai-pin');
+    if (!btn) {
+      btn = document.createElement('a');
+      btn.href = '#';
+      btn.className = 'btn btn-default btn-ai-pin';
+      btn.setAttribute('role', 'button');
+      btn.innerHTML = '<i class="fas fa-thumbtack" aria-hidden="true"></i>';
+      btn.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        const next = !btn.classList.contains('active');
+        this.ensureShiny((shiny) => {
+          shiny.setInputValue('@shidashi_ai_pin@', next, { priority: 'event' });
+        });
+      });
+      container.appendChild(btn);
+    }
+    btn.classList.toggle('active', !!pinned);
+    btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+    const label = pinned
+      ? 'AI agent tool calls run in this tab. Click to unpin.'
+      : 'Pin this tab: AI agent tool calls will run here.';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
+
   // ---------- Event system ----------
 
   broadcastEvent(type, message = {}) {
@@ -1094,6 +1164,9 @@ class ShidashiApp {
     const iframeContainer = document.querySelector('.shidashi-content');
     if (iframeContainer) {
       this.iframeManager = new IFrameManager(iframeContainer);
+    } else {
+      // A module page (in an iframe or standalone) can be an AI agent target
+      this._initFocusReporting();
     }
 
     // Restore theme
@@ -1684,6 +1757,12 @@ class ShidashiApp {
           tab.show();
         }
       }
+    });
+
+    // --- AI agent pin toggle (sent only for modules with agent tools) ---
+
+    this.shinyHandler('ai_pin_state', (params) => {
+      this._setAiPinState(!!params.pinned);
     });
 
     // --- Module token registration (for chatbot) ---
