@@ -1923,133 +1923,81 @@ class ShidashiApp {
     // --- Query UI handler (MCP) ---
 
     this.shinyHandler('query_ui', (params) => {
-      // params: { selector, request_id, input_id }
+      // params: { selector, request_id, input_id, transform_image }
       const selector = params.selector;
       const requestId = params.request_id;
       const inputId = params.input_id;
       if (!selector || !requestId || !inputId) return;
+      // A missing flag (older R) keeps the old behavior: capture images
+      const transformImage = params.transform_image !== false;
+
+      const reply = (fields) => {
+        Shiny.setInputValue(inputId, Object.assign({
+          request_id: requestId,
+          type: 'html',
+          html: '',
+          image_data: '',
+          image_type: '',
+          note: ''
+        }, fields), { priority: 'event' });
+      };
+      const replyImage = (dataUrl) => {
+        const parts = dataUrl.split(',');
+        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+        reply({ type: 'image', image_data: parts[1] || '', image_type: mime });
+      };
 
       const el = document.querySelector(selector);
       if (!el) {
-        Shiny.setInputValue(inputId, {
-          request_id: requestId,
-          type: 'not_found',
-          html: '',
-          image_data: '',
-          image_type: '',
-          note: "No element matched selector: '" + selector + "'"
-        }, { priority: 'event' });
+        reply({ type: 'not_found', note: "No element matched selector: '" + selector + "'" });
         return;
       }
 
-      // Check if element is hidden (display:none)
+      // The element's opening tag gives context without repeating its content
+      const outer = el.outerHTML;
+      const openingTag = outer.slice(0, outer.indexOf('>') + 1);
+
       if (getComputedStyle(el).display === 'none') {
-        Shiny.setInputValue(inputId, {
-          request_id: requestId,
-          type: 'hidden',
-          html: '',
-          image_data: '',
-          image_type: '',
-          note: el.innerHTML
-        }, { priority: 'event' });
+        reply({ type: 'hidden', html: el.innerHTML,
+                note: 'The element is hidden (display: none). ' + openingTag });
         return;
       }
 
-      // Check if element is a <canvas>
-      if (el.tagName === 'CANVAS') {
-        const dataUrl = this._captureCanvas(el);
-        if (dataUrl) {
-          const parts = dataUrl.split(',');
-          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-          Shiny.setInputValue(inputId, {
-            request_id: requestId,
-            type: 'image',
-            html: '',
-            image_data: parts[1] || '',
-            image_type: mime,
-            note: el.innerHTML
-          }, { priority: 'event' });
-          return;
-        }
-        // Tainted or empty canvas — fall through to innerHTML
-      }
-
-      // Check if element contains a single <img> with a data URI or a <canvas> child
-      const canvas = el.querySelector('canvas');
-      if (canvas) {
-        const dataUrl = this._captureCanvas(canvas);
-        if (dataUrl) {
-          const parts = dataUrl.split(',');
-          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-          Shiny.setInputValue(inputId, {
-            request_id: requestId,
-            type: 'image',
-            html: '',
-            image_data: parts[1] || '',
-            image_type: mime,
-            note: el.innerHTML
-          }, { priority: 'event' });
-          return;
-        }
-        // fall through
-      }
-
-      // Check for SVG element (e.g. stream-viz D3 output) — rasterise to PNG
-      const svgEl = el.querySelector('svg');
-      if (svgEl) {
-        this._captureSVG(svgEl).then((dataUrl) => {
+      if (transformImage) {
+        // A <canvas>, or an element holding one
+        const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+        if (canvas) {
+          const dataUrl = this._captureCanvas(canvas);
           if (dataUrl) {
-            const parts = dataUrl.split(',');
-            const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-            Shiny.setInputValue(inputId, {
-              request_id: requestId,
-              type: 'image',
-              html: '',
-              image_data: parts[1] || '',
-              image_type: mime,
-              note: ''
-            }, { priority: 'event' });
-          } else {
-            // SVG rasterisation failed — fall back to innerHTML
-            Shiny.setInputValue(inputId, {
-              request_id: requestId,
-              type: 'html',
-              html: el.innerHTML,
-              image_data: '',
-              image_type: '',
-              note: el.outerHTML
-            }, { priority: 'event' });
+            replyImage(dataUrl);
+            return;
           }
-        });
-        return;
+          // Tainted or empty canvas: fall through
+        }
+
+        // An SVG (e.g. stream-viz D3 output), rasterised to PNG
+        const svgEl = el.querySelector('svg');
+        if (svgEl) {
+          this._captureSVG(svgEl).then((dataUrl) => {
+            if (dataUrl) {
+              replyImage(dataUrl);
+            } else {
+              reply({ html: el.innerHTML, note: openingTag });
+            }
+          });
+          return;
+        }
+
+        // A single <img> with a data URI
+        const img = el.querySelector('img[src^="data:"]');
+        if (img && el.querySelectorAll('img').length === 1) {
+          replyImage(img.getAttribute('src') || '');
+          return;
+        }
       }
 
-      const img = el.querySelector('img[src^="data:"]');
-      if (img && el.querySelectorAll('img').length === 1) {
-        const src = img.getAttribute('src') || '';
-        // src is "data:image/png;base64,..."
-        const parts = src.split(',');
-        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-        Shiny.setInputValue(inputId, {
-          request_id: requestId,
-          type: 'image',
-          html: '',
-          image_data: parts[1] || '',
-          image_type: mime,
-          note: el.innerHTML
-        }, { priority: 'event' });
-        return;
-      }
-
-      // Default: return innerHTML with outerHTML as context note
-      Shiny.setInputValue(inputId, {
-        request_id: requestId,
-        type: 'html',
-        html: el.innerHTML,
-        image_data: '',
-        image_type: '',
-        note: el.outerHTML
-      }, { priority: 'event' });
+      // Default: the element's HTML, with its opening tag as context
+      reply({ html: el.innerHTML, note: openingTag });
     });
 
     // --- Ask-user handler (MCP built-in tool) ---

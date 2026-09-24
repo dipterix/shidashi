@@ -40,7 +40,11 @@
   one, starts it and opens the chosen module in the browser
   (`shidashi_launch`)
 * `shiny_query_ui` now returns the element's HTML or image in one call;
-  `shiny_query_ui_result` is removed
+  `shiny_query_ui_result` is removed; `transform_image = FALSE` asks for
+  HTML only, and long HTML is trimmed (image data and scripts shortened,
+  `max_chars` sets the limit)
+* Errors inside `shidashi`'s own observers are reported as warnings instead
+  of ending the user's session
 
 # shidashi 0.2.0
 
