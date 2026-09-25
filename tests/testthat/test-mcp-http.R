@@ -13,7 +13,8 @@ test_that("MCP paths parse into an optional module", {
 
 test_that("app id is eight characters from the appdir and process id", {
   root <- use_template_root(make_mini_template())
-  expected <- substr(digest::digest(paste(root, Sys.getpid())), 1, 8)
+  appdir <- normalizePath(root, winslash = "/", mustWork = FALSE)
+  expected <- substr(digest::digest(paste(appdir, Sys.getpid())), 1, 8)
   expect_identical(mcp_app_id(), expected)
 })
 
