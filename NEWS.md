@@ -33,6 +33,18 @@
     current session (`shidashi_connect`, `shidashi_disconnect`); its tool
     list follows the attached app, and `shidashi_tools` lists the app's
     tools for clients that do not refresh their tool list
+  - module handles always carry the session token prefix
+    (`<module>@<token>`), so a handle stays the same when the user opens
+    the module again in another tab
+* Each skill is now two tools: `skill_load__<name>` reads the instructions
+  and reference files and never changes anything, and `skill_run__<name>`
+  runs the scripts; `skill_wrapper()` returns both (`load`, `run`);
+  in the dashboard chat, a script marked destructive in `agents.yaml` now
+  asks for confirmation
+* Skill scripts document their arguments in a `# Usage:` header comment;
+  `skill_run__<name>` lists each script's usage and refuses a call that
+  leaves out a required argument; files in `scripts/` whose names start
+  with `_` are helpers, not scripts
 * Added `save_launcher()` and `run_launcher()`: saved apps are kept in one
   `launchers.json` file in the `shidashi` cache folder, optionally with a
   copy of the app (`copy_app = TRUE`) and free-form metadata; the `MCP`

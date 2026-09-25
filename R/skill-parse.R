@@ -3,16 +3,6 @@
 # Parses Anthropic-compliant SKILL.md files and discovers companion
 # reference/script assets in the skill directory.
 
-#' Sanitize a skill name for use as an MCP tool identifier
-#'
-#' Converts a human-readable skill name to a valid identifier: lowercase,
-#' non-alphanumeric characters replaced with underscores, leading/trailing
-#' underscores stripped, consecutive underscores collapsed.
-#'
-#' @param name Character string; the skill name from SKILL.md frontmatter
-#'   or directory name.
-
-
 #' Parse a SKILL.md file
 #'
 #' Reads the YAML frontmatter and markdown body from an Anthropic-compliant
@@ -168,7 +158,9 @@ fuzzy_match_reference <- function(query, ref_files) {
 
 #' Discover executable scripts in a skill directory
 #'
-#' Looks for files under the \code{scripts/} subdirectory.
+#' Looks for files under the \code{scripts/} subdirectory. Helper files
+#' whose names start with \code{_} (e.g. \verb{_common.R}, sourced by the
+#' other scripts) and sub-folders are not scripts.
 #'
 #' @param skill_dir Absolute path to the skill directory.
 #' @return Character vector of file names relative to \code{scripts/}, or
@@ -180,13 +172,99 @@ discover_scripts <- function(skill_dir) {
   if (!dir.exists(scripts_dir)) {
     return(character(0L))
   }
-  list.files(
+  files <- list.files(
     scripts_dir,
     recursive = FALSE,
     full.names = FALSE,
     include.dirs = FALSE,
     no.. = TRUE
   )
+  files <- files[!startsWith(files, "_")]
+  files[!dir.exists(file.path(scripts_dir, files))]
+}
+
+
+#' Read the usage of a skill script from its header comment
+#'
+#' Scripts document their command line in the leading comment block, as
+#' \preformatted{
+#' # Usage:
+#' #   Rscript get_results.R <module_id> --target=<name>
+#' }
+#' or on one line, \verb{# Usage: Rscript greet.R [name]}. The block ends
+#' at an empty comment line or at the next \verb{Header:} line.
+#'
+#' @param script_path Path to the script.
+#' @return Character vector of argument patterns with the interpreter and
+#'   script name removed (e.g. \verb{<module_id> --target=<name>}), or
+#'   \code{character(0)} when the script documents no usage.
+#' @keywords internal
+#' @noRd
+parse_script_usage <- function(script_path) {
+  lines <- tryCatch(readLines(script_path, n = 80L, warn = FALSE),
+                    error = function(e) character())
+  # the leading comment block, without the shebang
+  header_end <- which(!startsWith(lines, "#"))
+  if (length(header_end)) {
+    lines <- lines[seq_len(header_end[[1L]] - 1L)]
+  }
+  lines <- lines[!startsWith(lines, "#!")]
+  text <- sub("^#[ \t]?", "", lines)
+
+  start <- grep("^\\s*usage:", text, ignore.case = TRUE)
+  if (!length(start)) {
+    return(character())
+  }
+  start <- start[[1L]]
+  usage <- trimws(sub("^\\s*usage:", "", text[[start]], ignore.case = TRUE))
+  for (line in text[-seq_len(start)]) {
+    if (!nzchar(trimws(line)) || grepl("^[A-Za-z][^:]*:", line)) {
+      break
+    }
+    usage <- c(usage, trimws(line))
+  }
+  usage <- usage[nzchar(usage)]
+
+  # drop the interpreter and the script name
+  script_name <- basename(script_path)
+  usage <- sub("^(Rscript|python3?|bash|sh)\\s+", "", usage)
+  usage <- sub(sprintf("^(\\./|scripts/)?%s\\s*", gsub(".", "\\.", script_name,
+                                                        fixed = TRUE)),
+               "", usage)
+  trimws(usage)
+}
+
+
+#' Check script arguments against the script's usage
+#'
+#' A usage pattern requires every \verb{<positional>} and every
+#' \verb{--option} outside square brackets. The arguments pass when they
+#' satisfy any of the patterns; a script without a usage accepts anything.
+#'
+#' @param usage Output of \code{parse_script_usage()}.
+#' @param args Character vector of command-line arguments.
+#' @return \code{TRUE} or \code{FALSE}.
+#' @keywords internal
+#' @noRd
+script_usage_satisfied <- function(usage, args) {
+  if (!length(usage)) {
+    return(TRUE)
+  }
+  args <- as.character(args)
+  given_positional <- sum(!startsWith(args, "--"))
+  given_options <- sub("=.*$", "", args[startsWith(args, "--")])
+
+  for (pattern in usage) {
+    required <- gsub("\\[[^]]*\\]", " ", pattern)
+    tokens <- strsplit(trimws(required), "\\s+")[[1L]]
+    tokens <- tokens[nzchar(tokens)]
+    n_positional <- sum(grepl("^['\"]?<[^>]+>['\"]?$", tokens))
+    options <- sub("=.*$", "", tokens[startsWith(tokens, "--")])
+    if (given_positional >= n_positional && all(options %in% given_options)) {
+      return(TRUE)
+    }
+  }
+  FALSE
 }
 
 

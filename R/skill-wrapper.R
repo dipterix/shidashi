@@ -76,6 +76,23 @@ skill_wrapper <- function(skill_path) {
   has_references <- length(ref_files) > 0
   has_scripts <- length(script_files) > 0
 
+  # The command line each script documents in its header (`# Usage:`),
+  # e.g. "<module_id> --target=<name>"
+  script_usage <- structure(
+    lapply(script_files, function(script) {
+      parse_script_usage(file.path(parsed$skill_dir, "scripts", script))
+    }),
+    names = script_files
+  )
+  script_lines <- vapply(script_files, function(script) {
+    usage <- script_usage[[script]]
+    if (!length(usage)) {
+      return(sprintf("- %s", script))
+    }
+    usage[!nzchar(usage)] <- "(no arguments)"
+    sprintf("- %s %s", script, paste(usage, collapse = " | "))
+  }, "", USE.NAMES = FALSE)
+
   load_actions <- "readme"
   if (has_references) {
     load_actions <- c(load_actions, "reference")
@@ -96,13 +113,8 @@ skill_wrapper <- function(skill_path) {
     sprintf("; read the instructions with `%s` first]", load_name)
   )
 
-  ref_desc <- if (has_references) {
-    paste0("Available: ", paste(ref_files, collapse = ", "))
-  } else {
-    "No reference files available for this skill"
-  }
-
-  # ellmer::tool requires the argument names to match the function formals
+  # ellmer::tool requires the argument names to match the function formals;
+  # the reference arguments are listed only when there are references
   load_args <- list(
     action = ellmer::type_enum(
       values = load_actions,
@@ -112,33 +124,46 @@ skill_wrapper <- function(skill_path) {
         paste(load_actions, collapse = ", ")
       ),
       required = FALSE
-    ),
-    file_name = ellmer::type_string(
-      description = paste0("Reference file for action='reference'. ", ref_desc),
-      required = FALSE
-    ),
-    pattern = ellmer::type_string(
-      description = "For action='reference': optional grep pattern to filter lines.", # nolint: line_length_linter.
-      required = FALSE
-    ),
-    line_start = ellmer::type_integer(
-      description = "For action='reference': start line (1-based). Default: 1.",
-      required = FALSE
-    ),
-    n_lines = ellmer::type_integer(
-      description = "For action='reference': max lines to return. Default: 200.", # nolint: line_length_linter.
-      required = FALSE
     )
   )
+  if (has_references) {
+    load_args <- c(load_args, list(
+      file_name = ellmer::type_string(
+        description = paste0(
+          "Reference file for action='reference'. Available: ",
+          paste(ref_files, collapse = ", ")
+        ),
+        required = FALSE
+      ),
+      pattern = ellmer::type_string(
+        description = "For action='reference': optional grep pattern to filter lines.", # nolint: line_length_linter.
+        required = FALSE
+      ),
+      line_start = ellmer::type_integer(
+        description = "For action='reference': start line (1-based). Default: 1.",
+        required = FALSE
+      ),
+      n_lines = ellmer::type_integer(
+        description = "For action='reference': max lines to return. Default: 200.", # nolint: line_length_linter.
+        required = FALSE
+      )
+    ))
+  }
   run_args <- list(
     file_name = ellmer::type_string(
       description = paste0(
-        "Script to run. Available: ", paste(script_files, collapse = ", ")
+        "Script to run. Available scripts and their arguments ",
+        "(`<x>` required, `[x]` optional):\n",
+        paste(script_lines, collapse = "\n")
       )
     ),
     args = ellmer::type_array(
       items = ellmer::type_string(),
-      description = "CLI arguments to pass to the script.",
+      description = paste(
+        "Command-line arguments for the script, one item per argument, in",
+        "the order its usage shows: a script run as `script.R abc",
+        "--option=5` takes [\"abc\", \"--option=5\"]."
+      ),
       required = FALSE
     ),
     envs = ellmer::type_array(
@@ -190,8 +215,15 @@ skill_wrapper <- function(skill_path) {
         if (has_scripts) {
           info_parts <- c(info_parts, "",
             "## Available scripts",
-            sprintf("Run them with `%s`.", run_name),
-            paste("-", script_files)
+            sprintf(
+              paste(
+                "Run them with `%s`: `file_name` is the script, and `args`",
+                "holds its arguments, one item per argument (`<x>` required,",
+                "`[x]` optional)."
+              ),
+              run_name
+            ),
+            script_lines
           )
         }
 
@@ -251,6 +283,22 @@ skill_wrapper <- function(skill_path) {
                "\nAvailable: ", paste(script_files, collapse = ", "),
                call. = FALSE)
         }
+        args <- as.character(unlist(args))
+        usage <- script_usage[[file_name]]
+        if (!script_usage_satisfied(usage, args)) {
+          stop(
+            "`", file_name, "` is missing required arguments. Usage: ",
+            paste(sprintf("`%s %s`", file_name, usage), collapse = " or "),
+            ". Pass each argument as one item of `args`; got ",
+            if (length(args)) {
+              paste0("[", paste(sprintf("\"%s\"", args), collapse = ", "), "]")
+            } else {
+              "none"
+            },
+            ".",
+            call. = FALSE
+          )
+        }
 
         # Parse envs from KEY=VALUE strings to named character vector
         env_vec <- character()
@@ -296,15 +344,16 @@ skill_wrapper <- function(skill_path) {
           return(read_readme())
         }
         with_gate(function() {
-          switch(
-            action,
-            "reference" = read_reference(file_name, pattern, line_start,
-                                         n_lines),
+          if (!identical(action, "reference") || !has_references) {
             stop("Unknown action: ", action,
                  "\nAvailable: ", paste(load_actions, collapse = ", "),
                  call. = FALSE)
-          )
+          }
+          read_reference(file_name, pattern, line_start, n_lines)
         })
+      }
+      if (!has_references) {
+        formals(load_fn) <- formals(load_fn)["action"]
       }
 
       run_fn <- function(file_name, args = NULL, envs = NULL) {

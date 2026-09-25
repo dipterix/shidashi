@@ -35,9 +35,9 @@ test_that("wrapper() returns a load tool and a run tool", {
   expect_identical(tools$load@name, "skill_load__greet")
   expect_identical(tools$run@name, "skill_run__greet")
 
-  # reading and running take different arguments
-  expect_setequal(names(tools$load@arguments@properties),
-                  c("action", "file_name", "pattern", "line_start", "n_lines"))
+  # reading and running take different arguments; greet has no reference
+  # files, so reading takes no reference arguments
+  expect_identical(names(tools$load@arguments@properties), "action")
   expect_setequal(names(tools$run@arguments@properties),
                   c("file_name", "args", "envs"))
   expect_match(tools$load@description, "skill_run__greet", fixed = TRUE)
@@ -55,6 +55,62 @@ test_that("a skill without scripts has no run tool", {
   expect_identical(tools$load@name, "skill_load__notes")
   expect_null(tools$run)
   expect_false(grepl("skill_run__", tools$load@description, fixed = TRUE))
+})
+
+test_that("the load tool reads reference files when the skill has them", {
+  skill_dir <- file.path(tempfile("skills"), "notes")
+  dir.create(file.path(skill_dir, "references"), recursive = TRUE)
+  on.exit(unlink(dirname(skill_dir), recursive = TRUE), add = TRUE)
+  writeLines(c("---", "name: notes", "description: Notes", "---", "",
+               "Read me."), file.path(skill_dir, "SKILL.md"))
+  writeLines(c("alpha", "beta", "gamma"),
+             file.path(skill_dir, "references", "list.md"))
+
+  tools <- skill_wrapper(skill_dir)()
+  expect_setequal(names(tools$load@arguments@properties),
+                  c("action", "file_name", "pattern", "line_start", "n_lines"))
+  result <- tools$load(action = "reference", file_name = "list.md",
+                       pattern = "^[ab]")
+  expect_match(result, "alpha")
+  expect_match(result, "beta")
+  expect_false(grepl("gamma", result, fixed = TRUE))
+})
+
+test_that("the run tool shows each script's usage and checks arguments", {
+  skill_dir <- file.path(tempfile("skills"), "pipes")
+  dir.create(file.path(skill_dir, "scripts"), recursive = TRUE)
+  on.exit(unlink(dirname(skill_dir), recursive = TRUE), add = TRUE)
+  writeLines(c("---", "name: pipes", "description: Pipes", "---", "",
+               "Read me."), file.path(skill_dir, "SKILL.md"))
+  writeLines(c(
+    "# Usage:",
+    "#   Rscript get_results.R <module_id> --target=<name>",
+    "",
+    "stop('should not run')"
+  ), file.path(skill_dir, "scripts", "get_results.R"))
+  writeLines("# shared helpers", file.path(skill_dir, "scripts", "_common.R"))
+
+  tools <- skill_wrapper(skill_dir)()
+  file_desc <- tools$run@arguments@properties$file_name@description
+  expect_match(file_desc, "get_results.R <module_id> --target=<name>",
+               fixed = TRUE)
+  expect_false(grepl("_common.R", file_desc, fixed = TRUE))
+  expect_match(tools$load(), "get_results.R <module_id> --target=<name>",
+               fixed = TRUE)
+
+  # rejected before the script runs
+  err <- tryCatch(
+    tools$run(file_name = "get_results.R", args = list("power_explorer")),
+    error = function(e) conditionMessage(e)
+  )
+  expect_match(err, "missing required arguments", fixed = TRUE)
+  expect_match(err, "`get_results.R <module_id> --target=<name>`",
+               fixed = TRUE)
+  expect_false(grepl("should not run", err, fixed = TRUE))
+
+  err <- tryCatch(tools$run(file_name = "_common.R"),
+                  error = function(e) conditionMessage(e))
+  expect_match(err, "Script not found", fixed = TRUE)
 })
 
 test_that("the load tool returns the readme by default", {

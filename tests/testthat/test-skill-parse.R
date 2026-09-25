@@ -50,6 +50,69 @@ test_that("discover_scripts returns empty for missing scripts/", {
   expect_length(discover_scripts(tmp), 0)
 })
 
+test_that("discover_scripts hides helper files and folders", {
+  tmp <- tempfile("skill")
+  dir.create(file.path(tmp, "scripts", "lib"), recursive = TRUE)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  writeLines("# helpers", file.path(tmp, "scripts", "_common.R"))
+  writeLines("# run", file.path(tmp, "scripts", "run.R"))
+
+  expect_identical(discover_scripts(tmp), "run.R")
+})
+
+test_that("parse_script_usage reads block and one-line usage headers", {
+  tmp <- tempfile("scripts")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  block <- file.path(tmp, "get_results.R")
+  writeLines(c(
+    "#!/usr/bin/env Rscript",
+    "# get_results.R - Read a target",
+    "#",
+    "# Usage:",
+    "#   Rscript get_results.R <module_id> --target=<name>",
+    "#   Rscript get_results.R <module_id> --list",
+    "#",
+    "# Example:",
+    "#   Rscript get_results.R notch_filter --target=apply_notch",
+    "",
+    "args <- commandArgs(trailingOnly = TRUE)"
+  ), block)
+  expect_identical(parse_script_usage(block),
+                   c("<module_id> --target=<name>", "<module_id> --list"))
+
+  one_line <- file.path(tmp, "greet.R")
+  writeLines(c(
+    "#!/usr/bin/env Rscript",
+    "# Usage: Rscript greet.R [name]",
+    "# Output: Hello, <name>!"
+  ), one_line)
+  expect_identical(parse_script_usage(one_line), "[name]")
+
+  none <- file.path(tmp, "plain.R")
+  writeLines(c("# nothing to see", "cat('hi')"), none)
+  expect_identical(parse_script_usage(none), character())
+})
+
+test_that("script_usage_satisfied checks required positionals and options", {
+  usage <- "<module_id> --target=<name> [--n=5]"
+  expect_false(script_usage_satisfied(usage, character()))
+  expect_false(script_usage_satisfied(usage, "power_explorer"))
+  expect_false(script_usage_satisfied(usage, "--target=x"))
+  expect_true(script_usage_satisfied(usage, c("power_explorer", "--target=x")))
+  expect_true(script_usage_satisfied(
+    usage, c("--target=x", "power_explorer", "--n=2")
+  ))
+
+  # optional JSON argument; any of several patterns; no documented usage
+  expect_true(script_usage_satisfied("<module_id> ['JSON']", "notch_filter"))
+  expect_true(script_usage_satisfied(
+    c("<id> --target=<name>", "<id> --list"), c("a", "--list")
+  ))
+  expect_true(script_usage_satisfied(character(), character()))
+})
+
 test_that("discover_references excludes SKILL.md and scripts/", {
   tmp <- tempfile("skill")
   dir.create(file.path(tmp, "scripts"), recursive = TRUE)
