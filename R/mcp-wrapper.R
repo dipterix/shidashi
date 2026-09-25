@@ -664,7 +664,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     # not-found message, or that the element is hidden); agents interpret it.
     query_ui_content <- function(res, transform_image = TRUE,
                                  max_chars = 10000L) {
-      note <- mcp_trim_html(res$note %||% "", max_chars = 500L)
+      note <- mcp_trim_html(res$note %||% "", max_chars = max_chars)
       if (identical(res$type, "not_found")) {
         stop(note, call. = FALSE)
       }
@@ -713,7 +713,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         ),
         max_chars = ellmer::type_integer(
           description = paste(
-            "Optional: the most HTML characters to return (default 10000).",
+            "Optional: the most HTML characters to return.",
             "Longer HTML is trimmed, with a note saying so."
           ),
           required = FALSE
