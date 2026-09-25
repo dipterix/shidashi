@@ -173,3 +173,236 @@ test_that("a selector that matches nothing is a tool error", {
   ))
   expect_error(wait_for_promise(p), "No element matched selector")
 })
+
+# ---- render_hidden_output() -------------------------------------------------
+
+# A session that keeps output options and flush callbacks in `state`;
+# `state$flush()` runs the flush callbacks once, like shiny does.
+fake_output_session <- function(options = list(plot = list())) {
+  state <- new.env(parent = emptyenv())
+  state$options <- options
+  state$callbacks <- list()
+  state$flush_requests <- 0L
+  state$flush <- function() {
+    callbacks <- state$callbacks
+    state$callbacks <- list()
+    for (callback in callbacks) callback()
+  }
+  impl <- list(outputOptions = function(name, ...) {
+    if (!name %in% names(state$options)) {
+      stop(name, " is not in list of output objects")
+    }
+    new_options <- list(...)
+    if (!length(new_options)) {
+      return(state$options[[name]])
+    }
+    state$options[[name]][names(new_options)] <- new_options
+    invisible()
+  })
+  session <- list(
+    output = structure(list(impl = impl, ns = function(id) id),
+                       class = "shinyoutput"),
+    onFlushed = function(callback, once = TRUE) {
+      key <- sprintf("cb%d", length(state$callbacks) + 1L)
+      state$callbacks[[key]] <- callback
+      function() state$callbacks[[key]] <- NULL
+    },
+    requestFlush = function() state$flush_requests <- state$flush_requests + 1L,
+    isClosed = function() FALSE
+  )
+  list(session = session, state = state)
+}
+
+test_that("render_hidden_output renders a hidden output until the next flush", {
+  fake <- fake_output_session()
+  render_hidden_output("plot", session = fake$session)
+  expect_false(fake$state$options$plot$suspendWhenHidden)
+  expect_identical(fake$state$flush_requests, 1L)
+
+  fake$state$flush()
+  expect_true(fake$state$options$plot$suspendWhenHidden)
+})
+
+test_that("render_hidden_output keeps an output that already renders when hidden", {
+  fake <- fake_output_session(list(plot = list(suspendWhenHidden = FALSE)))
+  restore <- render_hidden_output("plot", session = fake$session)
+  fake$state$flush()
+  restore()
+  expect_false(fake$state$options$plot$suspendWhenHidden)
+  expect_identical(fake$state$flush_requests, 1L)
+})
+
+test_that("render_hidden_output(once = FALSE) keeps rendering until restored", {
+  fake <- fake_output_session()
+  restore <- render_hidden_output("plot", session = fake$session, once = FALSE)
+  fake$state$flush()
+  expect_false(fake$state$options$plot$suspendWhenHidden)
+
+  restore()
+  expect_true(fake$state$options$plot$suspendWhenHidden)
+})
+
+test_that("restoring early cancels the restore on the next flush", {
+  fake <- fake_output_session()
+  restore <- render_hidden_output("plot", session = fake$session)
+  restore()
+  expect_true(fake$state$options$plot$suspendWhenHidden)
+  expect_length(fake$state$callbacks, 0)
+})
+
+test_that("render_hidden_output errors for an output the session lacks", {
+  fake <- fake_output_session()
+  expect_error(render_hidden_output("nothing", session = fake$session),
+               "Output `nothing` is not defined in this session")
+})
+
+test_that("render_hidden_output does nothing in a mock session", {
+  session <- shiny::MockShinySession$new()
+  restore <- render_hidden_output("plot", session = session)
+  expect_no_error(restore())
+})
+
+# ---- shiny_output_result ----------------------------------------------------
+
+# Tools for `session` with `outputIds` registered; returns the tools and a
+# record of the custom messages sent to the browser
+output_tools <- function(session, outputIds = "summary") {
+  helpers <- mcp_wrapper_input_output()
+  for (outputId in outputIds) {
+    helpers$input_helpers$register_output_specification(
+      quote(shiny::renderText("x")), outputId = outputId, quoted = TRUE
+    )
+  }
+  sent <- new.env(parent = emptyenv())
+  sent$messages <- list()
+  session$sendCustomMessage <- function(type, message) {
+    sent$messages[[length(sent$messages) + 1L]] <- c(list(type = type), message)
+    invisible()
+  }
+  tools <- shiny::withReactiveDomain(session, helpers$tool_generator(session))
+  list(tools = tools, sent = sent)
+}
+
+local_request_ids <- function(ids = c("req1", "req2"), env = parent.frame()) {
+  i <- 0L
+  local_mocked_bindings(rand_string = function(...) {
+    i <<- i + 1L
+    ids[[i]]
+  }, .env = env)
+}
+
+test_that("shiny_output_result lists the registered IDs for an unknown ID", {
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session, c("summary", "plot"))
+  err <- tryCatch(x$tools$shiny_output_result(outputId = "nothing"),
+                  error = conditionMessage)
+  expect_match(err, "summary")
+  expect_match(err, "plot")
+  expect_length(x$sent$messages, 0)
+})
+
+test_that("shiny_output_result says when a module registers no outputs", {
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session, character())
+  expect_error(x$tools$shiny_output_result(outputId = "nothing"),
+               "registers no outputs")
+})
+
+test_that("shiny_output_result reads the output only after it is flushed", {
+  local_request_ids()
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_output_result(outputId = "summary")
+  expect_true(promises::is.promise(p))
+  expect_identical(x$sent$messages[[1]]$type, "shidashi.prepare_output")
+  expect_identical(x$sent$messages[[1]]$selector,
+                   paste0("#", session$ns("summary")))
+
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", type = "prepared"
+  ))
+  later::run_now()
+  # the value is not sent yet, so asking now could read a stale element
+  expect_length(x$sent$messages, 1)
+
+  session$flushReact()
+  expect_length(x$sent$messages, 2)
+  query <- x$sent$messages[[2]]
+  expect_identical(query$type, "shidashi.query_ui")
+  expect_identical(query$request_id, "req2")
+  expect_gt(query$wait_ms, 0)
+  # the browser's note then says the output was just rendered
+  expect_true(query$rendered)
+
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req2", html = "<pre>x</pre>"
+  ))
+  expect_identical(wait_for_promise(p), "<pre>x</pre>")
+})
+
+test_that("shiny_output_result stops when the page has no such element", {
+  local_request_ids()
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_output_result(outputId = "summary")
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", type = "not_found",
+    note = "No element matched selector: '#summary'"
+  ))
+  expect_error(wait_for_promise(p), "No element matched selector")
+  session$flushReact()
+  expect_length(x$sent$messages, 1)
+})
+
+test_that("shiny_output_result says when a fallback size was used", {
+  local_request_ids()
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_output_result(outputId = "summary")
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", type = "prepared",
+    fallback_size = list(width = 640, height = 400)
+  ))
+  later::run_now()
+  session$flushReact()
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req2", html = "<img>"
+  ))
+  expect_match(wait_for_promise(p), "fallback size of 640x400")
+})
+
+test_that("shiny_output_result gives up in time and restores the option", {
+  local_request_ids()
+  old <- options(shidashi.output_result_timeout = 0.3)
+  on.exit(options(old), add = TRUE)
+  restored <- FALSE
+  local_mocked_bindings(render_hidden_output = function(...) {
+    function() restored <<- TRUE
+  })
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_output_result(outputId = "summary")
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", type = "prepared"
+  ))
+  # no flush: the session is busy, so the output never arrives
+  expect_error(wait_for_promise(p), "did not finish rendering")
+  expect_true(restored)
+})
+
+test_that("shiny_query_ui points to shiny_output_result for an unshown element", {
+  local_request_ids()
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_query_ui(css_selector = "#summary")
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", html = "", laid_out = FALSE,
+    note = "The element is not shown on the page."
+  ))
+  expect_match(wait_for_promise(p), "shiny_output_result")
+})

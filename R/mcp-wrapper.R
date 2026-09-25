@@ -477,6 +477,44 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       )
     })
 
+    # A request the browser answers through `@shiny_query_ui_result@`:
+    # returns its id and a promise that the observer above resolves; a timer
+    # rejects the promise with `timeout_message` if nothing arrives.
+    browser_request <- function(timeout, timeout_message) {
+      request_id <- rand_string()
+      promise <- promises::promise(function(resolve, reject) {
+        query_requests$set(request_id, list(resolve = resolve,
+                                            reject = reject))
+      })
+
+      # An error in a `later` callback would surface in the event loop, so
+      # the timeout is guarded like an observer
+      later::later(function() {
+        tryCatch({
+          if (!query_requests$has(request_id)) {
+            return()
+          }
+          entry <- query_requests$get(request_id)
+          query_requests$remove(request_id)
+          entry$reject(simpleError(timeout_message))
+        }, error = function(e) {
+          warning("[shidashi] browser request timeout failed: ",
+                  conditionMessage(e), call. = FALSE)
+        })
+      }, delay = timeout)
+
+      list(id = request_id, promise = promise)
+    }
+
+    query_ui_max_chars <- function(max_chars) {
+      max_chars <- suppressWarnings(as.integer(max_chars)[1])
+      if (length(max_chars) != 1 || is.na(max_chars) || max_chars < 1) {
+        max_chars <- as.integer(getOption("shidashi.query_ui_max_chars",
+                                          10000L))
+      }
+      max_chars
+    }
+
     shiny_input_info <- ellmer::tool(
       name = "shiny_input_info",
       description = paste(
@@ -683,54 +721,164 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       ),
       fun = function(css_selector, transform_image = TRUE, max_chars = NULL) {
         # Returns a promise: the MCP call (or the chat's tool call) waits on
-        # it while R keeps running, so the browser's answer can arrive. The
-        # observer above resolves it; a timer rejects it if nothing arrives.
+        # it while R keeps running, so the browser's answer can arrive.
         transform_image <- !identical(as.logical(transform_image)[1], FALSE)
-        max_chars <- suppressWarnings(as.integer(max_chars)[1])
-        if (length(max_chars) != 1 || is.na(max_chars) || max_chars < 1) {
-          max_chars <- as.integer(getOption("shidashi.query_ui_max_chars",
-                                            10000L))
-        }
-        request_id <- rand_string()
+        max_chars <- query_ui_max_chars(max_chars)
         timeout <- getOption("shidashi.query_ui_timeout", 15)
 
-        answer <- promises::promise(function(resolve, reject) {
-          query_requests$set(request_id, list(resolve = resolve,
-                                              reject = reject))
-        })
+        request <- browser_request(timeout, sprintf(
+          paste(
+            "The browser did not answer within %s s: the selector `%s`",
+            "may match nothing, or the module page is not open."
+          ),
+          format(timeout), css_selector
+        ))
 
         session$sendCustomMessage("shidashi.query_ui", list(
           selector = css_selector,
-          request_id = request_id,
+          request_id = request$id,
           input_id = session$ns("@shiny_query_ui_result@"),
           transform_image = transform_image
         ))
 
-        # An error in a `later` callback would surface in the event loop, so
-        # the timeout is guarded like an observer
-        later::later(function() {
-          tryCatch({
-            if (!query_requests$has(request_id)) {
-              return()
-            }
-            entry <- query_requests$get(request_id)
-            query_requests$remove(request_id)
-            entry$reject(simpleError(sprintf(
-              paste(
-                "The browser did not answer within %s s: the selector `%s`",
-                "may match nothing, or the module page is not open."
-              ),
-              format(timeout), css_selector
-            )))
-          }, error = function(e) {
-            warning("[shidashi] shiny_query_ui timeout failed: ",
-                    conditionMessage(e), call. = FALSE)
-          })
-        }, delay = timeout)
-
-        promises::then(answer, function(res) {
+        promises::then(request$promise, function(res) {
+          if (isFALSE(res$laid_out)) {
+            res$note <- paste(c(res$note[nzchar(res$note)], paste(
+              "To render a registered output even when it is hidden, call",
+              "`shiny_output_result(outputId)`."
+            )), collapse = " ")
+          }
           query_ui_content(res, transform_image = transform_image,
                            max_chars = max_chars)
+        })
+      }
+    )
+
+    shiny_output_result <- ellmer::tool(
+      name = "shiny_output_result",
+      description = paste(
+        "Get the rendered content of a registered output by its ID, even",
+        "when it sits in a hidden tab or a collapsed card: the output is",
+        "rendered first if needed, waiting up to 10 seconds. Plots,",
+        "canvases, SVGs, and single images come back as a picture; pass",
+        "`transform_image = false` to get the HTML instead. Call",
+        "`shiny_output_info()` to list the output IDs."
+      ),
+      arguments = list(
+        outputId = ellmer::type_string(
+          description = "A registered output ID, from `shiny_output_info()`.",
+          required = TRUE
+        ),
+        transform_image = ellmer::type_boolean(
+          description = paste(
+            "Optional, default true: return plots, canvases, SVGs, and",
+            "single images as a picture. Set false to get HTML only."
+          ),
+          required = FALSE
+        ),
+        max_chars = ellmer::type_integer(
+          description = paste(
+            "Optional: the most HTML characters to return (default 10000).",
+            "Longer HTML is trimmed, with a note saying so."
+          ),
+          required = FALSE
+        )
+      ),
+      fun = function(outputId, transform_image = TRUE, max_chars = NULL) {
+        if (!output_specs$has(outputId)) {
+          registered <- output_specs$keys()
+          if (!length(registered)) {
+            stop("This module registers no outputs. Use `shiny_query_ui()` ",
+                 "with a CSS selector instead.")
+          }
+          stop("There is no registered output ID: `", outputId,
+               "`. Registered IDs are: ", paste(registered, collapse = ", "),
+               ".")
+        }
+        transform_image <- !identical(as.logical(transform_image)[1], FALSE)
+        max_chars <- query_ui_max_chars(max_chars)
+        timeout <- getOption("shidashi.output_result_timeout", 10)
+        deadline <- Sys.time() + timeout
+        seconds_left <- function() {
+          as.numeric(difftime(deadline, Sys.time(), units = "secs"))
+        }
+
+        ns_outputId <- session$ns(outputId)
+        selector <- paste0("#", ns_outputId)
+        input_id <- session$ns("@shiny_query_ui_result@")
+
+        # Step 1: the browser finds the element, and gives a plot that was
+        # never shown a fallback size (shiny sizes plots from the browser)
+        width <- shiny::isolate(
+          session$clientData[[paste0("output_", ns_outputId, "_width")]]
+        )
+        prepare <- browser_request(timeout, sprintf(
+          "The browser did not answer within %s s: the module page may not be open.",
+          format(timeout)
+        ))
+        session$sendCustomMessage("shidashi.prepare_output", list(
+          selector = selector,
+          request_id = prepare$id,
+          input_id = input_id,
+          needs_size = is.null(width)
+        ))
+
+        promises::then(prepare$promise, function(prepared) {
+          if (identical(prepared$type, "not_found")) {
+            stop(prepared$note %||% sprintf(
+              "No element matched selector: '%s'", selector
+            ), call. = FALSE)
+          }
+
+          # Step 2: render the output even if hidden, then query the
+          # browser. The query goes out after the flush that sends the
+          # value, so the browser never reads a stale element.
+          restore <- render_hidden_output(outputId, session = session,
+                                          once = TRUE)
+          query <- browser_request(max(seconds_left(), 0.1), sprintf(
+            paste(
+              "The output `%s` did not finish rendering within %s s; the",
+              "session may be busy with a long computation. Try again later."
+            ),
+            outputId, format(timeout)
+          ))
+          cancel_query <- session$onFlushed(function() {
+            if (!query_requests$has(query$id)) {
+              return()
+            }
+            session$sendCustomMessage("shidashi.query_ui", list(
+              selector = selector,
+              request_id = query$id,
+              input_id = input_id,
+              transform_image = transform_image,
+              # the browser answers before R gives up
+              wait_ms = round(max(seconds_left() - 1, 0.1) * 1000),
+              rendered = TRUE
+            ))
+          }, once = TRUE)
+
+          promises::then(
+            query$promise,
+            onFulfilled = function(res) {
+              size <- prepared$fallback_size
+              if (length(size$width) == 1 && length(size$height) == 1) {
+                res$note <- paste(c(sprintf(
+                  paste(
+                    "The output has never been shown, so it was drawn at a",
+                    "fallback size of %sx%s px."
+                  ),
+                  size$width, size$height
+                ), res$note[nzchar(res$note)]), collapse = " ")
+              }
+              query_ui_content(res, transform_image = transform_image,
+                               max_chars = max_chars)
+            },
+            onRejected = function(e) {
+              cancel_query()
+              restore()
+              stop(e)
+            }
+          )
         })
       }
     )
@@ -738,10 +886,10 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     shiny_output_info <- ellmer::tool(
       name = "shiny_output_info",
       description = paste(
-        "List registered Shiny output elements and optionally retrieve",
-        "their rendered HTML content. When outputIds is omitted, returns",
-        "all registered outputs with their descriptions. You can get the",
-        "HTML content of output via `shiny_query_ui(selector)`"
+        "List registered Shiny output elements. When outputIds is omitted,",
+        "returns all registered outputs with their descriptions. Get an",
+        "output's rendered content with `shiny_output_result(outputId)`,",
+        "which also works when the output is in a hidden tab or card."
       ),
       arguments = list(
         outputIds = ellmer::type_array(
@@ -781,7 +929,8 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       shiny_input_info = shiny_input_info,
       shiny_input_update = shiny_input_update,
       shiny_query_ui = shiny_query_ui,
-      shiny_output_info = shiny_output_info
+      shiny_output_info = shiny_output_info,
+      shiny_output_result = shiny_output_result
     )
   })
 
@@ -1367,6 +1516,90 @@ register_output <- function(
   }
 
   invisible(NULL)
+}
+
+#' @title Render an Output Even When It Is Hidden
+#' @description
+#' By default \code{shiny} does not render outputs that are hidden, for
+#' example inside an inactive tab or a collapsed card
+#' (\code{suspendWhenHidden = TRUE}). \code{render_hidden_output()} turns
+#' this off for one output, so the output renders at the next flush even
+#' when hidden. With \code{once = TRUE}, the option is restored after that
+#' flush.
+#' @param outputId character string.  The \code{shiny} output ID (without
+#'   the module namespace prefix).
+#' @param session the \code{shiny} session object.
+#' @param once logical (default \code{TRUE}).  Whether to restore the
+#'   option after the next flush; when \code{FALSE}, the output keeps
+#'   rendering while hidden until the returned function is called.
+#' @return A function (invisible) that restores the option; calling it
+#'   more than once has no further effect.  Nothing is changed when the
+#'   output already renders while hidden.
+#' @examples
+#' \dontrun{
+#' # inside a shidashi module server function:
+#' register_output(renderPlot({ plot(1:10) }), outputId = "my_plot")
+#'
+#' # render `my_plot` once, even while its tab is not shown
+#' render_hidden_output("my_plot")
+#' }
+#' @export
+render_hidden_output <- function(
+  outputId,
+  session = shiny::getDefaultReactiveDomain(),
+  once = TRUE
+) {
+  if (is.null(session)) {
+    stop("shidashi::render_hidden_output must run in a shiny session.")
+  }
+  output <- session$output
+  opts <- tryCatch(
+    shiny::outputOptions(output, outputId),
+    error = function(e) {
+      stop("Output `", outputId, "` is not defined in this session.",
+           call. = FALSE)
+    }
+  )
+
+  restore <- function() {
+    invisible()
+  }
+
+  # `opts` is NULL only for sessions that cannot set output options, such
+  # as `shiny::MockShinySession`; an unset option means TRUE (the default)
+  if (!is.null(opts) && !isFALSE(opts$suspendWhenHidden)) {
+    # Resumes the output; if it was invalidated while hidden, it runs at
+    # the next flush
+    shiny::outputOptions(output, outputId, suspendWhenHidden = FALSE)
+
+    restored <- FALSE
+    cancel_hook <- NULL
+    restore <- function() {
+      if (restored) {
+        return(invisible())
+      }
+      restored <<- TRUE
+      if (is.function(cancel_hook)) {
+        cancel_hook()
+      }
+      if (!isTRUE(session$isClosed())) {
+        shiny::outputOptions(output, outputId, suspendWhenHidden = TRUE)
+      }
+      invisible()
+    }
+    if (isTRUE(once)) {
+      # Flush callbacks run after the output values are sent (and wait for
+      # async outputs), so the value is out before the option is restored
+      cancel_hook <- session$onFlushed(restore, once = TRUE)
+    }
+  }
+
+  # Make sure a flush happens even when nothing is pending, so the
+  # callback runs; not `session$flushOutput()`, which would flush before
+  # the output runs
+  tryCatch(session$requestFlush(), error = function(e) NULL)
+
+  invisible(restore)
 }
 
 

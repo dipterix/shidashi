@@ -55,6 +55,14 @@
   `shiny_query_ui_result` is removed; `transform_image = FALSE` asks for
   HTML only, and long HTML is trimmed (image data and scripts shortened,
   `max_chars` sets the limit)
+* Added the `shiny_output_result` `MCP` tool: it returns a registered
+  output's rendered content even when the output is in a hidden tab or a
+  collapsed card, rendering it first (waiting up to 10 seconds; option
+  `shidashi.output_result_timeout`); a plot that was never shown is drawn
+  at a fallback size; `shiny_query_ui` notes when an element is not shown
+  or shows an error
+* Added `render_hidden_output()`, which renders one output at the next
+  flush even when it is hidden, then restores `suspendWhenHidden`
 * Errors inside `shidashi`'s own observers are reported as warnings instead
   of ending the user's session
 

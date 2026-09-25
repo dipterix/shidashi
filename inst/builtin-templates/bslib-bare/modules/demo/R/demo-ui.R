@@ -356,59 +356,69 @@ server_demo <- function(input, output, session, ...) {
     run_analysis()
   })
 
-  output$distibution_plot <- renderPlot({
-    validate(
-      need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
-    )
-    theme <- shidashi::get_theme()
-
-    data <- local_data$data
-
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
-      data.frame(
-        name = x$name[[1]],
-        num = nrow(x)
+  shidashi::register_output(
+    renderPlot({
+      validate(
+        need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
       )
-    }))
-    merged <- merge(data, sample_size, by = "name", all.x = TRUE, all.y = FALSE)
-    merged$myaxis <- factor(paste0(merged$name, "\n", "n=", merged$num))
+      theme <- shidashi::get_theme()
 
-    ggtheme <- generate_ggtheme(
-      theme,
-      legend.position = "none",
-      axis.line.y.left = element_blank(),
-      axis.text = element_text(color = theme$foreground)
-    )
-    ggplot(merged) +
-      aes(myaxis, value, fill = name) +
-      geom_violin(width = 1) +
-      geom_boxplot(width = 0.1,
-                   color = "grey",
-                   alpha = 0.2) +
-      geom_jitter(
-        height = 0,
-        width = 0.1,
-        size = 0.1,
-        alpha = 0.2
-      ) +
-      ggtheme +
-      xlab("")
-  })
+      data <- local_data$data
 
-  output$summary_table <- renderTable({
-    validate(
-      need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
-    )
-    data <- local_data$data
+      sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
+        data.frame(
+          name = x$name[[1]],
+          num = nrow(x)
+        )
+      }))
+      merged <- merge(data, sample_size, by = "name", all.x = TRUE, all.y = FALSE)
+      merged$myaxis <- factor(paste0(merged$name, "\n", "n=", merged$num))
 
-    sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
-      data.frame(
-        name = x$name[[1]],
-        num = nrow(x)
+      ggtheme <- generate_ggtheme(
+        theme,
+        legend.position = "none",
+        axis.line.y.left = element_blank(),
+        axis.text = element_text(color = theme$foreground)
       )
-    }))
-    sample_size
-  })
+      ggplot(merged) +
+        aes(myaxis, value, fill = name) +
+        geom_violin(width = 1) +
+        geom_boxplot(width = 0.1,
+                     color = "grey",
+                     alpha = 0.2) +
+        geom_jitter(
+          height = 0,
+          width = 0.1,
+          size = 0.1,
+          alpha = 0.2
+        ) +
+        ggtheme +
+        xlab("")
+    }),
+    outputId = "distibution_plot",
+    description = "Violin plots of the generated data by group (Histogram tab of the Analysis card)",
+    download_type = "image"
+  )
+
+  shidashi::register_output(
+    renderTable({
+      validate(
+        need(is.data.frame(local_data$data), "Please press the refresh button on the top-right tool bar")
+      )
+      data <- local_data$data
+
+      sample_size <- do.call("rbind", lapply(split(data, data$name), function(x) {
+        data.frame(
+          name = x$name[[1]],
+          num = nrow(x)
+        )
+      }))
+      sample_size
+    }),
+    outputId = "summary_table",
+    description = "Sample size of each group (Summary tab of the Analysis card)",
+    download_type = "no-download"
+  )
 }
 
 

@@ -1055,6 +1055,151 @@ class ShidashiApp {
     });
   }
 
+  /**
+   * A size for an output that has no layout (inside a hidden tab or a
+   * collapsed card), so shiny can draw it: the width of the nearest
+   * ancestor that has a layout, and the output's own height if set in px,
+   * else that ancestor's height (within reason).
+   */
+  _fallbackOutputSize(el) {
+    let width = 0;
+    let height = 0;
+    for (let p = el.parentElement; p && !width; p = p.parentElement) {
+      const rect = p.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+    }
+    const ownHeight = getComputedStyle(el).height;
+    if (/px$/.test(ownHeight) && parseFloat(ownHeight) > 0) {
+      height = parseFloat(ownHeight);
+    }
+    if (!(width >= 100)) width = 600;
+    if (!(height >= 200)) height = 400;
+    return {
+      width: Math.round(width),
+      height: Math.round(Math.min(height, 1200))
+    };
+  }
+
+  /**
+   * Resolve true once `el` loses the `recalculating` class, or false after
+   * `timeoutMs`.
+   */
+  _waitRecalculated(el, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!el.classList.contains('recalculating')) {
+        resolve(true);
+        return;
+      }
+      let timer = null;
+      const observer = new MutationObserver(() => {
+        if (!el.classList.contains('recalculating')) {
+          observer.disconnect();
+          clearTimeout(timer);
+          // shiny drops the class before it renders the value
+          setTimeout(() => resolve(true), 50);
+        }
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+      timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(false);
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Answer a `query_ui` request for `el`: an image (plot, canvas, SVG, or
+   * single image) or the HTML, with a short note for the agent.
+   */
+  _answerQuery(el, params) {
+    // A missing flag (older R) keeps the old behavior: capture images
+    const transformImage = params.transform_image !== false;
+
+    // The element's opening tag gives context without repeating its content
+    const outer = el.outerHTML;
+    const openingTag = outer.slice(0, outer.indexOf('>') + 1);
+
+    // Why an element may be empty or out of date
+    const notes = [];
+    const laidOut = el.getClientRects().length > 0;
+    if (!laidOut && getComputedStyle(el).display !== 'none') {
+      if (params.rendered) {
+        // `shiny_output_result` rendered it for this request
+        notes.push('The output is not shown on the page (it is inside a hidden tab or a collapsed card), but it was rendered for this request. Content that the browser draws, such as canvases or htmlwidgets, may be blank while hidden.');
+      } else {
+        notes.push('The element is not shown on the page (it is inside a hidden tab or a collapsed card), so it may be empty or out of date.');
+      }
+    }
+    if (el.classList.contains('recalculating')) {
+      notes.push('The output is waiting to be recalculated; shiny does not render hidden outputs.');
+    }
+    if (el.classList.contains('shiny-output-error')) {
+      const message = (el.textContent || '').trim().slice(0, 300);
+      notes.push('The output shows an error or a message instead of a value' +
+                 (message ? ': ' + message : '.'));
+    }
+
+    const reply = (fields) => {
+      const note = notes.concat(fields.note ? [fields.note] : []).join(' ');
+      Shiny.setInputValue(params.input_id, Object.assign({
+        request_id: params.request_id,
+        type: 'html',
+        html: '',
+        image_data: '',
+        image_type: '',
+        laid_out: laidOut
+      }, fields, { note: note }), { priority: 'event' });
+    };
+    const replyImage = (dataUrl) => {
+      const parts = dataUrl.split(',');
+      const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+      reply({ type: 'image', image_data: parts[1] || '', image_type: mime });
+    };
+
+    if (getComputedStyle(el).display === 'none') {
+      reply({ type: 'hidden', html: el.innerHTML,
+              note: 'The element is hidden (display: none). ' + openingTag });
+      return;
+    }
+
+    if (transformImage) {
+      // A <canvas>, or an element holding one
+      const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+      if (canvas) {
+        const dataUrl = this._captureCanvas(canvas);
+        if (dataUrl) {
+          replyImage(dataUrl);
+          return;
+        }
+        // Tainted or empty canvas: fall through
+      }
+
+      // An SVG (e.g. stream-viz D3 output), rasterised to PNG
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        this._captureSVG(svgEl).then((dataUrl) => {
+          if (dataUrl) {
+            replyImage(dataUrl);
+          } else {
+            reply({ html: el.innerHTML, note: openingTag });
+          }
+        });
+        return;
+      }
+
+      // A single <img> with a data URI
+      const img = el.querySelector('img[src^="data:"]');
+      if (img && el.querySelectorAll('img').length === 1) {
+        replyImage(img.getAttribute('src') || '');
+        return;
+      }
+    }
+
+    // Default: the element's HTML, with its opening tag as context
+    reply({ html: el.innerHTML, note: openingTag });
+  }
+
   // ---------- Card tool click delegation ----------
 
   _bindCardTools() {
@@ -1922,29 +2067,21 @@ class ShidashiApp {
 
     // --- Query UI handler (MCP) ---
 
-    this.shinyHandler('query_ui', (params) => {
-      // params: { selector, request_id, input_id, transform_image }
+    this.shinyHandler('prepare_output', (params) => {
+      // params: { selector, request_id, input_id, needs_size }
+      // Step 1 of `shiny_output_result`: find the output, and give it a
+      // size if it has never been shown (shiny sizes plots from the browser)
       const selector = params.selector;
       const requestId = params.request_id;
       const inputId = params.input_id;
       if (!selector || !requestId || !inputId) return;
-      // A missing flag (older R) keeps the old behavior: capture images
-      const transformImage = params.transform_image !== false;
 
       const reply = (fields) => {
         Shiny.setInputValue(inputId, Object.assign({
           request_id: requestId,
-          type: 'html',
-          html: '',
-          image_data: '',
-          image_type: '',
+          type: 'prepared',
           note: ''
         }, fields), { priority: 'event' });
-      };
-      const replyImage = (dataUrl) => {
-        const parts = dataUrl.split(',');
-        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-        reply({ type: 'image', image_data: parts[1] || '', image_type: mime });
       };
 
       const el = document.querySelector(selector);
@@ -1953,51 +2090,48 @@ class ShidashiApp {
         return;
       }
 
-      // The element's opening tag gives context without repeating its content
-      const outer = el.outerHTML;
-      const openingTag = outer.slice(0, outer.indexOf('>') + 1);
+      const rect = el.getBoundingClientRect();
+      const reportsSize = el.classList.contains('shiny-plot-output') ||
+        el.classList.contains('shiny-image-output') ||
+        el.classList.contains('shiny-report-size');
+      let fallbackSize = null;
+      if (params.needs_size && reportsSize && el.id &&
+          rect.width === 0 && rect.height === 0) {
+        fallbackSize = this._fallbackOutputSize(el);
+        // Sent before the reply, so R has the size before the output runs;
+        // shiny sends the real size once the output is shown
+        Shiny.setInputValue('.clientdata_output_' + el.id + '_width', fallbackSize.width);
+        Shiny.setInputValue('.clientdata_output_' + el.id + '_height', fallbackSize.height);
+      }
+      reply({ laid_out: el.getClientRects().length > 0, fallback_size: fallbackSize });
+    });
 
-      if (getComputedStyle(el).display === 'none') {
-        reply({ type: 'hidden', html: el.innerHTML,
-                note: 'The element is hidden (display: none). ' + openingTag });
+    this.shinyHandler('query_ui', (params) => {
+      // params: { selector, request_id, input_id, transform_image, wait_ms }
+      const selector = params.selector;
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!selector || !requestId || !inputId) return;
+
+      const el = document.querySelector(selector);
+      if (!el) {
+        Shiny.setInputValue(inputId, {
+          request_id: requestId,
+          type: 'not_found',
+          note: "No element matched selector: '" + selector + "'"
+        }, { priority: 'event' });
         return;
       }
 
-      if (transformImage) {
-        // A <canvas>, or an element holding one
-        const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
-        if (canvas) {
-          const dataUrl = this._captureCanvas(canvas);
-          if (dataUrl) {
-            replyImage(dataUrl);
-            return;
-          }
-          // Tainted or empty canvas: fall through
-        }
-
-        // An SVG (e.g. stream-viz D3 output), rasterised to PNG
-        const svgEl = el.querySelector('svg');
-        if (svgEl) {
-          this._captureSVG(svgEl).then((dataUrl) => {
-            if (dataUrl) {
-              replyImage(dataUrl);
-            } else {
-              reply({ html: el.innerHTML, note: openingTag });
-            }
-          });
-          return;
-        }
-
-        // A single <img> with a data URI
-        const img = el.querySelector('img[src^="data:"]');
-        if (img && el.querySelectorAll('img').length === 1) {
-          replyImage(img.getAttribute('src') || '');
-          return;
-        }
+      // With `wait_ms`, answer once the output has finished recalculating
+      const waitMs = Number(params.wait_ms) || 0;
+      if (waitMs > 0 && el.classList.contains('recalculating')) {
+        this._waitRecalculated(el, waitMs).then(() => {
+          this._answerQuery(el, params);
+        });
+        return;
       }
-
-      // Default: the element's HTML, with its opening tag as context
-      reply({ html: el.innerHTML, note: openingTag });
+      this._answerQuery(el, params);
     });
 
     // --- Ask-user handler (MCP built-in tool) ---
