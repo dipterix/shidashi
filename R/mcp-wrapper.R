@@ -561,6 +561,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           stop("Input ID: `", inputId, "` is read-only.")
         }
 
+        # Missing or not initialized
         active_inputIds <- shiny::isolate(names(session$input))
         if (!item$inputId %in% active_inputIds) {
           stop(
@@ -577,7 +578,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
 
         update_info <- normalize_update_fun(item$update)
 
-        expr <- as.call(structure(
+        call_list <- structure(
           list(
             quote(update_info$fun_impl),
             session,
@@ -590,9 +591,21 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
             update_info$fields$id %||% "inputId",
             update_info$fields$value %||% "value"
           )
-        ))
-
-        eval(expr)
+        )
+        
+        # Check if update_info$fun_name is action button/link
+        if (isTRUE(update_info$fun_name %in% c(
+          "updateActionButton", "updateActionLink", "updateActionButtonStyled"
+        ))) {
+          # This is to update button
+          session$sendCustomMessage(
+            "shidashi.click",
+            list(selector = sprintf("#%s", session$ns(inputId)))
+          )
+        } else {
+          expr <- as.call(call_list)
+          eval(expr)
+        }
 
         # Wait for Shiny to update
         Sys.sleep(0.1)
