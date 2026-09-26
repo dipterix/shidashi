@@ -15,7 +15,7 @@ tools:
   category:
   - exploratory
   enabled: ["Plan", "Executing"]
-- name: shiny_query_ui_result
+- name: shiny_output_result
   category:
   - exploratory
   enabled: ["Plan", "Executing"]

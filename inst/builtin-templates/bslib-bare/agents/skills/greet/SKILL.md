@@ -10,7 +10,7 @@ that prints a personalised greeting.
 
 ### Usage
 
-1. Call `action='script'`, `file_name='greet.R'`, `args=['World']`
+1. Call `skill_run__greet` with `file_name='greet.R'`, `args=['World']`
 2. The script prints: `Hello, World!`
 
 ### Arguments

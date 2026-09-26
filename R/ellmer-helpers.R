@@ -88,7 +88,7 @@ get_mcp_provider <- function(req = NULL) {
   # TODO: detect actual provider from request headers
   # e.g. req$HTTP_USER_AGENT might contain "anthropic", "openai", etc.
   # For now, always return the MCP-format fallback provider.
-  ProviderAny(name = "mcp", model = "unknown", base_url = "http://localhost")
+  ProviderAny(name = "mcp", base_url = "http://localhost")
 }
 
 # --- Content → MCP result conversion ---

@@ -53,10 +53,14 @@ ui_quick_start <- function() {
         tags$ol(
           class = "mb-0",
           tags$li("Start your shidashi app: ", tags$code("shidashi::render()")),
-          tags$li("Open a module page in your browser"),
+          tags$li("Open a module with AI agents (e.g. AI Agent Demo) in your browser"),
           tags$li(
             "In VS Code Copilot Chat, ask: ",
             tags$em("\"Use the hello_world tool to greet me\"")
+          ),
+          tags$li(
+            "The agent works in the module tab you used last. Click the ",
+            as_icon("thumbtack"), " button in a tab to keep the agent there."
           )
         )
       )
@@ -99,8 +103,15 @@ ui_details <- function() {
             )
           ),
           tags$p(
-            "The proxy translates stdio into HTTP. ",
-            "It auto-discovers the active Shiny port from cached records."
+            "The proxy translates stdio into HTTP. Every running app writes ",
+            "a small record (app directory, port, process) to the cache; the ",
+            "proxy connects to the most recently started app and stays with ",
+            "that app directory, even after the app restarts on a new port."
+          ),
+          tags$p(
+            "The tool list is read from the template on disk, so it is ",
+            "available before any browser opens and never changes while the ",
+            "agent is connected. No session binding is needed."
           )
         ),
 
@@ -128,8 +139,34 @@ ui_details <- function() {
             )
           ),
           tags$p(
-            "To target a specific port: ",
-            tags$code('"args": ["<PROXY_PATH>", "8310"]')
+            "To always drive one app (useful when several apps run at once), ",
+            "name its directory: ",
+            tags$code('"args": ["<PROXY_PATH>", "--app", "/path/to/app"]')
+          ),
+          tags$p(
+            "To always run tools in one module: ",
+            tags$code('"args": ["<PROXY_PATH>", "--module", "demo"]')
+          )
+        ),
+
+        # --- Which module ---
+        accordion_item(
+          title = "Which Tab Does the Agent Use?",
+          tags$p(
+            "Every tool call picks a module tab on its own, in this order:"
+          ),
+          tags$ol(
+            tags$li(
+              "the module given in the tool's ", tags$code("_module"),
+              " argument (a module id such as ", tags$code("demo"), ")"
+            ),
+            tags$li("the tab pinned with the ", as_icon("thumbtack"), " button"),
+            tags$li("the tab you clicked or typed in most recently")
+          ),
+          tags$p(
+            "Each result ends with a note such as ",
+            tags$code("[shidashi] ran on demo (pinned)"), ". The ",
+            tags$code("shidashi_sessions"), " tool lists the open tabs."
           )
         ),
 
@@ -155,6 +192,66 @@ ui_details <- function() {
             )
           ),
           tags$p("Or use ", tags$code("~/.claude/mcp.json"), " for global config.")
+        ),
+
+        # --- Claude Desktop config ---
+        accordion_item(
+          title = "Claude Desktop Configuration",
+          tags$p(
+            "Edit ", tags$code("claude_desktop_config.json"), " (on macOS: ",
+            tags$code("~/Library/Application Support/Claude/"),
+            "; on Windows: ", tags$code("%APPDATA%\\Claude\\"), "):"
+          ),
+          tags$pre(
+            class = "bg-gray-90 pre-compact",
+            tags$code(
+              class = "json",
+'{
+  "mcpServers": {
+    "shidashi": {
+      "command": "node",
+      "args": ["<PROXY_PATH>"]
+    }
+  }
+}'
+            )
+          ),
+          tags$p(
+            "Quit and reopen Claude Desktop. The connector works even when no ",
+            "app is running; the agent then asks you what to do."
+          )
+        ),
+
+        # --- Saved apps ---
+        accordion_item(
+          title = "Saved Apps",
+          tags$p(
+            "Save an app so the agent can start it for you. Nothing starts on ",
+            "its own: when no app is running, the agent asks whether you will ",
+            "start one yourself or want it to launch a saved app, and which ",
+            "module to open."
+          ),
+          tags$pre(
+            class = "bg-gray-90 pre-compact",
+            tags$code(
+              class = "r",
+'shidashi::save_launcher(
+  "my-app", "/path/to/my/app",
+  description = "What this app is for",
+  port = NA,          # NA picks a free port
+  copy_app = TRUE,    # run a copy kept in the shidashi cache folder
+  lab = "neuro"       # other named values are metadata for the agent
+)
+
+# Start it yourself; extra arguments go to render()
+shidashi::run_launcher("my-app", launch_browser = TRUE)'
+            )
+          ),
+          tags$p(
+            "The agent lists saved apps with ", tags$code("shidashi_launchers"),
+            " and starts one with ", tags$code("shidashi_launch"),
+            ", which also opens the chosen module in your browser."
+          )
         ),
 
         # --- Find proxy path ---
@@ -183,8 +280,18 @@ proxy_path <- file.path(
         accordion_item(
           title = "Troubleshooting",
           tags$dl(
-            tags$dt("\"No tools available\""),
-            tags$dd("Open a module page first. The Shiny session must be active."),
+            tags$dt("\"No shidashi app is running\""),
+            tags$dd(
+              "Start the app with ", tags$code("shidashi::render()"),
+              ", or save it with ", tags$code("shidashi::save_launcher()"),
+              " so the agent can start it when you ask."
+            ),
+
+            tags$dt("\"No dashboard module is open\""),
+            tags$dd(
+              "Open a module that has AI agents (an ", tags$code("agents.yaml"),
+              " file) in the browser, then ask again."
+            ),
 
             tags$dt("\"Connection refused\""),
             tags$dd(
@@ -194,8 +301,15 @@ proxy_path <- file.path(
 
             tags$dt("Tools appear but calls fail"),
             tags$dd(
-              "Make sure the agent is in ", tags$strong("Executing"), " mode ",
-              "and bound to a session."
+              "Check that the tool is turned on (", tags$code("enabled"),
+              ") in the module's ", tags$code("agents.yaml"), ". Agent modes ",
+              "and the confirmation policy only affect the dashboard chat."
+            ),
+
+            tags$dt("The agent acts in the wrong tab"),
+            tags$dd(
+              "Pin the tab you want with the ", as_icon("thumbtack"),
+              " button, or ask the agent to pass ", tags$code("_module"), "."
             ),
 
             tags$dt("Proxy not found"),

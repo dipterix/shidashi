@@ -16,7 +16,7 @@
 #'
 #' @export
 template_settings <- local({
-  map <- fastmap::fastmap()
+  map <- new_fastmap()
   list(
     get = function(name, default = NULL) {
       map$get(name, missing = default)

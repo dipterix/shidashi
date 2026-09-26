@@ -72,36 +72,29 @@ mcp_wrapper <- function(generator) {
   )
 }
 
-setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
+setup_mcp_proxy <- function(overwrite = TRUE, verbose = TRUE) {
   src <- system.file("mcp-proxy", "shidashi-proxy.mjs", package = "shidashi")
   if (!nzchar(src)) {
     return(invisible(NULL))
   }
 
-  mcp_server_dir <- file.path(tools::R_user_dir("shidashi", "cache"), "mcp_server")
-  ports_dir <- file.path(mcp_server_dir, "ports")
-  dir.create(ports_dir, recursive = TRUE, showWarnings = FALSE)
+  # Running apps announce themselves in `apps/` (see mcp_write_app_record);
+  # `ports/` held the records of older versions and is no longer read.
+  server_dir <- mcp_server_dir()
+  dir.create(server_dir, recursive = TRUE, showWarnings = FALSE)
+  unlink(file.path(server_dir, "ports"), recursive = TRUE)
 
-  # Write port record when a port is supplied.
-  if (!is.null(port)) {
-    port_file <- file.path(
-      ports_dir,
-      paste0(format(as.numeric(Sys.time()) * 1000, scientific = FALSE, digits = 15), ".json")
-    )
-    writeLines(
-      paste0('{"port":', as.integer(port), ',"created":"',
-             format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), '"}'),
-      port_file
-    )
-    # Prune: keep only the 10 most-recent port records.
-    port_files <- sort(list.files(ports_dir, pattern = "\\.json$", full.names = TRUE))
-    if (length(port_files) > 10L) {
-      file.remove(port_files[seq_len(length(port_files) - 10L)])
-    }
-  }
+  # What the proxy answers on its own when no app is running
+  writeLines(
+    jsonlite::toJSON(list(
+      instructions = mcp_server_instructions(app_id = NULL),
+      tools = mcp_meta_tool_schemas()
+    ), auto_unbox = TRUE, null = "null", pretty = TRUE),
+    file.path(server_dir, "proxy-meta.json")
+  )
 
   # Copy proxy script to user cache.
-  dest <- file.path(mcp_server_dir, "mcp-proxy.mjs")
+  dest <- file.path(server_dir, "mcp-proxy.mjs")
   if (!file.exists(dest) || isTRUE(overwrite)) {
     file.copy(src, dest, overwrite = TRUE)
     if (verbose) message("Installed MCP proxy to:\n  ", dest)
@@ -125,8 +118,13 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
       "\nPaste the following into your .vscode/mcp.json",
       " (or equivalent MCP settings):\n\n",
       snippet,
-      "\n\nTo target a specific shidashi session, append its port as an extra arg:\n",
-      "  \"args\": [\"", dest, "\", \"<port>\"]\n"
+      "\n\nThe proxy connects to the most recently started shidashi app and ",
+      "follows it across restarts. To always drive one app, name its ",
+      "directory; to always run in one module, name the module:\n",
+      "  \"args\": [\"", dest, "\", \"--app\", \"<app directory>\", ",
+      "\"--module\", \"<module id>\"]\n",
+      "\nTo let the agent start an app for you, save it first with ",
+      "shidashi::save_launcher().\n"
     )
   }
 
@@ -223,7 +221,7 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 #' # Initialization with a mock session
 #' tools <- shiny_input_wrapper(shiny::MockShinySession$new())
 #'
-#' @param input_specs An optional \code{fastmap::fastmap()} object to use as
+#' @param input_specs An optional map made by \code{new_fastmap()} to use as
 #'   the backing store for input specifications.  When \code{NULL} (the
 #'   default) a fresh \code{fastmap} is created.  Passing an existing
 #'   \code{fastmap} allows multiple wrapper instances (e.g. one created
@@ -231,7 +229,7 @@ setup_mcp_proxy <- function(port = NULL, overwrite = TRUE, verbose = TRUE) {
 #'   the same input registry.
 #'
 #' @noRd
-mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_specs = fastmap::fastmap()) {
+mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs = new_fastmap()) {
 
   # stores the input ID, description, type, update function, writable for a
   # session inputId should be relative to session, meaning
@@ -456,29 +454,66 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     session = shiny::getDefaultReactiveDomain()
   ) {
 
-    query_requests <- fastmap::fastmap()
+    # Pending `shiny_query_ui` requests: request id -> list(resolve, reject)
+    query_requests <- new_fastmap()
 
-    # Observer: when the browser responds via setInputValue, store the
-    # result in query_requests so shiny_query_ui_result can fetch it.
+    # Observer: the browser answers a `shiny_query_ui` request through
+    # `setInputValue`; settle the promise that the tool call is waiting on.
+    # A reply for an unknown id (for example after the timeout) is ignored.
     local({
       shiny::bindEvent(
-        shiny::observe({
-          res <- session$input[["@shiny_query_ui_result@"]]
-          res <- as.list(res)
+        safe_observe({
+          res <- as.list(session$input[["@shiny_query_ui_result@"]])
           rid <- res$request_id
           if (length(rid) != 1 || !query_requests$has(rid)) {
             return()
           }
           entry <- query_requests$get(rid)
-          entry$result <- res
-          # str(res)
-          # message(Sys.time() - entry$request_timestamp)
-          query_requests$set(rid, entry)
-        }, domain = session, priority = 101),
+          query_requests$remove(rid)
+          entry$resolve(res)
+        }, domain = session, priority = 101, label = "MCP query_ui reply"),
         session$input[["@shiny_query_ui_result@"]],
         ignoreNULL = TRUE, ignoreInit = FALSE
       )
     })
+
+    # A request the browser answers through `@shiny_query_ui_result@`:
+    # returns its id and a promise that the observer above resolves; a timer
+    # rejects the promise with `timeout_message` if nothing arrives.
+    browser_request <- function(timeout, timeout_message) {
+      request_id <- rand_string()
+      promise <- promises::promise(function(resolve, reject) {
+        query_requests$set(request_id, list(resolve = resolve,
+                                            reject = reject))
+      })
+
+      # An error in a `later` callback would surface in the event loop, so
+      # the timeout is guarded like an observer
+      later::later(function() {
+        tryCatch({
+          if (!query_requests$has(request_id)) {
+            return()
+          }
+          entry <- query_requests$get(request_id)
+          query_requests$remove(request_id)
+          entry$reject(simpleError(timeout_message))
+        }, error = function(e) {
+          warning("[shidashi] browser request timeout failed: ",
+                  conditionMessage(e), call. = FALSE)
+        })
+      }, delay = timeout)
+
+      list(id = request_id, promise = promise)
+    }
+
+    query_ui_max_chars <- function(max_chars) {
+      max_chars <- suppressWarnings(as.integer(max_chars)[1])
+      if (length(max_chars) != 1 || is.na(max_chars) || max_chars < 1) {
+        max_chars <- as.integer(getOption("shidashi.query_ui_max_chars",
+                                          10000L))
+      }
+      max_chars
+    }
 
     shiny_input_info <- ellmer::tool(
       name = "shiny_input_info",
@@ -564,6 +599,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
           stop("Input ID: `", inputId, "` is read-only.")
         }
 
+        # Missing or not initialized
         active_inputIds <- shiny::isolate(names(session$input))
         if (!item$inputId %in% active_inputIds) {
           stop(
@@ -580,7 +616,7 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
 
         update_info <- normalize_update_fun(item$update)
 
-        expr <- as.call(structure(
+        call_list <- structure(
           list(
             quote(update_info$fun_impl),
             session,
@@ -593,9 +629,21 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
             update_info$fields$id %||% "inputId",
             update_info$fields$value %||% "value"
           )
-        ))
-
-        eval(expr)
+        )
+        
+        # Check if update_info$fun_name is action button/link
+        if (isTRUE(update_info$fun_name %in% c(
+          "updateActionButton", "updateActionLink", "updateActionButtonStyled"
+        ))) {
+          # This is to update button
+          session$sendCustomMessage(
+            "shidashi.click",
+            list(selector = sprintf("#%s", session$ns(inputId)))
+          )
+        } else {
+          expr <- as.call(call_list)
+          eval(expr)
+        }
 
         # Wait for Shiny to update
         Sys.sleep(0.1)
@@ -610,145 +658,238 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     )
 
 
+    # The browser's answer as tool content: an image (with the note, if
+    # any) or the trimmed HTML (with the note appended). The note is a short
+    # annotation from the JS side (e.g. the element's opening tag, a
+    # not-found message, or that the element is hidden); agents interpret it.
+    query_ui_content <- function(res, transform_image = TRUE,
+                                 max_chars = 10000L) {
+      note <- mcp_trim_html(res$note %||% "", max_chars = max_chars)
+      if (identical(res$type, "not_found")) {
+        stop(note, call. = FALSE)
+      }
+      has_image <- length(res$image_data) == 1 && nzchar(res$image_data)
+      if (transform_image && has_image) {
+        img <- ellmer::ContentImageInline(
+          type = res$image_type %||% "image/png",
+          data = res$image_data
+        )
+        if (nzchar(note)) {
+          return(list(img, ellmer::ContentText(note)))
+        }
+        return(img)
+      }
+      html <- mcp_trim_html(res$html %||% "", max_chars = max_chars)
+      if (!nzchar(html)) {
+        return(note)
+      }
+      if (nzchar(note)) {
+        html <- paste(c(html, "\n\n<!-- NOTE: ", note, "-->"), collapse = "\n")
+      }
+      html
+    }
+
     shiny_query_ui <- ellmer::tool(
       name = "shiny_query_ui",
       description = paste(
-        "Request the HTML content of a UI element by CSS selector.",
-        "This sends a query to the browser and returns a request_id.",
-        "The browser response is asynchronous; call `tool__shiny_query_ui_result`",
-        "with the returned request_id to retrieve the actual content.",
-        "Wait briefly (1-2 seconds) before fetching the result."
+        "Get the content of a UI element by CSS selector. By default a plot,",
+        "canvas, SVG, or single image comes back as a picture; pass",
+        "`transform_image = false` to get the element's HTML instead. Long",
+        "HTML is trimmed (image data and scripts are shortened); use a more",
+        "specific selector, or `max_chars`, to see more. The browser answers",
+        "within a few seconds, and a short note may add context."
       ),
       arguments = list(
         css_selector = ellmer::type_string(
           description = "A CSS selector to query (e.g. '#my_output', '.card-body', 'div[data-id=\"plot\"]').",
           required = TRUE
+        ),
+        transform_image = ellmer::type_boolean(
+          description = paste(
+            "Optional, default true: return plots, canvases, SVGs, and",
+            "single images as a picture. Set false to get HTML only."
+          ),
+          required = FALSE
+        ),
+        max_chars = ellmer::type_integer(
+          description = paste(
+            "Optional: the most HTML characters to return.",
+            "Longer HTML is trimmed, with a note saying so."
+          ),
+          required = FALSE
         )
       ),
-      fun = function(css_selector) {
-        request_id <- rand_string()
+      fun = function(css_selector, transform_image = TRUE, max_chars = NULL) {
+        # Returns a promise: the MCP call (or the chat's tool call) waits on
+        # it while R keeps running, so the browser's answer can arrive.
+        transform_image <- !identical(as.logical(transform_image)[1], FALSE)
+        max_chars <- query_ui_max_chars(max_chars)
+        timeout <- getOption("shidashi.query_ui_timeout", 15)
 
-        query_requests$set(request_id, list(
-          request_id = request_id,
-          request_timestamp = Sys.time(),
-          selector = css_selector,
-          result = NULL
+        request <- browser_request(timeout, sprintf(
+          paste(
+            "The browser did not answer within %s s: the selector `%s`",
+            "may match nothing, or the module page is not open."
+          ),
+          format(timeout), css_selector
         ))
 
         session$sendCustomMessage("shidashi.query_ui", list(
           selector = css_selector,
-          request_id = request_id,
-          input_id = session$ns("@shiny_query_ui_result@")
+          request_id = request$id,
+          input_id = session$ns("@shiny_query_ui_result@"),
+          transform_image = transform_image
         ))
 
-        # Wait for the browser to store the result in the map — up to 10 x 1s.
-        # Doing the wait in the sender avoids the race where the client calls
-        # shiny_query_ui_result before Shiny has flushed the reactive observer.
-        coro::async(function() {
-          for (i in seq_len(10)) {
-            coro::async_sleep(1)
-            if (query_requests$has(request_id) &&
-                !is.null(query_requests$get(request_id)$result)) {
-              break
-            }
+        promises::then(request$promise, function(res) {
+          if (isFALSE(res$laid_out)) {
+            res$note <- paste(c(res$note[nzchar(res$note)], paste(
+              "To render a registered output even when it is hidden, call",
+              "`shiny_output_result(outputId)`."
+            )), collapse = " ")
           }
-          paste0(
-            "Request registered (id: ", request_id, "). ",
-            "Call `tool__shiny_query_ui_result(request_id = \"", request_id, "\")` ",
-            "to retrieve the result."
-          )
-        })()
+          query_ui_content(res, transform_image = transform_image,
+                           max_chars = max_chars)
+        })
       }
     )
 
-    shiny_query_ui_result <- ellmer::tool(
-      name = "shiny_query_ui_result",
+    shiny_output_result <- ellmer::tool(
+      name = "shiny_output_result",
       description = paste(
-        "Fetch the result of a previous `shiny_query_ui` request.",
-        "Returns the innerHTML of the matched element, or an inline image",
-        "if the element contains <img> or <canvas>.",
-        "An optional text note may be appended with additional context",
-        "(e.g. outerHTML, not-found message, or hidden-element content).",
-        "If the result is not yet ready, wait ~0.5 s and call again."
+        "Get the rendered content of a registered output by its ID, even",
+        "when it sits in a hidden tab or a collapsed card: the output is",
+        "rendered first if needed, waiting up to 10 seconds. Plots,",
+        "canvases, SVGs, and single images come back as a picture; pass",
+        "`transform_image = false` to get the HTML instead. Call",
+        "`shiny_output_info()` to list the output IDs."
       ),
       arguments = list(
-        request_id = ellmer::type_string(
-          description = "The request_id returned by a prior `shiny_query_ui` call.",
+        outputId = ellmer::type_string(
+          description = "A registered output ID, from `shiny_output_info()`.",
           required = TRUE
+        ),
+        transform_image = ellmer::type_boolean(
+          description = paste(
+            "Optional, default true: return plots, canvases, SVGs, and",
+            "single images as a picture. Set false to get HTML only."
+          ),
+          required = FALSE
+        ),
+        max_chars = ellmer::type_integer(
+          description = paste(
+            "Optional: the most HTML characters to return (default 10000).",
+            "Longer HTML is trimmed, with a note saying so."
+          ),
+          required = FALSE
         )
       ),
-      fun = function(request_id) {
-        # 1. Unknown request_id
-        if (!query_requests$has(request_id)) {
-          stop(
-            "Unknown request_id: '", request_id, "'. ",
-            "It may have already been consumed or was never created. ",
-            "Call `shiny_query_ui` first to register a new request."
-          )
+      fun = function(outputId, transform_image = TRUE, max_chars = NULL) {
+        if (!output_specs$has(outputId)) {
+          registered <- output_specs$keys()
+          if (!length(registered)) {
+            stop("This module registers no outputs. Use `shiny_query_ui()` ",
+                 "with a CSS selector instead.")
+          }
+          stop("There is no registered output ID: `", outputId,
+               "`. Registered IDs are: ", paste(registered, collapse = ", "),
+               ".")
+        }
+        transform_image <- !identical(as.logical(transform_image)[1], FALSE)
+        max_chars <- query_ui_max_chars(max_chars)
+        timeout <- getOption("shidashi.output_result_timeout", 10)
+        deadline <- Sys.time() + timeout
+        seconds_left <- function() {
+          as.numeric(difftime(deadline, Sys.time(), units = "secs"))
         }
 
-        entry <- query_requests$get(request_id)
-        res <- entry$result
+        ns_outputId <- session$ns(outputId)
+        selector <- paste0("#", ns_outputId)
+        input_id <- session$ns("@shiny_query_ui_result@")
 
-        # 2. Result available — consume and return
-        if (!is.null(res)) {
-          query_requests$remove(request_id)
-          # note is an optional free-text annotation added by newer JS versions
-          # (e.g. outerHTML context, not-found message, hidden-element innerHTML).
-          # Older JS omits it entirely; R does not branch on it — agents interpret it.
-          note <- res$note %||% ""
-
-          # Primary dispatch: image_data present → inline image
-          if (length(res$image_data) == 1 && nzchar(res$image_data)) {
-            mime <- res$image_type %||% "image/png"
-            img <- ellmer::ContentImageInline(type = mime, data = res$image_data)
-            if (nzchar(note)) {
-              return(list(img, ellmer::ContentText(note)))
-            }
-            return(img)
-          }
-
-          # Default: return html string, append note when present
-          html <- res$html %||% ""
-          if (nzchar(note)) {
-            html <- paste(
-              c(html, "\n\n<!-- NOTE: ", note, "-->"),
-              collapse = "\n"
-            )
-          }
-          return(html)
-        }
-
-        # 3. Not yet available — check age
-        elapsed <- as.double(
-          difftime(Sys.time(), entry$request_timestamp, units = "secs")
+        # Step 1: the browser finds the element, and gives a plot that was
+        # never shown a fallback size (shiny sizes plots from the browser)
+        width <- shiny::isolate(
+          session$clientData[[paste0("output_", ns_outputId, "_width")]]
         )
-        if (elapsed > 30) {
-          stop(
-            "No response from browser for selector '",
-            entry$selector, "' within 30 seconds. ",
-            "The selector is most likely invalid (no matching results)."
+        prepare <- browser_request(timeout, sprintf(
+          "The browser did not answer within %s s: the module page may not be open.",
+          format(timeout)
+        ))
+        session$sendCustomMessage("shidashi.prepare_output", list(
+          selector = selector,
+          request_id = prepare$id,
+          input_id = input_id,
+          needs_size = is.null(width)
+        ))
+
+        promises::then(prepare$promise, function(prepared) {
+          if (identical(prepared$type, "not_found")) {
+            stop(prepared$note %||% sprintf(
+              "No element matched selector: '%s'", selector
+            ), call. = FALSE)
+          }
+
+          # Step 2: render the output even if hidden, then query the
+          # browser. The query goes out after the flush that sends the
+          # value, so the browser never reads a stale element.
+          restore <- render_hidden_output(outputId, session = session,
+                                          once = TRUE)
+          query <- browser_request(max(seconds_left(), 0.1), sprintf(
+            paste(
+              "The output `%s` did not finish rendering within %s s; the",
+              "session may be busy with a long computation. Try again later."
+            ),
+            outputId, format(timeout)
+          ))
+          cancel_query <- session$onFlushed(function() {
+            if (!query_requests$has(query$id)) {
+              return()
+            }
+            session$sendCustomMessage("shidashi.query_ui", list(
+              selector = selector,
+              request_id = query$id,
+              input_id = input_id,
+              transform_image = transform_image,
+              # the browser answers before R gives up
+              wait_ms = round(max(seconds_left() - 1, 0.1) * 1000),
+              rendered = TRUE
+            ))
+          }, once = TRUE)
+
+          promises::then(
+            query$promise,
+            onFulfilled = function(res) {
+              size <- prepared$fallback_size
+              if (length(size$width) == 1 && length(size$height) == 1) {
+                res$note <- paste(c(sprintf(
+                  paste(
+                    "The output has never been shown, so it was drawn at a",
+                    "fallback size of %sx%s px."
+                  ),
+                  size$width, size$height
+                ), res$note[nzchar(res$note)]), collapse = " ")
+              }
+              query_ui_content(res, transform_image = transform_image,
+                               max_chars = max_chars)
+            },
+            onRejected = function(e) {
+              cancel_query()
+              restore()
+              stop(e)
+            }
           )
-        }
-        # Ask the client to wait briefly and retry
-        coro::async(function() {
-          coro::async_sleep(1)
-          paste0(
-            "Result not yet available (", round(elapsed, 1), "s elapsed). ",
-            "Wait ~0.5 s and call `tool__shiny_query_ui_result(request_id = \"",
-            request_id, "\")` again."
-          )
-        })()
+        })
       }
     )
 
     shiny_output_info <- ellmer::tool(
       name = "shiny_output_info",
       description = paste(
-        "List registered Shiny output elements and optionally retrieve",
-        "their rendered HTML content. When outputIds is omitted, returns",
-        "all registered outputs with their descriptions. You can get the",
-        "HTML content of output via `shiny_query_ui(selector)`"
+        "List registered Shiny output elements. When outputIds is omitted,",
+        "returns all registered outputs with their descriptions. Get an",
+        "output's rendered content with `shiny_output_result(outputId)`,",
+        "which also works when the output is in a hidden tab or card."
       ),
       arguments = list(
         outputIds = ellmer::type_array(
@@ -788,8 +929,8 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
       shiny_input_info = shiny_input_info,
       shiny_input_update = shiny_input_update,
       shiny_query_ui = shiny_query_ui,
-      shiny_query_ui_result = shiny_query_ui_result,
-      shiny_output_info = shiny_output_info
+      shiny_output_info = shiny_output_info,
+      shiny_output_result = shiny_output_result
     )
   })
 
@@ -805,6 +946,49 @@ mcp_wrapper_input_output <- function(input_specs = fastmap::fastmap(), output_sp
     tool_generator = wrapper
   )
 
+}
+
+# Make HTML cheaper for an agent to read: shorten long data URIs, drop
+# script and style bodies, remove whitespace between tags, and cut at a tag
+# boundary when longer than `max_chars`, saying how much was cut.
+mcp_trim_html <- function(html, max_chars = 10000L) {
+  html <- paste(as.character(html), collapse = "\n")
+  if (!nzchar(html)) {
+    return(html)
+  }
+
+  uris <- gregexpr("data:[^,\"'\\s)]*,[^\"'\\s)<>]{100,}", html, perl = TRUE)
+  regmatches(html, uris) <- lapply(regmatches(html, uris), function(found) {
+    vapply(found, function(uri) {
+      comma <- regexpr(",", uri, fixed = TRUE)
+      sprintf("%s...(%d characters omitted)", substr(uri, 1, comma),
+              nchar(uri) - comma)
+    }, "")
+  })
+
+  html <- gsub("(?is)(<(script|style)\\b[^>]*>).*?(</\\2\\s*>)",
+               "\\1...(omitted)\\3", html, perl = TRUE)
+  html <- gsub(">\\s+<", "><", html, perl = TRUE)
+  html <- gsub("\\s{2,}", " ", html, perl = TRUE)
+  html <- trimws(html)
+
+  total <- nchar(html)
+  if (total <= max_chars) {
+    return(html)
+  }
+  kept <- substr(html, 1, max_chars)
+  tag_ends <- gregexpr(">", kept, fixed = TRUE)[[1]]
+  last_tag_end <- max(tag_ends)
+  if (last_tag_end > 0 && max_chars - last_tag_end <= 200) {
+    kept <- substr(kept, 1, last_tag_end)
+  }
+  sprintf(
+    paste(
+      "%s\n<!-- [shidashi] trimmed: showing %d of %d characters. Use a more",
+      "specific selector, or a larger max_chars. -->"
+    ),
+    kept, nchar(kept), total
+  )
 }
 
 find_expr <- function(call, env) {
@@ -890,7 +1074,7 @@ register_output_widgets <- function(
     modal_prefix <- paste0(outputId, "__dlmodal_")
 
     shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         # Build modal UI based on download_type
         modal_ui <- switch(
           download_type,
@@ -984,7 +1168,7 @@ register_output_widgets <- function(
           easyClose = TRUE,
           footer = shiny::modalButton("Cancel")
         ), session = session)
-      }, domain = session),
+      }, domain = session, label = "output download dialog"),
       input[[paste0(outputId, "__download_trigger")]],
       ignoreNULL = TRUE, ignoreInit = TRUE
     )
@@ -1290,7 +1474,7 @@ register_output <- function(
           shidashi <- asNamespace("shidashi")
 
           shiny::bindEvent(
-            shiny::observe(
+            safe_observe(
               bquote({
                 tryCatch(
                   expr = {
@@ -1316,7 +1500,8 @@ register_output <- function(
               quoted = TRUE,
               env = env,
               priority = -1L,
-              domain = session
+              domain = session,
+              label = "threeBrain background"
             ),
             shidashi$get_theme(),
             ignoreNULL = TRUE,
@@ -1331,6 +1516,90 @@ register_output <- function(
   }
 
   invisible(NULL)
+}
+
+#' @title Render an Output Even When It Is Hidden
+#' @description
+#' By default \code{shiny} does not render outputs that are hidden, for
+#' example inside an inactive tab or a collapsed card
+#' (\code{suspendWhenHidden = TRUE}). \code{render_hidden_output()} turns
+#' this off for one output, so the output renders at the next flush even
+#' when hidden. With \code{once = TRUE}, the option is restored after that
+#' flush.
+#' @param outputId character string.  The \code{shiny} output ID (without
+#'   the module namespace prefix).
+#' @param session the \code{shiny} session object.
+#' @param once logical (default \code{TRUE}).  Whether to restore the
+#'   option after the next flush; when \code{FALSE}, the output keeps
+#'   rendering while hidden until the returned function is called.
+#' @return A function (invisible) that restores the option; calling it
+#'   more than once has no further effect.  Nothing is changed when the
+#'   output already renders while hidden.
+#' @examples
+#' \dontrun{
+#' # inside a shidashi module server function:
+#' register_output(renderPlot({ plot(1:10) }), outputId = "my_plot")
+#'
+#' # render `my_plot` once, even while its tab is not shown
+#' render_hidden_output("my_plot")
+#' }
+#' @export
+render_hidden_output <- function(
+  outputId,
+  session = shiny::getDefaultReactiveDomain(),
+  once = TRUE
+) {
+  if (is.null(session)) {
+    stop("shidashi::render_hidden_output must run in a shiny session.")
+  }
+  output <- session$output
+  opts <- tryCatch(
+    shiny::outputOptions(output, outputId),
+    error = function(e) {
+      stop("Output `", outputId, "` is not defined in this session.",
+           call. = FALSE)
+    }
+  )
+
+  restore <- function() {
+    invisible()
+  }
+
+  # `opts` is NULL only for sessions that cannot set output options, such
+  # as `shiny::MockShinySession`; an unset option means TRUE (the default)
+  if (!is.null(opts) && !isFALSE(opts$suspendWhenHidden)) {
+    # Resumes the output; if it was invalidated while hidden, it runs at
+    # the next flush
+    shiny::outputOptions(output, outputId, suspendWhenHidden = FALSE)
+
+    restored <- FALSE
+    cancel_hook <- NULL
+    restore <- function() {
+      if (restored) {
+        return(invisible())
+      }
+      restored <<- TRUE
+      if (is.function(cancel_hook)) {
+        cancel_hook()
+      }
+      if (!isTRUE(session$isClosed())) {
+        shiny::outputOptions(output, outputId, suspendWhenHidden = TRUE)
+      }
+      invisible()
+    }
+    if (isTRUE(once)) {
+      # Flush callbacks run after the output values are sent (and wait for
+      # async outputs), so the value is out before the option is restored
+      cancel_hook <- session$onFlushed(restore, once = TRUE)
+    }
+  }
+
+  # Make sure a flush happens even when nothing is pending, so the
+  # callback runs; not `session$flushOutput()`, which would flush before
+  # the output runs
+  tryCatch(session$requestFlush(), error = function(e) NULL)
+
+  invisible(restore)
 }
 
 

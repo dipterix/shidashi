@@ -3,6 +3,68 @@
 * Added a color picker widget using vanilla `shiny` select input;
 * Added base theme for plots and viewers that are registered output,
   such as `plotOutput2`;
+* Redesigned the `MCP` endpoint so agents such as `Claude Code` can drive
+  the dashboard without session binding:
+  - the tool list is built from the template on disk (each module's tools
+    load once without a browser), so it is available before any browser
+    opens and never changes while an agent is connected; tools from
+    modules that fail to load fall back to `agents/tool-schema.yaml`
+  - each tool call runs in a module chosen on the spot: the module named
+    by the optional `_module` argument, else the module tab the user pinned
+    with the new pin button, else the one the user used most recently;
+    results end with a note naming the module
+  - removed the `list_shinysessions`, `register_shinysession`,
+    `get_session_info`, and `ask_user` `MCP` tools; added
+    `shidashi_sessions` (open modules and the default one) and
+    `shidashi_call` (tools that exist only in live sessions)
+  - the server no longer issues `Mcp-Session-Id`; `/mcp/{module}` limits a
+    connection to one module (a module id or a handle)
+  - agent modes and the confirmation policy apply only to the in-dashboard
+    chat; over `MCP`, tools carry `readOnlyHint` and `destructiveHint`
+    annotations and a note, and the agent asks the user in its own chat,
+    never in the browser; tools turned off in `agents.yaml` stay off
+  - the stdio proxy picks up apps from per-app records, follows an app
+    across restarts, accepts `--app` and `--module`, and always replies to
+    a request
+  - the stdio proxy works without a running app: it connects, lists the
+    tools it can, and tells the agent to ask the user whether to start an
+    app or launch a saved one
+  - the stdio proxy can attach to a shidashi app at any address for the
+    current session (`shidashi_connect`, `shidashi_disconnect`); its tool
+    list follows the attached app, and `shidashi_tools` lists the app's
+    tools for clients that do not refresh their tool list
+  - module handles always carry the session token prefix
+    (`<module>@<token>`), so a handle stays the same when the user opens
+    the module again in another tab
+* Each skill is now two tools: `skill_load__<name>` reads the instructions
+  and reference files and never changes anything, and `skill_run__<name>`
+  runs the scripts; `skill_wrapper()` returns both (`load`, `run`);
+  in the dashboard chat, a script marked destructive in `agents.yaml` now
+  asks for confirmation
+* Skill scripts document their arguments in a `# Usage:` header comment;
+  `skill_run__<name>` lists each script's usage and refuses a call that
+  leaves out a required argument; files in `scripts/` whose names start
+  with `_` are helpers, not scripts
+* Added `save_launcher()` and `run_launcher()`: saved apps are kept in one
+  `launchers.json` file in the `shidashi` cache folder, optionally with a
+  copy of the app (`copy_app = TRUE`) and free-form metadata; the `MCP`
+  proxy lists saved apps (`shidashi_launchers`) and, when the user picks
+  one, starts it and opens the chosen module in the browser
+  (`shidashi_launch`)
+* `shiny_query_ui` now returns the element's HTML or image in one call;
+  `shiny_query_ui_result` is removed; `transform_image = FALSE` asks for
+  HTML only, and long HTML is trimmed (image data and scripts shortened,
+  `max_chars` sets the limit)
+* Added the `shiny_output_result` `MCP` tool: it returns a registered
+  output's rendered content even when the output is in a hidden tab or a
+  collapsed card, rendering it first (waiting up to 10 seconds; option
+  `shidashi.output_result_timeout`); a plot that was never shown is drawn
+  at a fallback size; `shiny_query_ui` notes when an element is not shown
+  or shows an error
+* Added `render_hidden_output()`, which renders one output at the next
+  flush even when it is hidden, then restores `suspendWhenHidden`
+* Errors inside `shidashi`'s own observers are reported as warnings instead
+  of ending the user's session
 
 # shidashi 0.2.0
 

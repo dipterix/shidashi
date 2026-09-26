@@ -207,6 +207,76 @@ class ShidashiApp {
     });
   }
 
+  // ---------- AI agent targeting (MCP) ----------
+
+  /**
+   * Tell Shiny that the user is using this module page, so AI agent tool
+   * calls without an explicit target run here. Reported on interaction
+   * (throttled), when the dashboard shell activates this tab, and on load
+   * when the page is visible. Module pages only; the shell is not a target.
+   */
+  _initFocusReporting() {
+    let lastReport = 0;
+    const report = (force) => {
+      const now = Date.now();
+      if (!force && now - lastReport < 2000) return;
+      lastReport = now;
+      this.ensureShiny((shiny) => {
+        shiny.setInputValue('@shidashi_focus@', now, { priority: 'event' });
+      });
+    };
+    ['pointerdown', 'keydown', 'focusin'].forEach((type) => {
+      document.addEventListener(type, () => report(false),
+                                { capture: true, passive: true });
+    });
+    window.addEventListener('message', (evt) => {
+      if (evt.origin !== window.location.origin) return;
+      if (evt.data?.type === 'shidashi.module_activated') report(true);
+    });
+    // Hidden iframes (inactive tabs) have no size
+    if (document.visibilityState === 'visible' &&
+        window.innerWidth > 0 && window.innerHeight > 0) {
+      report(true);
+    }
+  }
+
+  /**
+   * Show the pin toggle next to the floating buttons and reflect its state.
+   * A pinned tab receives AI agent tool calls even when the user works in
+   * another tab; pinning one tab unpins the others (handled in R).
+   */
+  _setAiPinState(pinned) {
+    let container = document.querySelector('.shidashi-back-to-top');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'shidashi-back-to-top';
+      document.body.appendChild(container);
+    }
+    let btn = container.querySelector('.btn-ai-pin');
+    if (!btn) {
+      btn = document.createElement('a');
+      btn.href = '#';
+      btn.className = 'btn btn-default btn-ai-pin';
+      btn.setAttribute('role', 'button');
+      btn.innerHTML = '<i class="fas fa-thumbtack" aria-hidden="true"></i>';
+      btn.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        const next = !btn.classList.contains('active');
+        this.ensureShiny((shiny) => {
+          shiny.setInputValue('@shidashi_ai_pin@', next, { priority: 'event' });
+        });
+      });
+      container.appendChild(btn);
+    }
+    btn.classList.toggle('active', !!pinned);
+    btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
+    const label = pinned
+      ? 'AI agent tool calls run in this tab. Click to unpin.'
+      : 'Pin this tab: AI agent tool calls will run here.';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+  }
+
   // ---------- Event system ----------
 
   broadcastEvent(type, message = {}) {
@@ -985,6 +1055,151 @@ class ShidashiApp {
     });
   }
 
+  /**
+   * A size for an output that has no layout (inside a hidden tab or a
+   * collapsed card), so shiny can draw it: the width of the nearest
+   * ancestor that has a layout, and the output's own height if set in px,
+   * else that ancestor's height (within reason).
+   */
+  _fallbackOutputSize(el) {
+    let width = 0;
+    let height = 0;
+    for (let p = el.parentElement; p && !width; p = p.parentElement) {
+      const rect = p.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+    }
+    const ownHeight = getComputedStyle(el).height;
+    if (/px$/.test(ownHeight) && parseFloat(ownHeight) > 0) {
+      height = parseFloat(ownHeight);
+    }
+    if (!(width >= 100)) width = 600;
+    if (!(height >= 200)) height = 400;
+    return {
+      width: Math.round(width),
+      height: Math.round(Math.min(height, 1200))
+    };
+  }
+
+  /**
+   * Resolve true once `el` loses the `recalculating` class, or false after
+   * `timeoutMs`.
+   */
+  _waitRecalculated(el, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!el.classList.contains('recalculating')) {
+        resolve(true);
+        return;
+      }
+      let timer = null;
+      const observer = new MutationObserver(() => {
+        if (!el.classList.contains('recalculating')) {
+          observer.disconnect();
+          clearTimeout(timer);
+          // shiny drops the class before it renders the value
+          setTimeout(() => resolve(true), 50);
+        }
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+      timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(false);
+      }, timeoutMs);
+    });
+  }
+
+  /**
+   * Answer a `query_ui` request for `el`: an image (plot, canvas, SVG, or
+   * single image) or the HTML, with a short note for the agent.
+   */
+  _answerQuery(el, params) {
+    // A missing flag (older R) keeps the old behavior: capture images
+    const transformImage = params.transform_image !== false;
+
+    // The element's opening tag gives context without repeating its content
+    const outer = el.outerHTML;
+    const openingTag = outer.slice(0, outer.indexOf('>') + 1);
+
+    // Why an element may be empty or out of date
+    const notes = [];
+    const laidOut = el.getClientRects().length > 0;
+    if (!laidOut && getComputedStyle(el).display !== 'none') {
+      if (params.rendered) {
+        // `shiny_output_result` rendered it for this request
+        notes.push('The output is not shown on the page (it is inside a hidden tab or a collapsed card), but it was rendered for this request. Content that the browser draws, such as canvases or htmlwidgets, may be blank while hidden.');
+      } else {
+        notes.push('The element is not shown on the page (it is inside a hidden tab or a collapsed card), so it may be empty or out of date.');
+      }
+    }
+    if (el.classList.contains('recalculating')) {
+      notes.push('The output is waiting to be recalculated; shiny does not render hidden outputs.');
+    }
+    if (el.classList.contains('shiny-output-error')) {
+      const message = (el.textContent || '').trim().slice(0, 300);
+      notes.push('The output shows an error or a message instead of a value' +
+                 (message ? ': ' + message : '.'));
+    }
+
+    const reply = (fields) => {
+      const note = notes.concat(fields.note ? [fields.note] : []).join(' ');
+      Shiny.setInputValue(params.input_id, Object.assign({
+        request_id: params.request_id,
+        type: 'html',
+        html: '',
+        image_data: '',
+        image_type: '',
+        laid_out: laidOut
+      }, fields, { note: note }), { priority: 'event' });
+    };
+    const replyImage = (dataUrl) => {
+      const parts = dataUrl.split(',');
+      const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
+      reply({ type: 'image', image_data: parts[1] || '', image_type: mime });
+    };
+
+    if (getComputedStyle(el).display === 'none') {
+      reply({ type: 'hidden', html: el.innerHTML,
+              note: 'The element is hidden (display: none). ' + openingTag });
+      return;
+    }
+
+    if (transformImage) {
+      // A <canvas>, or an element holding one
+      const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
+      if (canvas) {
+        const dataUrl = this._captureCanvas(canvas);
+        if (dataUrl) {
+          replyImage(dataUrl);
+          return;
+        }
+        // Tainted or empty canvas: fall through
+      }
+
+      // An SVG (e.g. stream-viz D3 output), rasterised to PNG
+      const svgEl = el.querySelector('svg');
+      if (svgEl) {
+        this._captureSVG(svgEl).then((dataUrl) => {
+          if (dataUrl) {
+            replyImage(dataUrl);
+          } else {
+            reply({ html: el.innerHTML, note: openingTag });
+          }
+        });
+        return;
+      }
+
+      // A single <img> with a data URI
+      const img = el.querySelector('img[src^="data:"]');
+      if (img && el.querySelectorAll('img').length === 1) {
+        replyImage(img.getAttribute('src') || '');
+        return;
+      }
+    }
+
+    // Default: the element's HTML, with its opening tag as context
+    reply({ html: el.innerHTML, note: openingTag });
+  }
+
   // ---------- Card tool click delegation ----------
 
   _bindCardTools() {
@@ -1094,6 +1309,9 @@ class ShidashiApp {
     const iframeContainer = document.querySelector('.shidashi-content');
     if (iframeContainer) {
       this.iframeManager = new IFrameManager(iframeContainer);
+    } else {
+      // A module page (in an iframe or standalone) can be an AI agent target
+      this._initFocusReporting();
     }
 
     // Restore theme
@@ -1686,6 +1904,12 @@ class ShidashiApp {
       }
     });
 
+    // --- AI agent pin toggle (sent only for modules with agent tools) ---
+
+    this.shinyHandler('ai_pin_state', (params) => {
+      this._setAiPinState(!!params.pinned);
+    });
+
     // --- Module token registration (for chatbot) ---
 
     this.shinyHandler('register_module_token', (params) => {
@@ -1843,8 +2067,47 @@ class ShidashiApp {
 
     // --- Query UI handler (MCP) ---
 
+    this.shinyHandler('prepare_output', (params) => {
+      // params: { selector, request_id, input_id, needs_size }
+      // Step 1 of `shiny_output_result`: find the output, and give it a
+      // size if it has never been shown (shiny sizes plots from the browser)
+      const selector = params.selector;
+      const requestId = params.request_id;
+      const inputId = params.input_id;
+      if (!selector || !requestId || !inputId) return;
+
+      const reply = (fields) => {
+        Shiny.setInputValue(inputId, Object.assign({
+          request_id: requestId,
+          type: 'prepared',
+          note: ''
+        }, fields), { priority: 'event' });
+      };
+
+      const el = document.querySelector(selector);
+      if (!el) {
+        reply({ type: 'not_found', note: "No element matched selector: '" + selector + "'" });
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      const reportsSize = el.classList.contains('shiny-plot-output') ||
+        el.classList.contains('shiny-image-output') ||
+        el.classList.contains('shiny-report-size');
+      let fallbackSize = null;
+      if (params.needs_size && reportsSize && el.id &&
+          rect.width === 0 && rect.height === 0) {
+        fallbackSize = this._fallbackOutputSize(el);
+        // Sent before the reply, so R has the size before the output runs;
+        // shiny sends the real size once the output is shown
+        Shiny.setInputValue('.clientdata_output_' + el.id + '_width', fallbackSize.width);
+        Shiny.setInputValue('.clientdata_output_' + el.id + '_height', fallbackSize.height);
+      }
+      reply({ laid_out: el.getClientRects().length > 0, fallback_size: fallbackSize });
+    });
+
     this.shinyHandler('query_ui', (params) => {
-      // params: { selector, request_id, input_id }
+      // params: { selector, request_id, input_id, transform_image, wait_ms }
       const selector = params.selector;
       const requestId = params.request_id;
       const inputId = params.input_id;
@@ -1855,122 +2118,20 @@ class ShidashiApp {
         Shiny.setInputValue(inputId, {
           request_id: requestId,
           type: 'not_found',
-          html: '',
-          image_data: '',
-          image_type: '',
           note: "No element matched selector: '" + selector + "'"
         }, { priority: 'event' });
         return;
       }
 
-      // Check if element is hidden (display:none)
-      if (getComputedStyle(el).display === 'none') {
-        Shiny.setInputValue(inputId, {
-          request_id: requestId,
-          type: 'hidden',
-          html: '',
-          image_data: '',
-          image_type: '',
-          note: el.innerHTML
-        }, { priority: 'event' });
-        return;
-      }
-
-      // Check if element is a <canvas>
-      if (el.tagName === 'CANVAS') {
-        const dataUrl = this._captureCanvas(el);
-        if (dataUrl) {
-          const parts = dataUrl.split(',');
-          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-          Shiny.setInputValue(inputId, {
-            request_id: requestId,
-            type: 'image',
-            html: '',
-            image_data: parts[1] || '',
-            image_type: mime,
-            note: el.innerHTML
-          }, { priority: 'event' });
-          return;
-        }
-        // Tainted or empty canvas — fall through to innerHTML
-      }
-
-      // Check if element contains a single <img> with a data URI or a <canvas> child
-      const canvas = el.querySelector('canvas');
-      if (canvas) {
-        const dataUrl = this._captureCanvas(canvas);
-        if (dataUrl) {
-          const parts = dataUrl.split(',');
-          const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-          Shiny.setInputValue(inputId, {
-            request_id: requestId,
-            type: 'image',
-            html: '',
-            image_data: parts[1] || '',
-            image_type: mime,
-            note: el.innerHTML
-          }, { priority: 'event' });
-          return;
-        }
-        // fall through
-      }
-
-      // Check for SVG element (e.g. stream-viz D3 output) — rasterise to PNG
-      const svgEl = el.querySelector('svg');
-      if (svgEl) {
-        this._captureSVG(svgEl).then((dataUrl) => {
-          if (dataUrl) {
-            const parts = dataUrl.split(',');
-            const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-            Shiny.setInputValue(inputId, {
-              request_id: requestId,
-              type: 'image',
-              html: '',
-              image_data: parts[1] || '',
-              image_type: mime,
-              note: ''
-            }, { priority: 'event' });
-          } else {
-            // SVG rasterisation failed — fall back to innerHTML
-            Shiny.setInputValue(inputId, {
-              request_id: requestId,
-              type: 'html',
-              html: el.innerHTML,
-              image_data: '',
-              image_type: '',
-              note: el.outerHTML
-            }, { priority: 'event' });
-          }
+      // With `wait_ms`, answer once the output has finished recalculating
+      const waitMs = Number(params.wait_ms) || 0;
+      if (waitMs > 0 && el.classList.contains('recalculating')) {
+        this._waitRecalculated(el, waitMs).then(() => {
+          this._answerQuery(el, params);
         });
         return;
       }
-
-      const img = el.querySelector('img[src^="data:"]');
-      if (img && el.querySelectorAll('img').length === 1) {
-        const src = img.getAttribute('src') || '';
-        // src is "data:image/png;base64,..."
-        const parts = src.split(',');
-        const mime = (parts[0] || '').replace(/^data:/, '').replace(/;base64$/, '') || 'image/png';
-        Shiny.setInputValue(inputId, {
-          request_id: requestId,
-          type: 'image',
-          html: '',
-          image_data: parts[1] || '',
-          image_type: mime,
-          note: el.innerHTML
-        }, { priority: 'event' });
-        return;
-      }
-
-      // Default: return innerHTML with outerHTML as context note
-      Shiny.setInputValue(inputId, {
-        request_id: requestId,
-        type: 'html',
-        html: el.innerHTML,
-        image_data: '',
-        image_type: '',
-        note: el.outerHTML
-      }, { priority: 'event' });
+      this._answerQuery(el, params);
     });
 
     // --- Ask-user handler (MCP built-in tool) ---

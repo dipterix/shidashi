@@ -261,7 +261,7 @@ chatbot_server <- function(input, output, session,
   stop_btn_id <- paste0(id, "-stop")
 
   # ---- Local state (fastmap for non-reactive mutable state) ----
-  local_data <- fastmap::fastmap()
+  local_data <- new_fastmap()
   local_data$set("chat_token", NULL)
   local_data$set("is_streaming", FALSE)
 
@@ -388,11 +388,12 @@ chatbot_server <- function(input, output, session,
 
         # Send provider/model info to the status bar
         provider <- chat$get_provider()
+        model_str <- chat$get_model()
         session$sendCustomMessage(
           "shidashi.update_chat_status",
           list(
             id     = session$ns(paste0(id, "-status-model")),
-            text   = sprintf("%s/%s", provider@name, provider@model),
+            text   = sprintf("%s/%s", provider@name, model_str),
             status = "ready"
           )
         )
@@ -606,12 +607,12 @@ chatbot_server <- function(input, output, session,
 
   # On user prompt
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
       user_msg <- paste(input[[user_input_id]], collapse = "")
       user_msg <- trimws(user_msg)
       if (!nzchar(user_msg)) { return() }
       chat_task$invoke(user_msg)
-    }),
+    }, label = "chat: user prompt"),
     input[[user_input_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
@@ -619,7 +620,7 @@ chatbot_server <- function(input, output, session,
 
   # On switching conversation ID
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
 
       selected <- as.integer(input[[conv_select_id]])
       if (length(selected) != 1 || is.na(selected)) return()
@@ -682,7 +683,7 @@ chatbot_server <- function(input, output, session,
       )
       return()
 
-    }),
+    }, label = "chat: switch conversation"),
     input[[conv_select_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
@@ -690,7 +691,7 @@ chatbot_server <- function(input, output, session,
 
   # On starting new conversation
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
 
       # Invalidate any pending operations from previous conversation
       new_chat_token()
@@ -710,7 +711,7 @@ chatbot_server <- function(input, output, session,
       shinychat::chat_clear(id = id, session = session)
       update_conv_dropdown()
 
-    }),
+    }, label = "chat: new conversation"),
     input[[new_conv_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
@@ -718,7 +719,7 @@ chatbot_server <- function(input, output, session,
 
   # On stop button click
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
       if (!isTRUE(local_data$get("is_streaming"))) return()
 
       # Invalidate current token - this causes all in-flight operations
@@ -730,7 +731,7 @@ chatbot_server <- function(input, output, session,
       globals_save_conversation(module_id = module_id, chat = local_chat)
       update_conv_dropdown()
       update_chat_status(status = "ready")
-    }),
+    }, label = "chat: stop button"),
     input[[stop_btn_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
@@ -738,7 +739,7 @@ chatbot_server <- function(input, output, session,
 
   # On changing permission mode
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
       new_mode <- input[[mode_select_id]]
       if (length(new_mode) != 1 || !nzchar(new_mode)) return()
       current_mode(new_mode)
@@ -752,7 +753,7 @@ chatbot_server <- function(input, output, session,
                               module_id = module_id,
                               session = session)
 
-    }),
+    }, label = "chat: agent mode"),
     input[[mode_select_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE
@@ -760,11 +761,11 @@ chatbot_server <- function(input, output, session,
 
   # On changing confirmation policy
   shiny::bindEvent(
-    shiny::observe({
+    safe_observe({
       policy <- input[[confirm_policy_id]]
       if (!length(policy) || !nzchar(policy)) return()
       globals_set_confirmation_policy(module_id = module_id, policy = policy)
-    }),
+    }, label = "chat: confirmation policy"),
     input[[confirm_policy_id]],
     ignoreNULL = TRUE,
     ignoreInit = TRUE

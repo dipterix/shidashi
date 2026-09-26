@@ -191,14 +191,21 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
   # create a tool-generating function
   tool_gen_fun <- function(session) {
 
-    tool_map <- fastmap::fastmap()
+    tool_map <- new_fastmap()
     lapply(tools, function(tool) {
       toolset <- list()
       if (inherits(tool, "ellmer::ToolDef")) {
         toolset <- list(tool)
       } else {
-        # generator
-        toolset <- tool(session = session)
+        # generator; a failing generator must not take the other tools down
+        toolset <- tryCatch(
+          tool(session = session),
+          error = function(e) {
+            warning("A tool generator in module `", module_id, "` failed: ",
+                    conditionMessage(e), call. = FALSE)
+            list()
+          }
+        )
         if (inherits(toolset, "ellmer::ToolDef")) {
           toolset <- list(toolset)
         }
@@ -223,32 +230,43 @@ compile_tools_and_scripts <- function(root_path, module_id, env) {
     })
 
     # ---- Process skill wrappers (Phase 4) ----
+    # Each skill gives `skill_load__<name>` (reads the skill; never changes
+    # anything) and, when it has scripts, `skill_run__<name>`
     lapply(names(skill_wrappers), function(sname) {
       wrapper <- skill_wrappers[[sname]]
-      skill_tool <- tryCatch(
+      skill_tools <- tryCatch(
         wrapper(),
         error = function(e) {
-          warning("Failed to create skill tool '", sname, "': ",
+          warning("Failed to create skill tools '", sname, "': ",
                   conditionMessage(e))
           NULL
         }
       )
-      if (!inherits(skill_tool, "ellmer::ToolDef")) {
-        return()
-      }
       skill_conf <- agent_conf$skills[[sname]]
-      skill_tool@annotations$shidashi_type <- "skill"
-      skill_tool@annotations$shidashi_enabled <- skill_conf$enabled
-      skill_tool@annotations$shidashi_category <- c("skill", as.character(skill_conf$category))
-      skill_tool@annotations$shidashi_module_id <- module_id
-      skill_tool@annotations$shidashi_skill_scripts <- structure(
+      skill_scripts <- structure(
         as.list(skill_conf$scripts),
         names = vapply(skill_conf$scripts, function(x) {
           x[["name"]]
         }, FUN.VALUE = "")
       )
-      skill_tool@name <- sprintf("skill__%s", sname)
-      tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
+      for (role in c("load", "run")) {
+        skill_tool <- skill_tools[[role]]
+        if (!inherits(skill_tool, "ellmer::ToolDef")) {
+          next
+        }
+        skill_tool@annotations$shidashi_type <- sprintf("skill_%s", role)
+        skill_tool@annotations$shidashi_enabled <- skill_conf$enabled
+        skill_tool@annotations$shidashi_category <- if (role == "load") {
+          c("skill", "exploratory")
+        } else {
+          c("skill", as.character(skill_conf$category))
+        }
+        skill_tool@annotations$shidashi_module_id <- module_id
+        if (role == "run") {
+          skill_tool@annotations$shidashi_skill_scripts <- skill_scripts
+        }
+        tool_map$set(skill_tool@name, wrap_tools_with_permissions(tool = skill_tool, session = session))
+      }
     })
 
     tool_map
@@ -278,25 +296,36 @@ wrap_tools_with_permissions <- function(tool, session) {
 
   wrapper_fn <- function(...) {
 
-    agent_mode <- globals_get_agent_mode(module_id = module_id)
+    # Agent modes and the confirmation policy belong to the in-dashboard
+    # chat. An MCP call only respects tools turned off in agents.yaml; the
+    # agent follows the tool's hints and asks the user in its own chat.
+    via_mcp <- mcp_call_active()
 
-    if (identical(agent_mode, "None")) {
-      # Agent mode is None
-      stop("Agent mode is [None]. All tools & skills are disabled")
-    }
+    if (via_mcp) {
+      if (is.null(shidashi_permission) || isFALSE(shidashi_permission)) {
+        stop("This tool is turned off in the module's agents.yaml.")
+      }
+    } else {
+      agent_mode <- globals_get_agent_mode(module_id = module_id)
 
-    if (is.null(shidashi_permission)) {
-      stop("This tool is disabled under current agent permission mode.")
-    }
+      if (identical(agent_mode, "None")) {
+        # Agent mode is None
+        stop("Agent mode is [None]. All tools & skills are disabled")
+      }
 
-    if (
-      !isTRUE(shidashi_permission) &&
-        !agent_mode %in% as.character(unlist(shidashi_permission))
-    ) {
-      stop(
-        "This tool is only enabled under the following agent modes: ",
-        paste(as.character(unlist(shidashi_permission)), collapse = ", ")
-      )
+      if (is.null(shidashi_permission)) {
+        stop("This tool is disabled under current agent permission mode.")
+      }
+
+      if (
+        !isTRUE(shidashi_permission) &&
+          !agent_mode %in% as.character(unlist(shidashi_permission))
+      ) {
+        stop(
+          "This tool is only enabled under the following agent modes: ",
+          paste(as.character(unlist(shidashi_permission)), collapse = ", ")
+        )
+      }
     }
 
     cl <- match.call()
@@ -310,17 +339,25 @@ wrap_tools_with_permissions <- function(tool, session) {
 
     category <- shidashi_category
 
-    # For skill scripts
-    if (length(skill_scripts_permission) > 0 && identical(shidashi_type, "skill") && identical(args$action, "script")) {
+    # For skill scripts: the script's own settings apply on top of the skill's
+    if (length(skill_scripts_permission) > 0 && identical(shidashi_type, "skill_run")) {
       file_name <- args$file_name
       if (length(file_name) == 1 && nzchar(file_name)) {
+        category <- unique(c(
+          category, get_script_category(skill_scripts_permission, file_name)
+        ))
         script_permission <- as.list(skill_scripts_permission[[file_name]])
         if (
           length(script_permission) > 0 &&
           !isTRUE(script_permission$enabled)
         ) {
-          if (isFALSE(script_permission$enabled) ||
-              !isTRUE(agent_mode %in% script_permission$enabled)) {
+          if (via_mcp) {
+            if (is.null(script_permission$enabled) ||
+                isFALSE(script_permission$enabled)) {
+              stop("This script is turned off in the module's agents.yaml.")
+            }
+          } else if (isFALSE(script_permission$enabled) ||
+                     !isTRUE(agent_mode %in% script_permission$enabled)) {
             stop("While skill is permitted, this specific script is disabled under current agent permission mode.")
           }
         }
@@ -330,7 +367,8 @@ wrap_tools_with_permissions <- function(tool, session) {
     # Determine if this specific call is destructive
     needs_confirm <- any(c("destructive", "needs_confirmation") %in% category)
 
-    if (!needs_confirm) {
+    # MCP calls never wait on a dialog in the browser
+    if (via_mcp || !needs_confirm) {
       return(do.call(original_fn, args))
     }
 
@@ -355,8 +393,9 @@ wrap_tools_with_permissions <- function(tool, session) {
     }
 
     # policy == "ask": Ask user for confirmation
-    # Extract short tool name (strip type prefix like "tool__" or "skill__")
-    short_name <- sub("^(tool|skill)__", "", tool_name)
+    # Extract short tool name (strip type prefix like "tool__" or
+    # "skill_run__")
+    short_name <- sub("^(tool|skill_load|skill_run)__", "", tool_name)
 
     confirm_result <- mcp_tool_ask_user(
       arguments = list(

@@ -335,6 +335,40 @@ truc_string <- function(x, max_char, annot = "(truncated)", side = c("end", "beg
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
+# A fastmap with a class. `fastmap::fastmap()` returns an unclassed list, so
+# `inherits(x, "fastmap")` is always FALSE; create every map with
+# `new_fastmap()` and test it with `is_shidashi_fastmap()`.
+new_fastmap <- function(missing_default = NULL) {
+  structure(fastmap::fastmap(missing_default = missing_default),
+            class = "shidashi-fastmap")
+}
+
+is_shidashi_fastmap <- function(x) {
+  inherits(x, "shidashi-fastmap")
+}
+
+# Like `shiny::observe()`, but an error in the body is reported as a warning
+# instead of ending the user's session. `req()` and `validate()` stay silent,
+# as they do in a plain observer. Use it for every observer in the package.
+safe_observe <- function(x, env = parent.frame(), quoted = FALSE, ...,
+                         label = NULL) {
+  if (!quoted) {
+    x <- substitute(x)
+  }
+  where <- label %||% "an observer"
+  on_error <- function(e) {
+    if (!inherits(e, "shiny.silent.error")) {
+      warning(sprintf("[shidashi] %s failed: %s", where, conditionMessage(e)),
+              call. = FALSE)
+    }
+    invisible()
+  }
+  shiny::observe(
+    bquote(tryCatch(.(x), error = .(on_error))),
+    env = env, quoted = TRUE, ..., label = label
+  )
+}
+
 drop_null <- function(x) {
   as.list(x[!vapply(x, is.null, FALSE)])
 }

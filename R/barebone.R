@@ -516,7 +516,7 @@ create_barebone_agents <- function(path) {
       "",
       "### Usage",
       "",
-      "1. Call `action='script'`, `file_name='greet.R'`, `args=['World']`",
+      "1. Call `skill_run__greet` with `file_name='greet.R'`, `args=['World']`",
       "2. The script prints: `Hello, World!`",
       "",
       "### Arguments",
@@ -544,19 +544,29 @@ create_barebone_agents <- function(path) {
   )
 
   # agents/tool-schema.yaml
-  # Pre-listed tool schemas for MCP clients that do not support
-  # dynamic deferred tools.
+  # Optional fallback schemas, used when a module fails to load while the
+  # MCP tool list is built.
   writeLines(
     c(
       "# agents/tool-schema.yaml",
       "#",
-      "# Pre-listed tool schemas for MCP clients that do not support",
-      "# dynamic deferred tools. These schemas are advertised in `tools/list`",
-      "# even before a Shiny session is bound. Calling the tools still",
-      "# requires a bound session.",
+      "# Optional settings for AI agents that use this app through MCP.",
       "#",
-      "# Skills (agents/skills/) are auto-discovered and do NOT need to be",
-      "# listed here.",
+      "# `welcome`: a short text telling agents what the app is for. Agents",
+      "# see it in the `shidashi_sessions` tool.",
+      "#",
+      "# `tools`: optional fallback schemas for the MCP tool list.",
+      "#",
+      "# shidashi builds the MCP tool list by loading each module's tools",
+      "# without a browser, so most tools need no entry here. A schema listed",
+      "# here is used only when a module that lists the tool in its",
+      "# agents.yaml fails to load (for example, because a package it needs",
+      "# is not installed).",
+      "#",
+      "# Skills (agents/skills/) are discovered automatically and do NOT need",
+      "# to be listed here.",
+      "",
+      "welcome: \"A shidashi dashboard. Describe what this app is for here.\"",
       "",
       "tools:",
       "- name: hello_world",

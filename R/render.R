@@ -12,6 +12,7 @@
 #' @param prelaunch expression to execute before launching the session; the
 #' expression will execute in a brand new session
 #' @param prelaunch_quoted whether the expression is quoted; default is false
+#' @param server_name server name to show in the \verb{MCP} route
 #' @return This functions runs a 'shiny' application, and returns the job id
 #' if 'RStudio' is available.
 #'
@@ -31,7 +32,8 @@ render <- function(
   prelaunch_quoted = FALSE,
   launch_browser = TRUE,
   as_job = TRUE,
-  test_mode = getOption("shiny.testmode", FALSE)
+  test_mode = getOption("shiny.testmode", FALSE),
+  server_name = "shidashi"
 ) {
   if (!dir.exists(root_path)) {
     stop("`root_path` cannot be found: ", root_path)
@@ -49,9 +51,11 @@ render <- function(
     mcp_port <- httpuv::randomPort()
   }
   dots[["port"]] <- mcp_port
+  mcp_host <- dots[["host"]] %||% getOption("shiny.host", "127.0.0.1")
 
-  # Write port record and keep proxy up-to-date in user cache.
-  setup_mcp_proxy(port = mcp_port, overwrite = TRUE, verbose = FALSE)
+  # Keep the MCP proxy up-to-date in user cache. The app process itself
+  # announces its port to the proxy (see register_mcp_route).
+  setup_mcp_proxy(overwrite = TRUE, verbose = FALSE)
 
   # Copy global.R from inst/ so that shinyAppDir sources it at startup.
   # global.R calls shidashi::init_app() to create per-application state.
@@ -79,7 +83,9 @@ render <- function(
 
     # Use shinyAppDir so that ui.R / server.R are loaded normally, then
     # chain the MCP handler in front of Shiny's built-in httpHandler.
-    app <- register_mcp_route(shiny::shinyAppDir(root_path))
+    app <- register_mcp_route(shiny::shinyAppDir(root_path),
+                              port = mcp_port, appdir = root_path,
+                              host = mcp_host, server_name = server_name)
     do.call(shiny::runApp, c(
       list(appDir = app, launch.browser = launch_browser, test.mode = test_mode),
       dots
@@ -102,7 +108,10 @@ render <- function(
       'options("crayon.colors" = 256)\n',
       deparse(prelaunch),
       "\n",
-      sprintf("app <- shidashi:::register_mcp_route(shiny::shinyAppDir(\"%s\"))", root_path),
+      sprintf(
+        "app <- shidashi:::register_mcp_route(shiny::shinyAppDir(\"%s\"), port = %d, appdir = \"%s\", host = \"%s\", server_name = \"%s\")",
+        root_path, as.integer(mcp_port), root_path, mcp_host, server_name
+      ),
       deparse(run_call)
     )
     writeLines(

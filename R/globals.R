@@ -62,17 +62,17 @@ init_app <- function(env = parent.frame()) {
   }
 
   # Persist shiny sessions
-  if (!inherits(global_env$session_registry, "fastmap")) {
-    global_env$session_registry <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$session_registry)) {
+    global_env$session_registry <- new_fastmap()
   }
 
   # For MCP to query input and outputs
-  if (!inherits(global_env$module_input_registry, "fastmap")) {
-    global_env$module_input_registry <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$module_input_registry)) {
+    global_env$module_input_registry <- new_fastmap()
   }
 
-  if (!inherits(global_env$module_output_registry, "fastmap")) {
-    global_env$module_output_registry <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$module_output_registry)) {
+    global_env$module_output_registry <- new_fastmap()
   }
 
   # Chatbot: per-module conversation history
@@ -80,20 +80,20 @@ init_app <- function(env = parent.frame()) {
 
   # module_id -> list(active_idx, conversations)
   # Each conversation: list(title, turns, last_visited)
-  if (!inherits(global_env$module_conversations, "fastmap")) {
-    global_env$module_conversations <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$module_conversations)) {
+    global_env$module_conversations <- new_fastmap()
   }
 
   # Phase 7: per-module agent mode state
   # module_id -> list(current_mode, modes, default_mode)
-  if (!inherits(global_env$module_agent_modes, "fastmap")) {
-    global_env$module_agent_modes <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$module_agent_modes)) {
+    global_env$module_agent_modes <- new_fastmap()
   }
 
   # Per-module confirmation policy for destructive tools
   # module_id -> "auto_allow" | "ask" | "auto_reject"
-  if (!inherits(global_env$module_confirmation_policy, "fastmap")) {
-    global_env$module_confirmation_policy <- fastmap::fastmap()
+  if (!is_shidashi_fastmap(global_env$module_confirmation_policy)) {
+    global_env$module_confirmation_policy <- new_fastmap()
   }
 
   set_shidashi_globals(global_env)
@@ -135,7 +135,7 @@ globals_get_module_input_specs <- function(module_id) {
   }
 
   if (!global_env$module_input_registry$has(module_id)) {
-    global_env$module_input_registry$set(module_id, fastmap::fastmap())
+    global_env$module_input_registry$set(module_id, new_fastmap())
   }
 
   global_env$module_input_registry$get(module_id)
@@ -151,7 +151,7 @@ globals_get_module_output_specs <- function(module_id) {
   }
 
   if (!global_env$module_output_registry$has(module_id)) {
-    global_env$module_output_registry$set(module_id, fastmap::fastmap())
+    global_env$module_output_registry$set(module_id, new_fastmap())
   }
 
   global_env$module_output_registry$get(module_id)
@@ -388,19 +388,26 @@ register_session <- function(session) {
                             default = tolower(rand_string(length = 26)))
     }
 
+    # MCP state: when the user last used this session, and whether the user
+    # pinned it as the module for agent tool calls (see mcp-module.R). An
+    # environment, so every copy of the entry shares it.
+    activity <- new.env(parent = emptyenv())
+    activity$focused_at <- NULL
+    activity$pinned <- FALSE
+
     entry <- list(
       shiny_session      = session,
       shidashi_module_id = NULL,
-      mcp_session_ids    = character(),
+      activity           = activity,
       namespace          = namespace,
       url                = url,
       registered_at      = Sys.time(),
-      tools              = fastmap::fastmap(),
-      output_renderers   = fastmap::fastmap(),
+      tools              = new_fastmap(),
+      output_renderers   = new_fastmap(),
       shared_id          = shared_id,
       events             = shiny::reactiveValues(),
       inputs             = shiny::reactiveValues(),
-      handlers           = fastmap::fastmap()
+      handlers           = new_fastmap()
     )
     message("Registered session token: ", token)
   } else {
@@ -416,13 +423,13 @@ register_session <- function(session) {
     root_session <- session$rootScope()
 
     entry$handlers$set("event_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         event <- root_session$input[["@shidashi_event@"]]
         if (!length(event) || !is.list(event)) { return() }
         if (length(event$type) != 1 || is.na(event$type) || !is.character(event$type)) { return() }
         if (!nzchar(event$type)) { return() }
         entry$events[[event$type]] <- event$message
-      }, domain = root_session),
+      }, domain = root_session, label = "session events"),
       root_session$input[["@shidashi_event@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE
     ))
@@ -434,7 +441,7 @@ register_session <- function(session) {
     root_session <- session$rootScope()
 
     entry$handlers$set("theme_handler", shiny::bindEvent(
-      shiny::observe(
+      safe_observe(
         {
           tryCatch(
             {
@@ -460,7 +467,8 @@ register_session <- function(session) {
         domain = root_session,
 
         # Set priority = 1 before rendering
-        priority = 1L
+        priority = 1L,
+        label = "theme update"
       ),
       entry$events[["theme.changed"]],
       ignoreNULL = TRUE, ignoreInit = TRUE
@@ -469,9 +477,37 @@ register_session <- function(session) {
     session$sendCustomMessage("shidashi.get_theme", list())
   }
 
+  # MCP: the browser reports when the user uses this session, and when the
+  # user pins or unpins it as the module for agent tool calls
+  if (!entry$handlers$has("focus_handler")) {
+    root_session <- session$rootScope()
+    activity <- entry$activity
+    entry$handlers$set("focus_handler", shiny::bindEvent(
+      safe_observe({
+        activity$focused_at <- Sys.time()
+      }, domain = root_session, label = "MCP focus report"),
+      root_session$input[["@shidashi_focus@"]],
+      ignoreNULL = TRUE, ignoreInit = FALSE
+    ))
+  }
+
+  if (!entry$handlers$has("pin_handler")) {
+    root_session <- session$rootScope()
+    entry$handlers$set("pin_handler", shiny::bindEvent(
+      safe_observe({
+        mcp_set_pin(
+          token = token,
+          pinned = isTRUE(root_session$input[["@shidashi_ai_pin@"]])
+        )
+      }, domain = root_session, label = "MCP pin toggle"),
+      root_session$input[["@shidashi_ai_pin@"]],
+      ignoreNULL = TRUE, ignoreInit = FALSE
+    ))
+  }
+
   # broadcast_handler — stored in session's registry entry handlers
   if (!entry$handlers$has("broadcast_handler")) {
-    entry$handlers$set("broadcast_handler", shiny::observe(
+    entry$handlers$set("broadcast_handler", safe_observe(
       {
         inputs <- shiny::reactiveValuesToList(session$input)
         nms <- names(inputs)
@@ -496,14 +532,15 @@ register_session <- function(session) {
       },
       domain = session,
       priority = -100000,
-      suspended = TRUE
+      suspended = TRUE,
+      label = "input broadcast"
     ))
   }
 
   if (!entry$handlers$has("input_sync_handler")) {
     root_session <- session$rootScope()
     entry$handlers$set("input_sync_handler", shiny::bindEvent(
-      shiny::observe({
+      safe_observe({
         try(
           silent = TRUE,
           {
@@ -534,7 +571,7 @@ register_session <- function(session) {
             })
           }
         )
-      }, suspended = TRUE, domain = root_session, priority = -100000),
+      }, suspended = TRUE, domain = root_session, priority = -100000, label = "input sync"),
       root_session$input[["@shidashi@"]],
       ignoreNULL = TRUE, ignoreInit = TRUE
     ))

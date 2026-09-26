@@ -180,6 +180,13 @@ export class IFrameManager {
       window.shidashi._reportActiveModule(moduleId);
     }
 
+    // Tell the module page it is in front, so AI agent tool calls go there
+    try {
+      entry.iframe.contentWindow?.postMessage(
+        { type: 'shidashi.module_activated' }, window.location.origin
+      );
+    } catch (e) { /* cross-origin safety */ }
+
     // Trigger resize for Shiny outputs inside the iframe
     try {
       const iframe = entry.iframe;
