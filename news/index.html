@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,6 +36,27 @@
 <h2 class="pkg-version" data-toc-text="0.2.1" id="shidashi-021">shidashi 0.2.1<a class="anchor" aria-label="anchor" href="#shidashi-021"></a></h2>
 <ul><li>Added a color picker widget using vanilla <code>shiny</code> select input;</li>
 <li>Added base theme for plots and viewers that are registered output, such as <code>plotOutput2</code>;</li>
+<li>Redesigned the <code>MCP</code> endpoint so agents such as <code>Claude Code</code> can drive the dashboard without session binding:
+<ul><li>the tool list is built from the template on disk (each module’s tools load once without a browser), so it is available before any browser opens and never changes while an agent is connected; tools from modules that fail to load fall back to <code>agents/tool-schema.yaml</code>
+</li>
+<li>each tool call runs in a module chosen on the spot: the module named by the optional <code>_module</code> argument, else the module tab the user pinned with the new pin button, else the one the user used most recently; results end with a note naming the module</li>
+<li>removed the <code>list_shinysessions</code>, <code>register_shinysession</code>, <code>get_session_info</code>, and <code>ask_user</code> <code>MCP</code> tools; added <code>shidashi_sessions</code> (open modules and the default one) and <code>shidashi_call</code> (tools that exist only in live sessions)</li>
+<li>the server no longer issues <code>Mcp-Session-Id</code>; <code>/mcp/{module}</code> limits a connection to one module (a module id or a handle)</li>
+<li>agent modes and the confirmation policy apply only to the in-dashboard chat; over <code>MCP</code>, tools carry <code>readOnlyHint</code> and <code>destructiveHint</code> annotations and a note, and the agent asks the user in its own chat, never in the browser; tools turned off in <code>agents.yaml</code> stay off</li>
+<li>the stdio proxy picks up apps from per-app records, follows an app across restarts, accepts <code>--app</code> and <code>--module</code>, and always replies to a request</li>
+<li>the stdio proxy works without a running app: it connects, lists the tools it can, and tells the agent to ask the user whether to start an app or launch a saved one</li>
+<li>the stdio proxy can attach to a shidashi app at any address for the current session (<code>shidashi_connect</code>, <code>shidashi_disconnect</code>); its tool list follows the attached app, and <code>shidashi_tools</code> lists the app’s tools for clients that do not refresh their tool list</li>
+<li>module handles always carry the session token prefix (<code>&lt;module&gt;@&lt;token&gt;</code>), so a handle stays the same when the user opens the module again in another tab</li>
+</ul></li>
+<li>Each skill is now two tools: <code>skill_load__&lt;name&gt;</code> reads the instructions and reference files and never changes anything, and <code>skill_run__&lt;name&gt;</code> runs the scripts; <code><a href="../reference/skill_wrapper.html">skill_wrapper()</a></code> returns both (<code>load</code>, <code>run</code>); in the dashboard chat, a script marked destructive in <code>agents.yaml</code> now asks for confirmation</li>
+<li>Skill scripts document their arguments in a <code># Usage:</code> header comment; <code>skill_run__&lt;name&gt;</code> lists each script’s usage and refuses a call that leaves out a required argument; files in <code>scripts/</code> whose names start with <code>_</code> are helpers, not scripts</li>
+<li>Added <code><a href="../reference/save_launcher.html">save_launcher()</a></code> and <code><a href="../reference/save_launcher.html">run_launcher()</a></code>: saved apps are kept in one <code>launchers.json</code> file in the <code>shidashi</code> cache folder, optionally with a copy of the app (<code>copy_app = TRUE</code>) and free-form metadata; the <code>MCP</code> proxy lists saved apps (<code>shidashi_launchers</code>) and, when the user picks one, starts it and opens the chosen module in the browser (<code>shidashi_launch</code>)</li>
+<li>
+<code>shiny_query_ui</code> now returns the element’s HTML or image in one call; <code>shiny_query_ui_result</code> is removed; <code>transform_image = FALSE</code> asks for HTML only, and long HTML is trimmed (image data and scripts shortened, <code>max_chars</code> sets the limit)</li>
+<li>Added the <code>shiny_output_result</code> <code>MCP</code> tool: it returns a registered output’s rendered content even when the output is in a hidden tab or a collapsed card, rendering it first (waiting up to 10 seconds; option <code>shidashi.output_result_timeout</code>); a plot that was never shown is drawn at a fallback size; <code>shiny_query_ui</code> notes when an element is not shown or shows an error</li>
+<li>Added <code><a href="../reference/render_hidden_output.html">render_hidden_output()</a></code>, which renders one output at the next flush even when it is hidden, then restores <code>suspendWhenHidden</code>
+</li>
+<li>Errors inside <code>shidashi</code>’s own observers are reported as warnings instead of ending the user’s session</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="shidashi-020">shidashi 0.2.0<a class="anchor" aria-label="anchor" href="#shidashi-020"></a></h2><p class="text-muted">CRAN release: 2026-04-10</p>

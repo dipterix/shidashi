@@ -1,24 +1,20 @@
-# Wrap a Skill Directory as an `MCP` Tool Generator
+# Wrap a Skill Directory as `MCP` Tool Generators
 
-Creates a closure that produces an
+Creates a closure that produces two
 [`ellmer::tool`](https://ellmer.tidyverse.org/reference/tool.html)
-dispatching on an `action` enumerator:
+objects for a skill:
 
-- `readme`:
+- `skill_load__<name>`:
 
-  Returns the full `SKILL.md` instructions. Must be called first to
-  unlock other actions.
+  Reads the skill. Its `action` argument is `readme` (the full
+  `SKILL.md` instructions, the default) or `reference` (content from a
+  reference file in the skill directory). It never changes anything.
 
-- `reference`:
-
-  Returns content from a reference file in the skill directory (gated
-  behind `readme`).
-
-- `script`:
+- `skill_run__<name>`:
 
   Executes a script in the `scripts/` subdirectory via
-  [`processx::run()`](http://processx.r-lib.org/reference/run.md) (gated
-  behind `readme`).
+  [`processx::run()`](http://processx.r-lib.org/reference/run.md). Only
+  created when the skill has scripts.
 
 ## Usage
 
@@ -36,20 +32,22 @@ skill_wrapper(skill_path)
 ## Value
 
 A function with class `c("shidashi_skill_wrapper", "function")` that
-returns an
-[`ellmer::ToolDef`](https://ellmer.tidyverse.org/reference/ToolDef.html)
-object.
+returns a list with elements `load` (an
+[`ellmer::ToolDef`](https://ellmer.tidyverse.org/reference/ToolDef.html))
+and `run` (an
+[`ellmer::ToolDef`](https://ellmer.tidyverse.org/reference/ToolDef.html),
+or `NULL` when the skill has no scripts).
 
 ## Details
 
-The returned tool enforces a soft gate: calling `reference` or `script`
-before `readme` is allowed, but if the call errors the message is
+The two tools share a soft gate: reading a reference or running a script
+before the `readme` is allowed, but if the call errors the message is
 augmented with a condensed summary (~200 tokens) instructing the AI to
 read the full instructions first. This minimizes token waste (the
 summary is only sent on failure).
 
-The gate state is per-instance: each call to the wrapper produces a
-closure with an independent `readme_unlocked` flag.
+The gate state is per-instance: each call to the wrapper produces a pair
+of tools with an independent `readme_unlocked` flag.
 
 ## Examples
 
@@ -58,9 +56,9 @@ skill_dir <- system.file(
   "builtin-templates/bslib-bare/agents/skills/greet",
   package = "shidashi"
 )
-wrapper  <- skill_wrapper(skill_dir)
-tool_def <- wrapper()
-cat(tool_def(action = "readme"))
+wrapper <- skill_wrapper(skill_dir)
+tools <- wrapper()
+cat(tools$load(action = "readme"))
 #> ## Instructions
 #> 
 #> This skill demonstrates the skill system. It runs a short R script
@@ -68,7 +66,7 @@ cat(tool_def(action = "readme"))
 #> 
 #> ### Usage
 #> 
-#> 1. Call `action='script'`, `file_name='greet.R'`, `args=['World']`
+#> 1. Call `skill_run__greet` with `file_name='greet.R'`, `args=['World']`
 #> 2. The script prints: `Hello, World!`
 #> 
 #> ### Arguments
@@ -76,5 +74,6 @@ cat(tool_def(action = "readme"))
 #> - `args[1]`: The name to greet (default: `"World"`)
 #> 
 #> ## Available scripts
-#> - greet.R
+#> Run them with `skill_run__greet`: `file_name` is the script, and `args` holds its arguments, one item per argument (`<x>` required, `[x]` optional).
+#> - greet.R [name]
 ```

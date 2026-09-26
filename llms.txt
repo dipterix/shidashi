@@ -258,8 +258,15 @@ repository](https://github.com/dipterix/shidashi-templates/).
 - [`renderStreamViz()`](https://dipterix.org/shidashi/reference/renderStreamViz.md)
   : Render a streaming widget
 
+- [`render_hidden_output()`](https://dipterix.org/shidashi/reference/render_hidden_output.md)
+  : Render an Output Even When It Is Hidden
+
 - [`reset_output()`](https://dipterix.org/shidashi/reference/reset_output.md)
   : Reset shiny outputs with messages
+
+- [`save_launcher()`](https://dipterix.org/shidashi/reference/save_launcher.md)
+  [`run_launcher()`](https://dipterix.org/shidashi/reference/save_launcher.md)
+  : Save and start 'shidashi' apps for AI agents
 
 - [`shiny_progress()`](https://dipterix.org/shidashi/reference/shiny_progress.md)
   : Wrapper of shiny progress that can run without shiny
@@ -270,7 +277,7 @@ repository](https://github.com/dipterix/shidashi-templates/).
 - [`skill_wrapper()`](https://dipterix.org/shidashi/reference/skill_wrapper.md)
   :
 
-  Wrap a Skill Directory as an `MCP` Tool Generator
+  Wrap a Skill Directory as `MCP` Tool Generators
 
 - [`streamVizOutput()`](https://dipterix.org/shidashi/reference/streamVizOutput.md)
   : Output placeholder for a streaming visualization widget

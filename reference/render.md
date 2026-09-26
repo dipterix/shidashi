@@ -12,7 +12,8 @@ render(
   prelaunch_quoted = FALSE,
   launch_browser = TRUE,
   as_job = TRUE,
-  test_mode = getOption("shiny.testmode", FALSE)
+  test_mode = getOption("shiny.testmode", FALSE),
+  server_name = "shidashi"
 )
 ```
 
@@ -51,6 +52,10 @@ render(
 
   whether to test the project; this options is helpful when you want to
   debug the project without relaunching shiny applications
+
+- server_name:
+
+  server name to show in the `MCP` route
 
 ## Value
 

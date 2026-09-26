@@ -189,7 +189,7 @@ module_info()
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x56198e585c38>
+#> <environment: 0x55e614147798>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -208,8 +208,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x56198ed5fd60>
-#> <environment: 0x56198ed60e10>
+#> <bytecode: 0x55e614908268>
+#> <environment: 0x55e614909318>
 #> 
 #> $module$template_path
 #> NULL
