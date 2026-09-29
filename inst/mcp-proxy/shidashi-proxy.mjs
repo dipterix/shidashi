@@ -12,8 +12,11 @@
  *   node mcp-proxy.mjs [--app <app_id | app directory>] [--module <module>]
  *   node mcp-proxy.mjs <url | port>
  *
- * Files written by R. This script lives in `<cache>/mcp_server/`, where
- * `<cache>` is the shidashi cache folder:
+ * Files written by R, in the shidashi cache folder `<cache>`: the
+ * environment variable SHIDASHI_CACHE_DIR; else the folder above this
+ * script when it is the copy in `<cache>/mcp_server/` made by
+ * setup_mcp_proxy(); else tools::R_user_dir("shidashi", "cache") (the
+ * case when this script runs from a Claude plugin):
  *   <cache>/launchers.json            apps saved with shidashi::save_launcher()
  *   <cache>/mcp_server/apps/<id>.json one per running app:
  *                                     {app_id, appdir, host, port, pid, started}
@@ -51,18 +54,41 @@
 import http from 'http';
 import https from 'https';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import readline from 'readline';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const APPS_DIR = path.join(__dirname, 'apps');
-// The shidashi cache folder: saved launchers and app copies live here
-const CACHE_DIR = path.dirname(__dirname);
+
+// The shidashi cache folder: saved launchers, app copies, and `mcp_server/`.
+// An empty variable counts as unset, as in R.
+function resolveCacheDir() {
+  const env = (name) => process.env[name] || '';
+  if (env('SHIDASHI_CACHE_DIR')) return env('SHIDASHI_CACHE_DIR');
+  // A copy installed by setup_mcp_proxy() sits in `<cache>/mcp_server/`
+  if (path.basename(__dirname) === 'mcp_server') return path.dirname(__dirname);
+  // Otherwise (e.g. a Claude plugin): tools::R_user_dir("shidashi", "cache")
+  let base = env('R_USER_CACHE_DIR') || env('XDG_CACHE_HOME');
+  if (!base) {
+    if (process.platform === 'win32') {
+      base = path.join(env('LOCALAPPDATA'), 'R', 'cache');
+    } else if (process.platform === 'darwin') {
+      base = path.join(os.homedir(), 'Library', 'Caches', 'org.R-project.R');
+    } else {
+      base = path.join(os.homedir(), '.cache');
+    }
+  }
+  return path.join(base, 'R', 'shidashi');
+}
+
+const CACHE_DIR = resolveCacheDir();
+const SERVER_DIR = path.join(CACHE_DIR, 'mcp_server');
+const APPS_DIR = path.join(SERVER_DIR, 'apps');
 const LAUNCHERS_PATH = path.join(CACHE_DIR, 'launchers.json');
-const LOGS_DIR = path.join(__dirname, 'logs');
-const META_PATH = path.join(__dirname, 'proxy-meta.json');
+const LOGS_DIR = path.join(SERVER_DIR, 'logs');
+const META_PATH = path.join(SERVER_DIR, 'proxy-meta.json');
 const PROTOCOL_VERSION = '2025-03-26';
 const LAUNCH_TIMEOUT_MS = 40000;
 
@@ -124,6 +150,10 @@ if (DIRECT) log(`Connecting directly to ${DIRECT.label}`);
 // What the proxy knows without an app: meta tools (from R) and its own tools
 // ---------------------------------------------------------------------------
 
+// Read on every use: R rewrites the file whenever an app starts, which may
+// be after this proxy started
+let metaMissingLogged = false;
+
 function loadMeta() {
   try {
     const meta = JSON.parse(fs.readFileSync(META_PATH, 'utf8'));
@@ -132,12 +162,14 @@ function loadMeta() {
       tools: Array.isArray(meta.tools) ? meta.tools : [],
     };
   } catch {
-    log('proxy-meta.json not found; run shidashi:::setup_mcp_proxy() in R');
+    if (!metaMissingLogged) {
+      metaMissingLogged = true;
+      log(`${META_PATH} not found; start a shidashi app once ` +
+          '(shidashi::render()) to create it');
+    }
     return { instructions: '', tools: [] };
   }
 }
-
-const META = loadMeta();
 
 const PROXY_INSTRUCTIONS =
   'If a tool says that no shidashi app is running, stop and ask the user ' +
@@ -571,7 +603,7 @@ function initializeResult() {
     protocolVersion: PROTOCOL_VERSION,
     capabilities: { tools: { listChanged: true } },
     serverInfo: { name: 'shidashi', version: '1.0.0' },
-    instructions: [META.instructions, PROXY_INSTRUCTIONS]
+    instructions: [loadMeta().instructions, PROXY_INSTRUCTIONS]
       .filter(Boolean).join('\n\n'),
   };
 }
@@ -996,7 +1028,7 @@ async function handle(request, body) {
       });
     }
     listedFrom = 'offline';
-    return reply(id, { tools: [...META.tools, ...PROXY_TOOLS] });
+    return reply(id, { tools: [...loadMeta().tools, ...PROXY_TOOLS] });
   }
 
   if (method === 'tools/call') {
@@ -1024,7 +1056,11 @@ let pending = 0;
 let inputClosed = false;
 
 function exitWhenIdle() {
-  if (inputClosed && pending === 0) process.exit(0);
+  if (inputClosed && pending === 0) {
+    // Exit once the replies are flushed: writes to a pipe are asynchronous
+    // on macOS, so exiting right away can cut off the last reply
+    process.stdout.write('', () => process.exit(0));
+  }
 }
 
 rl.on('line', async (line) => {

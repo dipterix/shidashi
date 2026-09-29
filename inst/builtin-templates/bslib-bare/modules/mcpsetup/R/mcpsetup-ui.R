@@ -13,13 +13,38 @@ ui_quick_start <- function() {
       tags$div(
         class = "alert alert-info",
         tags$strong("2-Minute Setup: "),
-        "Run one command in R, paste config into VS Code, done!"
+        "Claude users install the shidashi plugin. For other MCP clients, ",
+        "run one command in R and paste the config into VS Code."
+      )
+    ),
+    column(
+      width = 12L,
+      card(
+        title = "Claude Code or Claude Desktop: install the plugin",
+        tags$p("In Claude Code, run:"),
+        tags$pre(
+          class = "bg-gray-90 pre-compact",
+          tags$code(
+"/plugin marketplace add dipterix/shidashi
+/plugin install shidashi@shidashi"
+          )
+        ),
+        tags$p(
+          "In Claude Desktop, open ", tags$strong("Customize > Plugins > Add > Add marketplace"),
+          ", enter ", tags$code("dipterix/shidashi"), ", then install ",
+          tags$strong("shidashi"), "."
+        ),
+        tags$p(
+          class = "mb-0",
+          "The plugin needs Node.js 18 or newer. Then skip to ",
+          tags$strong("3. Test It"), "."
+        )
       )
     ),
     column(
       width = 6L,
       card(
-        title = "1. Run in R Console",
+        title = "1. Other clients: run in R Console",
         tags$pre(
           class = "bg-gray-90 pre-compact",
           tags$code(
@@ -55,7 +80,7 @@ ui_quick_start <- function() {
           tags$li("Start your shidashi app: ", tags$code("shidashi::render()")),
           tags$li("Open a module with AI agents (e.g. AI Agent Demo) in your browser"),
           tags$li(
-            "In VS Code Copilot Chat, ask: ",
+            "In Claude or VS Code Copilot Chat, ask: ",
             tags$em("\"Use the hello_world tool to greet me\"")
           ),
           tags$li(
@@ -95,7 +120,8 @@ ui_details <- function() {
        |
        | stdio (JSON-RPC)
        v
-  mcp-proxy.mjs        (Node.js proxy)
+  shidashi proxy       (Node.js; the Claude plugin
+       |                or mcp-proxy.mjs in the cache)
        |
        | HTTP
        v

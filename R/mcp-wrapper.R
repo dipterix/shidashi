@@ -115,7 +115,12 @@ setup_mcp_proxy <- function(overwrite = TRUE, verbose = TRUE) {
       "}"
     )
     message(
-      "\nPaste the following into your .vscode/mcp.json",
+      "\nClaude Code: install the shidashi plugin (no settings to edit):\n",
+      "  /plugin marketplace add dipterix/shidashi\n",
+      "  /plugin install shidashi@shidashi\n",
+      "Claude Desktop: Customize > Plugins > Add > Add marketplace, enter ",
+      "dipterix/shidashi, then install shidashi.\n",
+      "\nOther MCP clients: paste the following into your .vscode/mcp.json",
       " (or equivalent MCP settings):\n\n",
       snippet,
       "\n\nThe proxy connects to the most recently started shidashi app and ",

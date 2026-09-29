@@ -26,3 +26,6 @@ node_modules$
 ^TODO.*\.md$
 inst/builtin-templates/[^/\\]+/www/stream$
 ^\.lintr$
+^\.claude-plugin$
+^inst/mcp-proxy/\.claude-plugin$
+^inst/mcp-proxy/\.mcp\.json$

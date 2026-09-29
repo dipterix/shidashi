@@ -1,0 +1,12 @@
+{
+  "name": "shidashi",
+  "displayName": "shidashi",
+  "version": "0.2.0.6",
+  "description": "Drive shidashi dashboards from Claude: read and set inputs, read outputs, and run each module's tools in the Shiny apps you open with the shidashi R package, or launch your saved apps.",
+  "author": {
+    "name": "dipterix"
+  },
+  "homepage": "https://dipterix.org/shidashi/",
+  "repository": "https://github.com/dipterix/shidashi",
+  "license": "MIT"
+}

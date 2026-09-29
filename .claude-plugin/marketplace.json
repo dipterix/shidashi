@@ -1,0 +1,14 @@
+{
+  "name": "shidashi",
+  "description": "Claude Plugins for R-shidashi Dashboards",
+  "owner": {
+    "name": "dipterix"
+  },
+  "plugins": [
+    {
+      "name": "shidashi",
+      "source": "./inst/mcp-proxy",
+      "description": "Drive shidashi dashboards (Shiny apps built with the shidashi R package) from Claude"
+    }
+  ]
+}
