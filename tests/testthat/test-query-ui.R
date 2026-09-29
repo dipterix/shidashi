@@ -394,6 +394,112 @@ test_that("shiny_output_result gives up in time and restores the option", {
   expect_true(restored)
 })
 
+# Runs `shiny_output_result` for `summary`, stored with `renderer` in the
+# session registry, until the browser answers with `answer`
+output_result_with <- function(renderer, answer = list(html = "<p>page 1</p>"),
+                               max_chars = NULL, env = parent.frame()) {
+  renderers <- new_fastmap()
+  renderers$set("summary", renderer)
+  local_mocked_bindings(
+    get_session_entry = function(token) list(output_renderers = renderers),
+    .env = env
+  )
+  local_request_ids(env = env)
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_output_result(outputId = "summary", max_chars = max_chars)
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", type = "prepared"
+  ))
+  later::run_now()
+  session$flushReact()
+  session$setInputs(`@shiny_query_ui_result@` = c(list(request_id = "req2"),
+                                                   answer))
+  wait_for_promise(p)
+}
+
+fake_widget_renderer <- function(render_expr) {
+  list(render_expr = render_expr, render_env = globalenv(),
+       download_type = "htmlwidget")
+}
+
+test_that("shiny_output_result adds a widget's full data", {
+  result <- output_result_with(fake_widget_renderer(quote(structure(
+    list(x = list(data = data.frame(a = 1:30))),
+    class = c("mywidget", "htmlwidget")
+  ))))
+  expect_length(result, 2)
+  expect_identical(result[[1]]@text, "<p>page 1</p>")
+  data_text <- result[[2]]@text
+  expect_match(data_text, "Full data of this widget")
+  expect_match(data_text, "mywidget")
+  expect_match(data_text, "30 +30")   # all rows, not one page
+})
+
+test_that("shiny_output_result adds a widget's data after its picture", {
+  result <- output_result_with(
+    fake_widget_renderer(quote(data.frame(a = 1:3))),
+    answer = list(image_data = "iVBORw0KGgo=", image_type = "image/png")
+  )
+  expect_length(result, 2)
+  expect_true(inherits(result[[1]], "ellmer::ContentImageInline"))
+  expect_match(result[[2]]@text, "data.frame")
+})
+
+test_that("shiny_output_result still answers when the widget data fails", {
+  result <- output_result_with(fake_widget_renderer(
+    quote(shiny::validate(shiny::need(FALSE, "Build the table first")))
+  ))
+  expect_identical(result[[1]]@text, "<p>page 1</p>")
+  expect_match(result[[2]]@text,
+               "Could not get the data: Build the table first")
+})
+
+test_that("shiny_output_result trims long widget data at a line break", {
+  result <- output_result_with(
+    fake_widget_renderer(quote(data.frame(a = 1:500))),
+    max_chars = 300
+  )
+  data_text <- result[[2]]@text
+  expect_match(data_text, "trimmed: showing \\d+ of \\d+ characters")
+  kept <- sub("^[^\n]*\n", "", sub("\n\\[shidashi\\] trimmed.*$", "", data_text))
+  expect_lte(nchar(kept), 300)
+  expect_match(kept, "[0-9]$")   # ends with a whole row
+})
+
+test_that("shiny_output_result adds what a data output downloads", {
+  written_to <- NULL
+  result <- output_result_with(list(
+    download_type = "data", extension = "csv",
+    download_function = function(con) {
+      written_to <<- con
+      utils::write.csv(data.frame(a = 1:3), con, row.names = FALSE)
+    }
+  ))
+  expect_match(written_to, "\\.csv$")
+  expect_false(file.exists(written_to))
+  expect_identical(result[[1]]@text, "<p>page 1</p>")
+  expect_match(result[[2]]@text, "as its download button saves it")
+  expect_match(result[[2]]@text, "\"a\"\r?\n1\r?\n2\r?\n3")
+})
+
+test_that("shiny_output_result does not show binary downloads", {
+  result <- output_result_with(list(
+    download_type = "data",
+    download_function = function(con) writeBin(as.raw(c(1, 0, 2)), con)
+  ))
+  expect_match(result[[2]]@text, "binary file of 3 bytes")
+})
+
+test_that("shiny_output_result adds nothing for other download types", {
+  result <- output_result_with(list(
+    download_type = "no-download", render_expr = quote(stop("not evaluated")),
+    render_env = globalenv()
+  ))
+  expect_identical(result, "<p>page 1</p>")
+})
+
 test_that("shiny_query_ui points to shiny_output_result for an unshown element", {
   local_request_ids()
   session <- shiny::MockShinySession$new()

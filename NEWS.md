@@ -60,7 +60,11 @@
   collapsed card, rendering it first (waiting up to 10 seconds; option
   `shidashi.output_result_timeout`); a plot that was never shown is drawn
   at a fallback size; `shiny_query_ui` notes when an element is not shown
-  or shows an error
+  or shows an error; outputs registered with `download_type = "htmlwidget"`
+  also return the widget's data (`x`), since a widget such as a `DT` table
+  shows only one page of it, and outputs registered with
+  `download_type = "data"` also return what `download_function` writes;
+  both are trimmed by `max_chars`
 * Added `render_hidden_output()`, which renders one output at the next
   flush even when it is hidden, then restores `suspendWhenHidden`
 * Errors inside `shidashi`'s own observers are reported as warnings instead

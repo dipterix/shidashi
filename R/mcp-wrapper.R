@@ -762,8 +762,10 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         "when it sits in a hidden tab or a collapsed card: the output is",
         "rendered first if needed, waiting up to 10 seconds. Plots,",
         "canvases, SVGs, and single images come back as a picture; pass",
-        "`transform_image = false` to get the HTML instead. Call",
-        "`shiny_output_info()` to list the output IDs."
+        "`transform_image = false` to get the HTML instead. For an",
+        "htmlwidget output (such as a table that shows one page at a time)",
+        "or a downloadable data output, the full data also comes back as",
+        "text. Call `shiny_output_info()` to list the output IDs."
       ),
       arguments = list(
         outputId = ellmer::type_string(
@@ -779,8 +781,9 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         ),
         max_chars = ellmer::type_integer(
           description = paste(
-            "Optional: the most HTML characters to return (default 10000).",
-            "Longer HTML is trimmed, with a note saying so."
+            "Optional: the most characters to return (default 10000), for",
+            "the HTML and for the data text separately. Longer content is",
+            "trimmed, with a note saying so."
           ),
           required = FALSE
         )
@@ -871,8 +874,105 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
                   size$width, size$height
                 ), res$note[nzchar(res$note)]), collapse = " ")
               }
-              query_ui_content(res, transform_image = transform_image,
-                               max_chars = max_chars)
+              content <- query_ui_content(res, transform_image = transform_image,
+                                          max_chars = max_chars)
+
+              # Outputs registered as htmlwidgets or as downloadable data
+              # also return their data as text: a widget such as a DT table
+              # shows only one page of it. The registry is missing outside a
+              # running app (e.g. a mock session)
+              entry <- tryCatch(get_session_entry(session$token),
+                                error = function(e) NULL)
+              renderer <- NULL
+              if (!is.null(entry)) {
+                renderer <- entry$output_renderers$get(outputId)
+              }
+              download_type <- if (is.list(renderer)) renderer$download_type
+              if (!isTRUE(download_type %in% c("htmlwidget", "data"))) {
+                return(content)
+              }
+
+              read_data <- function() {
+                if (identical(download_type, "htmlwidget")) {
+                  # print() stops early, so a huge data frame stays cheap
+                  old_opts <- options(max.print = max(max_chars, 100L))
+                  on.exit(options(old_opts), add = TRUE)
+                  widget <- eval(renderer$render_expr,
+                                 envir = new.env(parent = renderer$render_env))
+                  # a render function such as `DT::renderDataTable` also
+                  # takes a plain data frame
+                  x <- widget
+                  if (inherits(widget, "htmlwidget")) {
+                    x <- .subset2(widget, "x")
+                  }
+                  return(utils::capture.output({
+                    print(list(class = class(widget), content = x))
+                  }))
+                }
+
+                if (!is.function(renderer$download_function)) {
+                  return("[shidashi] This output has no download function.")
+                }
+                extension <- ""
+                if (length(renderer$extension)) {
+                  extension <- gsub("^[\\.]{0,}", ".", renderer$extension[[1]])
+                }
+                tmp <- tempfile(fileext = extension)
+                on.exit(unlink(tmp), add = TRUE)
+                renderer$download_function(tmp)
+                size <- file.size(tmp)
+                if (is.na(size) || size == 0) {
+                  return("[shidashi] The download function wrote no data.")
+                }
+                if (any(readBin(tmp, "raw", n = min(size, 8192)) == as.raw(0))) {
+                  return(sprintf(paste(
+                    "[shidashi] The data is a binary file of %s bytes;",
+                    "it cannot be shown as text."
+                  ), format(size)))
+                }
+                iconv(rawToChar(readBin(tmp, "raw", n = size)),
+                      from = "UTF-8", to = "UTF-8", sub = "?")
+              }
+
+              text <- tryCatch(
+                shiny::withReactiveDomain(session, shiny::isolate(read_data())),
+                error = function(e) {
+                  reason <- conditionMessage(e)
+                  if (!nzchar(reason)) {
+                    # e.g. `req()`, which stops without a message
+                    reason <- "the output is not ready."
+                  }
+                  paste("[shidashi] Could not get the data:", reason)
+                }
+              )
+              text <- paste(text, collapse = "\n")
+              total <- nchar(text)
+              if (total > max_chars) {
+                # cut at a line break, so printed tables stay aligned
+                text <- substr(text, 1, max_chars)
+                line_end <- max(gregexpr("\n", text, fixed = TRUE)[[1]])
+                if (line_end > 1) {
+                  text <- substr(text, 1, line_end - 1)
+                }
+                text <- sprintf(paste(
+                  "%s\n[shidashi] trimmed: showing %d of %d characters.",
+                  "Use a larger max_chars."
+                ), text, nchar(text), total)
+              }
+              heading <- if (identical(download_type, "htmlwidget")) {
+                paste("Full data of this widget (the page may show only part",
+                      "of it, e.g. one page of a table):")
+              } else {
+                "Data of this output, as its download button saves it:"
+              }
+
+              if (is.character(content)) {
+                content <- lapply(content[nzchar(content)], ellmer::ContentText)
+              } else if (S7::S7_inherits(content, ellmer::Content)) {
+                content <- list(content)
+              }
+              c(content, list(ellmer::ContentText(paste(heading, text,
+                                                        sep = "\n"))))
             },
             onRejected = function(e) {
               cancel_query()
@@ -1282,7 +1382,8 @@ register_output_widgets <- function(
       render_env = render_env,
       output_opts = output_opts,
       extension = extension,
-      download_type = download_type
+      download_type = download_type,
+      download_function = download_function
     ))
   }
 
