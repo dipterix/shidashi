@@ -31,9 +31,9 @@ fake_module_session <- function(
       description = tool_name
     ))
   })
-  activity <- new.env(parent = emptyenv())
-  activity$focused_at <- focused_at
-  activity$pinned <- pinned
+  activity <- new_fastmap(missing_default = NULL)
+  activity$set("focused_at", focused_at)
+  activity$set("pinned", pinned)
   globals_session_registry()$set(session$token, list(
     shiny_session = session,
     namespace     = module_id,
@@ -47,7 +47,7 @@ fake_module_session <- function(
 # Change the focus/pin state of a fake open module
 set_activity <- function(token, ...) {
   activity <- globals_session_registry()$get(token)$activity
-  list2env(list(...), envir = activity)
+  activity$mset(...)
   invisible(token)
 }
 

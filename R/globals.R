@@ -389,11 +389,11 @@ register_session <- function(session) {
     }
 
     # MCP state: when the user last used this session, and whether the user
-    # pinned it as the module for agent tool calls (see mcp-module.R). An
-    # environment, so every copy of the entry shares it.
-    activity <- new.env(parent = emptyenv())
-    activity$focused_at <- NULL
-    activity$pinned <- FALSE
+    # pinned it as the module for agent tool calls (see mcp-module.R). A
+    # fastmap, so every copy of the entry shares it.
+    activity <- new_fastmap(missing_default = NULL)
+    activity$set("focused_at", NULL)
+    activity$set("pinned", FALSE)
 
     entry <- list(
       shiny_session      = session,
@@ -484,7 +484,7 @@ register_session <- function(session) {
     activity <- entry$activity
     entry$handlers$set("focus_handler", shiny::bindEvent(
       safe_observe({
-        activity$focused_at <- Sys.time()
+        activity$set("focused_at", Sys.time())
       }, domain = root_session, label = "MCP focus report"),
       root_session$input[["@shidashi_focus@"]],
       ignoreNULL = TRUE, ignoreInit = FALSE

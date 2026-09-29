@@ -75,10 +75,10 @@ mcp_rank_modules <- function(open_modules) {
     }
   }
   pinned <- vapply(open_modules, function(open_module) {
-    isTRUE(open_module$entry$activity$pinned)
+    isTRUE(open_module$entry$activity$get("pinned", FALSE))
   }, FALSE)
   focused <- vapply(open_modules, function(open_module) {
-    time_or_neg_inf(open_module$entry$activity$focused_at)
+    time_or_neg_inf(open_module$entry$activity$get("focused_at"))
   }, 0)
   opened <- vapply(open_modules, function(open_module) {
     time_or_neg_inf(open_module$entry$registered_at)
@@ -89,10 +89,10 @@ mcp_rank_modules <- function(open_modules) {
 # Why the top-ranked open module won
 mcp_module_reason <- function(open_module) {
   activity <- open_module$entry$activity
-  if (isTRUE(activity$pinned)) {
+  if (isTRUE(activity$get("pinned", FALSE))) {
     return("pinned")
   }
-  if (inherits(activity$focused_at, "POSIXct")) {
+  if (inherits(activity$get("focused_at"), "POSIXct")) {
     return("last used")
   }
   "most recently opened"
@@ -198,22 +198,23 @@ mcp_no_module_message <- function(tool_name, module, offering, all_open,
 mcp_set_pin <- function(token, pinned = TRUE) {
   pinned <- isTRUE(pinned)
   entry <- get_session_entry(token)
-  if (!is.environment(entry$activity)) {
+  if (!is_shidashi_fastmap(entry$activity)) {
     return(invisible(FALSE))
   }
   if (pinned) {
     for (other_token in globals_session_registry()$keys()) {
       if (identical(other_token, token)) next
       other <- get_session_entry(other_token)
-      if (is.environment(other$activity) && isTRUE(other$activity$pinned)) {
-        other$activity$pinned <- FALSE
+      if (is_shidashi_fastmap(other$activity) &&
+        isTRUE(other$activity$get("pinned", FALSE))) {
+        other$activity$set("pinned", FALSE)
         other$shiny_session$sendCustomMessage(
           "shidashi.ai_pin_state", list(pinned = FALSE)
         )
       }
     }
   }
-  entry$activity$pinned <- pinned
+  entry$activity$set("pinned", pinned)
   entry$shiny_session$sendCustomMessage(
     "shidashi.ai_pin_state", list(pinned = pinned)
   )

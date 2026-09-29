@@ -363,7 +363,7 @@ load_module_resource <- function(root_path = template_root(), module_id = NULL, 
             # Show the AI agent pin toggle on pages that have agent tools
             if (entry$tools$size() > 0L) {
               session$sendCustomMessage("shidashi.ai_pin_state", list(
-                pinned = isTRUE(entry$activity$pinned)
+                pinned = isTRUE(entry$activity$get("pinned", FALSE))
               ))
             }
 

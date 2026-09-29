@@ -107,11 +107,11 @@ test_that("pinning a module unpins every other open module", {
   second <- fake_module_session("aiagent")
 
   mcp_set_pin(second, TRUE)
-  expect_false(get_session_entry(first)$activity$pinned)
-  expect_true(get_session_entry(second)$activity$pinned)
+  expect_false(get_session_entry(first)$activity$get("pinned"))
+  expect_true(get_session_entry(second)$activity$get("pinned"))
 
   mcp_set_pin(second, FALSE)
-  expect_false(get_session_entry(second)$activity$pinned)
+  expect_false(get_session_entry(second)$activity$get("pinned"))
 })
 
 test_that("resolver reports the module a call would use without _module", {

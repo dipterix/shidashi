@@ -284,15 +284,15 @@ mcp_tool_sessions <- function(scope = list()) {
       open_module <- open_modules[[ii]]
       activity <- open_module$entry$activity
       last_used <- NULL
-      if (inherits(activity$focused_at, "POSIXct")) {
-        last_used <- format(activity$focused_at, "%Y-%m-%dT%H:%M:%S")
+      if (inherits(activity$get("focused_at"), "POSIXct")) {
+        last_used <- format(activity$get("focused_at"), "%Y-%m-%dT%H:%M:%S")
       }
       list(
         handle    = open_module$handle,
         module_id = open_module$module_id,
         label     = module_label(open_module$module_id),
         default   = ii == 1L,
-        pinned    = isTRUE(activity$pinned),
+        pinned    = isTRUE(activity$get("pinned", FALSE)),
         last_used = last_used,
         tools     = as.list(sort(open_module$entry$tools$keys()))
       )
