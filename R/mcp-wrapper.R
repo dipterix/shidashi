@@ -610,7 +610,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
 
         # Decode JSON-encoded value
         value <- tryCatch(
-          jsonlite::fromJSON(value),
+          jsonlite::fromJSON(value, simplifyVector = TRUE, simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
           error = function(e) value
         )
 
@@ -631,14 +631,15 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           )
         )
         
-        # Check if update_info$fun_name is action button/link
-        if (isTRUE(update_info$fun_name %in% c(
+        # Check if update_info$fun is action button/link
+        if (isTRUE(update_info$fun %in% c(
           "updateActionButton", "updateActionLink", "updateActionButtonStyled"
         ))) {
           # This is to update button
+          selector <- sprintf("#%s", session$ns(inputId))
           session$sendCustomMessage(
             "shidashi.click",
-            list(selector = sprintf("#%s", session$ns(inputId)))
+            list(selector = selector)
           )
         } else {
           expr <- as.call(call_list)
