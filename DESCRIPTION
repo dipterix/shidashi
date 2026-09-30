@@ -1,7 +1,7 @@
 Package: shidashi
 Type: Package
 Title: A Shiny Dashboard Template Modular System with Chat Bot Support
-Version: 0.2.0.8
+Version: 0.2.0.9
 Language: en-US
 URL: https://dipterix.org/shidashi/,
     https://github.com/dipterix/shidashi
@@ -31,7 +31,7 @@ Imports:
     tools,
     bslib,
     digest (>= 0.6.27),
-    ellmer (>= 0.4.0),
+    ellmer (>= 0.5.0),
     fastmap (>= 1.1.0),
     formatR (>= 1.11),
     httr2,
