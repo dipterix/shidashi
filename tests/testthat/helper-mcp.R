@@ -2,8 +2,10 @@
 
 # Fresh per-app globals (session registry etc.). Keep the returned
 # environment referenced for the duration of the test: the globals are
-# held through a weak reference.
-local_mcp_app <- function() {
+# held through a weak reference. `init_app()` sets the option
+# `shidashi.shared_id`; it is restored when the test ends.
+local_mcp_app <- function(env = parent.frame()) {
+  withr::local_options(list(shidashi.shared_id = NULL), .local_envir = env)
   app_env <- new.env()
   init_app(app_env)
   app_env

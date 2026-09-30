@@ -157,7 +157,6 @@ include_view <- function(file, ..., .env = parent.frame(),
   }, error = function(e) {
     stop(call. = NULL, "Cannot find views/", file)
   })
-  list2env(list(.env = .env), envir = .GlobalEnv)
   args <- NULL
   if (is.environment(.env$env)) {
     args <- get0("@args", envir = .env$env, ifnotfound = NULL)

@@ -45,6 +45,8 @@
   - the dashboard now finds a module's open tab by its module id, and a
     module page asks its dashboard directly when switching modules, so
     `switch_module()` also works when the dashboard sits in a frame
+  - `switch_module()` gains `auto_new`: with `auto_new = FALSE` it only
+    switches to a module whose tab is open
 * Each skill is now two tools: `skill_load__<name>` reads the instructions
   and reference files and never changes anything, and `skill_run__<name>`
   runs the scripts; `skill_wrapper()` returns both (`load`, `run`);

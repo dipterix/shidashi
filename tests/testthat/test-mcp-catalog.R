@@ -160,6 +160,9 @@ test_that("a tool marked destructive in any module is destructive", {
 })
 
 test_that("skills with destructive scripts name those scripts", {
+  # loads every bundled module, and the demo module attaches ggplot2,
+  # ggExtra, and plyr
+  skip_on_cran()
   app_env <- local_mcp_app()
   root <- use_template_root(normalizePath(
     system.file("builtin-templates", "bslib-bare", package = "shidashi")

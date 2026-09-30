@@ -1,7 +1,7 @@
 Package: shidashi
 Type: Package
 Title: A Shiny Dashboard Template Modular System with Chat Bot Support
-Version: 0.2.0.7
+Version: 0.2.0.8
 Language: en-US
 URL: https://dipterix.org/shidashi/,
     https://github.com/dipterix/shidashi
@@ -41,18 +41,19 @@ Imports:
     yaml,
     jsonlite,
     htmltools,
-    htmlwidgets
+    htmlwidgets,
+    later,
+    promises
 Suggests:
     cli,
     coro,
     logger (>= 0.2.1),
     processx,
-    promises,
-    later,
     rstudioapi (>= 0.13),
     httpuv,
     ggplot2,
     ggExtra,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0

@@ -59,10 +59,10 @@ mcp_server_instructions <- function(app_id = mcp_app_id()) {
     "4. Tools marked destructive change the user's work: ask the user for in this ",
     "conversation for confirmation before calling them. \n",
     "5. To show the user another module, or open one, call `switch_module`. ",
-    "You may switch the module only if user asked for it, or the skill/protocol permit it.",
-    "If you are not sure, you must notify the user or show the plan to the user for permission (one-time permission is fine),",
-    "for example, 'the procedure requires switching between different modules [list module IDs explicitly].",
-    "Please confirm that this is OK, otherwise I will only work on current active module.'"
+    "Switch modules only if the user asked for it, or a skill or protocol permits it.",
+    "If you are not sure, tell the user your plan and ask for permission (one-time permission is fine),",
+    "for example, 'The procedure requires switching between modules [list the module IDs].",
+    "Please confirm that this is OK; otherwise I will only work on the current module.'"
   )
 }
 

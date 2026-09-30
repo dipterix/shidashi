@@ -16,6 +16,7 @@ test_that("new_fastmap() is a working fastmap with its own class", {
 })
 
 test_that("init_app() keeps the registries it already created", {
+  withr::local_options(list(shidashi.shared_id = NULL))
   app_env <- new.env()
   init_app(app_env)
   registry <- globals_session_registry()

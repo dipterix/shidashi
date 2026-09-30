@@ -29,3 +29,4 @@ inst/builtin-templates/[^/\\]+/www/stream$
 ^\.claude-plugin$
 ^inst/mcp-proxy/\.claude-plugin$
 ^inst/mcp-proxy/\.mcp\.json$
+^inst/builtin-templates/[^/]+/(Rplots\.pdf|_rs_job\.R|global\.R|ui\.R)$

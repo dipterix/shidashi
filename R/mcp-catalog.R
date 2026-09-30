@@ -432,7 +432,9 @@ mcp_meta_tool_schemas <- function() {
       name = "switch_module",
       description = paste(
         "Show a module to the user in the dashboard, as clicking it in the",
-        "sidebar does: its open tab comes to the front, or, when it is not",
+        "sidebar does. Switch only when the user asked for it or a skill's",
+        "instructions call for it; otherwise ask the user first. Its open",
+        "tab comes to the front, or, when it is not",
         "open, it opens in a new tab (`auto_new: false` only switches to an",
         "open tab). The call returns once the module's page has loaded (up",
         "to 30 s); tool calls then run there by default. Refused while the",

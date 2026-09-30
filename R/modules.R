@@ -205,25 +205,28 @@ active_module <- function(
 
 
 #' @rdname module_info
-#' @description \code{switch_module} programmatically switches the active
-#' module in the dashboard UI.
+#' @description \code{switch_module} shows a module in the dashboard, as
+#' clicking it in the sidebar does: the module's open tab comes to the front,
+#' or the module opens in a new tab.
 #' It sends a \code{shidashi.switch_module} message to the JavaScript
 #' front-end.  When called from a module running inside an \verb{iframe}, the
-#' handler automatically forwards the request to the parent window via
-#' \code{postMessage} so that the sidebar highlight, tab bar, and \verb{iframe}
-#' all update correctly.
+#' page asks the dashboard in its parent frame to switch, so that the sidebar
+#' highlight, tab bar, and \verb{iframe} all update correctly.
 #' @param module_id character string; the target module identifier (must
 #'   match an entry in \file{modules.yaml}).
+#' @param auto_new logical; whether to open the module in a new tab when it
+#'   is not open; \code{FALSE} only switches to an open tab.
 #' @export
 switch_module <- function(
     module_id,
-    session = shiny::getDefaultReactiveDomain()) {
+    session = shiny::getDefaultReactiveDomain(),
+    auto_new = TRUE) {
   if (is.null(session)) {
     stop("`switch_module`: must be called within a Shiny reactive context")
   }
   session$sendCustomMessage(
     "shidashi.switch_module",
-    list(module_id = module_id)
+    list(module_id = module_id, auto_new = isTRUE(auto_new))
   )
   invisible()
 }
