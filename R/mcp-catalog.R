@@ -388,8 +388,8 @@ mcp_meta_tool_schemas <- function() {
         "Show what the app is for, which dashboard modules are open, and the",
         "`default_module`: the module the user pinned or last used, where",
         "tools run unless `_module` says otherwise. Also lists modules that",
-        "are not open. Call it first, and again when unsure which module the",
-        "user is working in."
+        "are not open (`switch_module` opens one). Call it first, and again",
+        "when unsure which module the user is working in."
       ),
       inputSchema = list(type = "object", properties = empty_object)
     ),
@@ -426,6 +426,36 @@ mcp_meta_tool_schemas <- function() {
           `_module` = mcp_module_property()
         ),
         required = list("tool")
+      )
+    ),
+    list(
+      name = "switch_module",
+      description = paste(
+        "Show a module to the user in the dashboard, as clicking it in the",
+        "sidebar does: its open tab comes to the front, or, when it is not",
+        "open, it opens in a new tab (`auto_new: false` only switches to an",
+        "open tab). The call returns once the module's page has loaded (up",
+        "to 30 s); tool calls then run there by default. Refused while the",
+        "user has a module pinned: tool calls must stay in the pinned module,",
+        "so do not switch away; ask the user to unpin it first. An unknown",
+        "module ID gets the list of the dashboard's modules."
+      ),
+      inputSchema = list(
+        type = "object",
+        properties = list(
+          module_id = list(
+            type = "string",
+            description = "The module's ID, e.g. `demo` (see `shidashi_sessions`)."
+          ),
+          auto_new = list(
+            type = "boolean",
+            description = paste(
+              "Optional, default true: open the module in a new tab when it",
+              "is not open. False: only switch to an open tab."
+            )
+          )
+        ),
+        required = list("module_id")
       )
     )
   )

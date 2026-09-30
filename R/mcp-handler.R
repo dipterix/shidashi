@@ -57,7 +57,12 @@ mcp_server_instructions <- function(app_id = mcp_app_id()) {
     "double-check with the user. ",
     "Every result ends with a note naming the module it ran on. \n",
     "4. Tools marked destructive change the user's work: ask the user for in this ",
-    "conversation for confirmation before calling them."
+    "conversation for confirmation before calling them. \n",
+    "5. To show the user another module, or open one, call `switch_module`. ",
+    "You may switch the module only if user asked for it, or the skill/protocol permit it.",
+    "If you are not sure, you must notify the user or show the plan to the user for permission (one-time permission is fine),",
+    "for example, 'the procedure requires switching between different modules [list module IDs explicitly].",
+    "Please confirm that this is OK, otherwise I will only work on current active module.'"
   )
 }
 
@@ -119,6 +124,7 @@ mcp_handle_tools_call <- function(id, params, scope = list()) {
     tool_name,
     "shidashi_sessions" = mcp_tool_sessions(scope),
     "shidashi_tools"    = mcp_tool_tools(),
+    "switch_module"     = mcp_tool_switch_module(arguments, scope),
     "shidashi_call" = {
       inner_arguments <- arguments$arguments
       if (is.character(inner_arguments)) {

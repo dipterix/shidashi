@@ -207,6 +207,40 @@ class ShidashiApp {
     });
   }
 
+  /**
+   * Show a module in this dashboard, as clicking it in the sidebar does.
+   * @param {string} moduleId
+   * @param {boolean} autoNew - open a new tab when the module is not open
+   * @returns {string} a status from IFrameManager.showModule(), or
+   *   'no_dashboard' on a page without tabs
+   */
+  switchModule(moduleId, autoNew = true, title) {
+    if (!this.iframeManager) return 'no_dashboard';
+    const status = this.iframeManager.showModule(moduleId, autoNew, title);
+    if (status === 'activated' || status === 'opened') {
+      if (this.sidebar) this.sidebar.setActiveByModule(moduleId);
+      this._reportActiveModule(moduleId);
+    }
+    return status;
+  }
+
+  /**
+   * The app of the dashboard that shows this page: this page (the
+   * dashboard), or the parent frame of a module page in a tab (same
+   * origin); null when there is none.
+   */
+  _dashboardApp() {
+    if (this.iframeManager) return this;
+    if (window.self === window.top) return null;
+    try {
+      const app = window.parent.shidashi;
+      if (app && app.iframeManager && typeof app.switchModule === 'function') {
+        return app;
+      }
+    } catch (e) { /* cross-origin */ }
+    return null;
+  }
+
   // ---------- AI agent targeting (MCP) ----------
 
   /**
@@ -1298,9 +1332,7 @@ class ShidashiApp {
         if (evt.origin !== window.location.origin) return;
         const data = evt.data;
         if (data?.type === 'shidashi.switch_module' && data?.module_id) {
-          if (this.sidebar) this.sidebar.setActiveByModule(data.module_id);
-          if (this.iframeManager) this.iframeManager.openTabByModule(data.module_id);
-          this._reportActiveModule(data.module_id);
+          this.switchModule(data.module_id, data.auto_new !== false);
         }
       });
     }
@@ -1768,21 +1800,20 @@ class ShidashiApp {
     });
 
     this.shinyHandler('switch_module', (params) => {
+      // params: { module_id, auto_new, request_id, input_id }. With
+      // `request_id` (the `switch_module` MCP tool), the status goes back to
+      // R through the input `input_id`
       if (!params.module_id) return;
-      // If inside an iframe, forward to parent via postMessage
-      if (window.self !== window.top) {
-        try {
-          window.parent.postMessage({
-            type: 'shidashi.switch_module',
-            module_id: params.module_id
-          }, window.location.origin);
-          return;
-        } catch (e) { /* cross-origin safety */ }
+      const app = this._dashboardApp();
+      const status = app
+        ? app.switchModule(params.module_id, params.auto_new !== false)
+        : 'no_dashboard';
+      if (params.request_id && params.input_id) {
+        Shiny.setInputValue(params.input_id, {
+          request_id: params.request_id,
+          status: status
+        }, { priority: 'event' });
       }
-      // Top-level: handle directly
-      if (this.sidebar) this.sidebar.setActiveByModule(params.module_id);
-      if (this.iframeManager) this.iframeManager.openTabByModule(params.module_id);
-      this._reportActiveModule(params.module_id);
     });
 
     this.shinyHandler('shutdown_session', (params) => {

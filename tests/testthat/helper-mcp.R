@@ -174,6 +174,37 @@ use_template_root <- function(root) {
   invisible(root)
 }
 
+# Follow a promise: an environment whose `done` turns TRUE when it
+# settles, with its `value` or `error`
+track_promise <- function(p) {
+  state <- new.env(parent = emptyenv())
+  state$done <- FALSE
+  promises::then(
+    p,
+    onFulfilled = function(value) {
+      state$value <- value
+      state$done <- TRUE
+    },
+    onRejected = function(error) {
+      state$error <- error
+      state$done <- TRUE
+    }
+  )
+  state
+}
+
+# Run the event loop until a promise settles; return its value or throw
+wait_for_promise <- function(p, timeout = 5) {
+  state <- track_promise(p)
+  deadline <- Sys.time() + timeout
+  while (!state$done && Sys.time() < deadline) {
+    later::run_now(0.05)
+  }
+  if (!state$done) stop("the promise did not settle")
+  if (!is.null(state$error)) stop(state$error)
+  state$value
+}
+
 # Build a Rook-like POST request for the MCP handler
 mcp_request <- function(body, path = "/mcp", method = "POST") {
   body_raw <- charToRaw(as.character(

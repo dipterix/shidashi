@@ -1,27 +1,3 @@
-# Run the event loop until a promise settles; return its value or throw
-wait_for_promise <- function(p, timeout = 5) {
-  state <- new.env(parent = emptyenv())
-  state$done <- FALSE
-  promises::then(
-    p,
-    onFulfilled = function(value) {
-      state$value <- value
-      state$done <- TRUE
-    },
-    onRejected = function(error) {
-      state$error <- error
-      state$done <- TRUE
-    }
-  )
-  deadline <- Sys.time() + timeout
-  while (!state$done && Sys.time() < deadline) {
-    later::run_now(0.05)
-  }
-  if (!state$done) stop("the promise did not settle")
-  if (!is.null(state$error)) stop(state$error)
-  state$value
-}
-
 query_tools <- function(session) {
   shiny::withReactiveDomain(session, {
     mcp_wrapper_input_output()$tool_generator(session)

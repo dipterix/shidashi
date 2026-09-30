@@ -411,7 +411,7 @@ test_that("shidashi_tools lists the app's tools with their schemas", {
   app_tools <- jsonlite::fromJSON(res$texts[[1]], simplifyVector = FALSE)
   app_names <- vapply(app_tools, `[[`, "", "name")
   expect_identical(app_names, setdiff(listed_names, c(
-    "shidashi_sessions", "shidashi_tools", "shidashi_call"
+    "shidashi_sessions", "shidashi_tools", "shidashi_call", "switch_module"
   )))
   hello <- listed[[match("tool__hello", listed_names)]]
   expect_identical(app_tools[[match("tool__hello", app_names)]], hello)

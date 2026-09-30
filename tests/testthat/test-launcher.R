@@ -193,7 +193,8 @@ test_that("setup_mcp_proxy writes the meta tools for the offline proxy", {
   meta <- jsonlite::fromJSON(file.path(cache, "mcp_server", "proxy-meta.json"),
                              simplifyVector = FALSE)
   expect_setequal(vapply(meta$tools, `[[`, "", "name"),
-                  c("shidashi_sessions", "shidashi_tools", "shidashi_call"))
+                  c("shidashi_sessions", "shidashi_tools", "shidashi_call",
+                    "switch_module"))
   expect_match(meta$instructions, "_module")
   expect_false(grepl("app `", meta$instructions, fixed = TRUE))
 })

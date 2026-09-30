@@ -298,16 +298,44 @@ export class IFrameManager {
   }
 
   /**
-   * Open a tab by matching sidebar nav link attributes.
-   * Used by ravedash's switch_module().
+   * Find the tab that shows a module (`?module=<id>` in its URL).
+   * @param {string} moduleId
+   * @returns {string|null} The tab ID
+   */
+  findTabByModule(moduleId) {
+    for (const [id, entry] of this._tabs) {
+      if (this._extractModuleId(entry.url) === moduleId) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Show a module: activate its tab, or, when `autoNew`, open one from its
+   * sidebar link. Used by switch_module().
+   * @returns {string} 'activated', 'opened', 'not_open' (no tab, and
+   *   `autoNew` is false), or 'not_found' (no sidebar link)
+   */
+  showModule(moduleId, autoNew = true, title) {
+    const existingId = this.findTabByModule(moduleId);
+    if (existingId) {
+      this.activateTab(existingId);
+      return 'activated';
+    }
+    if (!autoNew) return 'not_open';
+    const link = document.querySelector(`.shidashi-nav-link[shiny-module="${moduleId}"]`);
+    if (!link) return 'not_found';
+    this.openTab(link.getAttribute('href'), title || link.getAttribute('title') || moduleId);
+    return 'opened';
+  }
+
+  /**
+   * Open a module's tab, or activate it when it is open.
+   * Used by ravedash's switch_module() and set_current_module.
    */
   openTabByModule(moduleId, title) {
-    // Find the sidebar link for this module
-    const link = document.querySelector(`.shidashi-nav-link[shiny-module="${moduleId}"]`);
-    if (link) {
-      const url = link.getAttribute('href');
-      this.openTab(url, title || link.getAttribute('title') || moduleId);
-    }
+    return this.showModule(moduleId, true, title);
   }
 
   /**

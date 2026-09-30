@@ -18,5 +18,4 @@ shidashi_finalize_installation <- function(
 
   # cat(readLines('/Users/dipterix/Library/Application Support/Claude/claude_desktop_config.json'), sep = "\n")
 
-
 }
