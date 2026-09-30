@@ -40,6 +40,20 @@
   - module handles always carry the session token prefix
     (`<module>@<token>`), so a handle stays the same when the user opens
     the module again in another tab
+  - added the `switch_module` meta tool: it shows a module in the user’s
+    dashboard as clicking it in the sidebar does (its open tab comes to
+    the front, or it opens in a new tab; `auto_new = FALSE` only
+    switches to an open tab), and returns once the module’s page has
+    loaded (options `shidashi.switch_module_timeout` and
+    `shidashi.switch_module_wait`); it is refused while the user has a
+    module pinned
+  - the dashboard now finds a module’s open tab by its module id, and a
+    module page asks its dashboard directly when switching modules, so
+    [`switch_module()`](https://dipterix.org/shidashi/reference/module_info.md)
+    also works when the dashboard sits in a frame
+  - [`switch_module()`](https://dipterix.org/shidashi/reference/module_info.md)
+    gains `auto_new`: with `auto_new = FALSE` it only switches to a
+    module whose tab is open
 - Each skill is now two tools: `skill_load__<name>` reads the
   instructions and reference files and never changes anything, and
   `skill_run__<name>` runs the scripts;

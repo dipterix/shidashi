@@ -12,12 +12,12 @@ is static and always returns the module whose server code is running,
 `active_module` dynamically tracks which module the user is looking at
 from any context.
 
-`switch_module` programmatically switches the active module in the
-dashboard UI. It sends a `shidashi.switch_module` message to the
+`switch_module` shows a module in the dashboard, as clicking it in the
+sidebar does: the module's open tab comes to the front, or the module
+opens in a new tab. It sends a `shidashi.switch_module` message to the
 JavaScript front-end. When called from a module running inside an
-`iframe`, the handler automatically forwards the request to the parent
-window via `postMessage` so that the sidebar highlight, tab bar, and
-`iframe` all update correctly.
+`iframe`, the page asks the dashboard in its parent frame to switch, so
+that the sidebar highlight, tab bar, and `iframe` all update correctly.
 
 ## Usage
 
@@ -34,7 +34,11 @@ active_module(
   root_path = template_root()
 )
 
-switch_module(module_id, session = shiny::getDefaultReactiveDomain())
+switch_module(
+  module_id,
+  session = shiny::getDefaultReactiveDomain(),
+  auto_new = TRUE
+)
 
 load_module(
   root_path = template_root(),
@@ -62,6 +66,11 @@ load_module(
 
   character string; the target module identifier (must match an entry in
   `modules.yaml`).
+
+- auto_new:
+
+  logical; whether to open the module in a new tab when it is not open;
+  `FALSE` only switches to an open tab.
 
 - request:
 
@@ -189,7 +198,7 @@ module_info()
 # load master module
 load_module()
 #> $environment
-#> <environment: 0x558f189f02a0>
+#> <environment: 0x555ee0186ef8>
 #> 
 #> $has_module
 #> [1] FALSE
@@ -208,8 +217,8 @@ load_module()
 #> function (input, output, session, ...) 
 #> {
 #> }
-#> <bytecode: 0x558f191bfe38>
-#> <environment: 0x558f191c0ee8>
+#> <bytecode: 0x555ee0950610>
+#> <environment: 0x555ee0959550>
 #> 
 #> $module$template_path
 #> NULL

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,10 @@
 <li>the stdio proxy works without a running app: it connects, lists the tools it can, and tells the agent to ask the user whether to start an app or launch a saved one</li>
 <li>the stdio proxy can attach to a shidashi app at any address for the current session (<code>shidashi_connect</code>, <code>shidashi_disconnect</code>); its tool list follows the attached app, and <code>shidashi_tools</code> lists the app’s tools for clients that do not refresh their tool list</li>
 <li>module handles always carry the session token prefix (<code>&lt;module&gt;@&lt;token&gt;</code>), so a handle stays the same when the user opens the module again in another tab</li>
+<li>added the <code>switch_module</code> meta tool: it shows a module in the user’s dashboard as clicking it in the sidebar does (its open tab comes to the front, or it opens in a new tab; <code>auto_new = FALSE</code> only switches to an open tab), and returns once the module’s page has loaded (options <code>shidashi.switch_module_timeout</code> and <code>shidashi.switch_module_wait</code>); it is refused while the user has a module pinned</li>
+<li>the dashboard now finds a module’s open tab by its module id, and a module page asks its dashboard directly when switching modules, so <code><a href="../reference/module_info.html">switch_module()</a></code> also works when the dashboard sits in a frame</li>
+<li>
+<code><a href="../reference/module_info.html">switch_module()</a></code> gains <code>auto_new</code>: with <code>auto_new = FALSE</code> it only switches to a module whose tab is open</li>
 </ul></li>
 <li>Each skill is now two tools: <code>skill_load__&lt;name&gt;</code> reads the instructions and reference files and never changes anything, and <code>skill_run__&lt;name&gt;</code> runs the scripts; <code><a href="../reference/skill_wrapper.html">skill_wrapper()</a></code> returns both (<code>load</code>, <code>run</code>); in the dashboard chat, a script marked destructive in <code>agents.yaml</code> now asks for confirmation</li>
 <li>Skill scripts document their arguments in a <code># Usage:</code> header comment; <code>skill_run__&lt;name&gt;</code> lists each script’s usage and refuses a call that leaves out a required argument; files in <code>scripts/</code> whose names start with <code>_</code> are helpers, not scripts</li>
