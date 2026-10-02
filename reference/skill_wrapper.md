@@ -49,6 +49,11 @@ summary is only sent on failure).
 The gate state is per-instance: each call to the wrapper produces a pair
 of tools with an independent `readme_unlocked` flag.
 
+Scripts inherit the app's environment variables, plus the ones the
+caller passes in `envs`. When an agent runs a script over `MCP`,
+`SHIDASHI_USING_MCP` is `"TRUE"`; see
+[`mcp_call_active`](https://dipterix.org/shidashi/reference/mcp_call_active.md).
+
 ## Examples
 
 ``` r

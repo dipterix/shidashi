@@ -115,6 +115,11 @@
 - [`init_app()`](https://dipterix.org/shidashi/reference/init_app.md) :
   Initialize a shidashi application
 
+- [`mcp_call_active()`](https://dipterix.org/shidashi/reference/mcp_call_active.md)
+  :
+
+  Whether an `MCP` tool call is running
+
 - [`mcp_wrapper()`](https://dipterix.org/shidashi/reference/mcp_wrapper.md)
   :
 

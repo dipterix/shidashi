@@ -11,7 +11,7 @@ input and filters output to contain only 'ellmer::ToolDef' objects."></head><bod
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,6 +75,9 @@ either a single tool object or a list/vector of such objects; see
 <p>The returned function automatically handles both single tool definitions
   and lists of tools, providing a consistent interface for <code>MCP</code> tool
   registration.</p>
+<p>A tool can call <code><a href="mcp_call_active.html">mcp_call_active</a></code> to tell whether an agent
+  called it over <code>MCP</code> or the in-dashboard chat did, for example to
+  print less for agents.</p>
     </div>
 
     <div class="section level2">

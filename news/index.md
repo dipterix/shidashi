@@ -54,6 +54,12 @@
   - [`switch_module()`](https://dipterix.org/shidashi/reference/module_info.md)
     gains `auto_new`: with `auto_new = FALSE` it only switches to a
     module whose tab is open
+  - exported
+    [`mcp_call_active()`](https://dipterix.org/shidashi/reference/mcp_call_active.md):
+    it is `TRUE` while a tool runs for an `MCP` call, and while it is,
+    the environment variable `SHIDASHI_USING_MCP` is `"TRUE"` (removed
+    when the call returns), so tools and skill scripts can behave
+    differently for agents, for example print less
 - Each skill is now two tools: `skill_load__<name>` reads the
   instructions and reference files and never changes anything, and
   `skill_run__<name>` runs the scripts;
@@ -64,6 +70,9 @@
   `skill_run__<name>` lists each script’s usage and refuses a call that
   leaves out a required argument; files in `scripts/` whose names start
   with `_` are helpers, not scripts
+- Environment variables passed to a skill script (`envs`) are now added
+  to the app’s environment instead of replacing it, so the script keeps
+  `PATH`, `HOME`, and `SHIDASHI_USING_MCP`
 - Added
   [`save_launcher()`](https://dipterix.org/shidashi/reference/save_launcher.md)
   and

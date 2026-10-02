@@ -35,6 +35,11 @@ The returned function automatically handles both single tool definitions
 and lists of tools, providing a consistent interface for `MCP` tool
 registration.
 
+A tool can call
+[`mcp_call_active`](https://dipterix.org/shidashi/reference/mcp_call_active.md)
+to tell whether an agent called it over `MCP` or the in-dashboard chat
+did, for example to print less for agents.
+
 ## Examples
 
 ``` r

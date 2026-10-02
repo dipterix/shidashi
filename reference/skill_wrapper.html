@@ -37,7 +37,7 @@ Executes a script in the
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -109,6 +109,10 @@ Can be absolute or relative to the project root.</p></dd>
   (the summary is only sent on failure).</p>
 <p>The gate state is per-instance: each call to the wrapper produces
   a pair of tools with an independent <code>readme_unlocked</code> flag.</p>
+<p>Scripts inherit the app's environment variables, plus the ones the
+  caller passes in <code>envs</code>. When an agent runs a script over
+  <code>MCP</code>, <code>SHIDASHI_USING_MCP</code> is <code>"TRUE"</code>; see
+  <code><a href="mcp_call_active.html">mcp_call_active</a></code>.</p>
     </div>
 
     <div class="section level2">
