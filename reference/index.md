@@ -141,7 +141,7 @@
 
 - [`objectListInput()`](https://dipterix.org/shidashi/reference/objectListInput.md)
   [`updateObjectListInput()`](https://dipterix.org/shidashi/reference/objectListInput.md)
-  : A re-orderable list of objects as a shiny input
+  : A ordered list of objects as a shiny input
 
 - [`open_url()`](https://dipterix.org/shidashi/reference/open_url.md) :
   Open a URL in a new browser tab
@@ -154,6 +154,7 @@
   : Read a shidashi stream binary file
 
 - [`register_input()`](https://dipterix.org/shidashi/reference/register_io.md)
+  [`as_tooltip()`](https://dipterix.org/shidashi/reference/register_io.md)
   [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
   :
 

@@ -1,4 +1,4 @@
-# A re-orderable list of objects as a shiny input
+# A ordered list of objects as a shiny input
 
 Displays the selected objects as a vertical list; entries can be dragged
 to re-order and removed with the `X` button on the right. The value is a
@@ -54,7 +54,7 @@ updateObjectListInput(
 
 - sortable:
 
-  whether the entries can be dragged to re-order; requires 'jQuery' 'UI'
+  whether the entries can be dragged to re-order; requires 'jQuery'
   shipped with shiny, and is silently disabled when unavailable
 
 - removable:

@@ -4,7 +4,9 @@ Register `shiny` inputs and outputs for `MCP` (Model Context Protocol)
 agent access.
 
 `register_input()` wraps a `shiny` input constructor to register
-metadata. It evaluates `expr` and returns the UI element.
+metadata. It evaluates `expr` and returns the UI element, with `tooltip`
+as its hover tip (the `HTML` `title` attribute). `as_tooltip()` gives
+the default hover tip: the first sentence of `description`.
 
 `register_output()` is a server-side function that registers a render
 function call (e.g. `renderPlot({...})`), assigns it to
@@ -20,10 +22,13 @@ register_input(
   inputId,
   update,
   description = "",
+  tooltip = as_tooltip(description),
   writable = TRUE,
   quoted = FALSE,
   env = parent.frame()
 )
+
+as_tooltip(description)
 
 register_output(
   expr,
@@ -65,6 +70,16 @@ register_output(
 
   character string. A human-readable description of the input or output
   purpose, exposed to `LLM` agents via `MCP` tools.
+
+- tooltip:
+
+  character string shown when the mouse hovers over the input; defaults
+  to the first sentence of `description` (see `as_tooltip()`). Set to
+  `NULL` for no hover tip. The hover tip is added only when the outer
+  tag of the UI element is an input (a `button`, `a`, `input`, `select`,
+  or `textarea` tag, or a tag with class `shiny-input-container`)
+  without a `title`; other elements, such as cards, are returned
+  unchanged.
 
 - writable:
 
@@ -116,9 +131,11 @@ register_output(
 
 ## Value
 
-`register_input` returns the evaluated UI element. `register_output` is
-called for its side effects (assigning the render function and
-registering widgets) and returns `NULL` invisibly.
+`register_input` returns the evaluated UI element, with `tooltip` as the
+`title` of an input (see `tooltip`). `as_tooltip` returns the first
+sentence of `description` as a character string (`""` when it is blank).
+`register_output` is called for its side effects (assigning the render
+function and registering widgets) and returns `NULL` invisibly.
 
 ## See also
 
@@ -128,6 +145,10 @@ registering widgets) and returns `NULL` invisibly.
 ## Examples
 
 ``` r
+# The default hover tip: the first sentence of the description
+as_tooltip("Plot threshold, e.g. 0.5. Agents set it before running.")
+#> [1] "Plot threshold, e.g. 0.5."
+
 if (FALSE) { # \dontrun{
 # inside a shidashi module UI function:
 ns <- shiny::NS("demo")

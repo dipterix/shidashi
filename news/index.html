@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,11 +60,13 @@
 <li>Added <code><a href="../reference/save_launcher.html">save_launcher()</a></code> and <code><a href="../reference/save_launcher.html">run_launcher()</a></code>: saved apps are kept in one <code>launchers.json</code> file in the <code>shidashi</code> cache folder, optionally with a copy of the app (<code>copy_app = TRUE</code>) and free-form metadata; the <code>MCP</code> proxy lists saved apps (<code>shidashi_launchers</code>) and, when the user picks one, starts it and opens the chosen module in the browser (<code>shidashi_launch</code>)</li>
 <li>
 <code>shiny_query_ui</code> now returns the element’s HTML or image in one call; <code>shiny_query_ui_result</code> is removed; <code>transform_image = FALSE</code> asks for HTML only, and long HTML is trimmed (image data and scripts shortened, <code>max_chars</code> sets the limit)</li>
-<li>Added the <code>shiny_output_result</code> <code>MCP</code> tool: it returns a registered output’s rendered content even when the output is in a hidden tab or a collapsed card, rendering it first (waiting up to 10 seconds; option <code>shidashi.output_result_timeout</code>); a plot that was never shown is drawn at a fallback size; <code>shiny_query_ui</code> notes when an element is not shown or shows an error; outputs registered with <code>download_type = "htmlwidget"</code> also return the widget’s data (<code>x</code>), since a widget such as a <code>DT</code> table shows only one page of it, and outputs registered with <code>download_type = "data"</code> also return what <code>download_function</code> writes; both are trimmed by <code>max_chars</code>
+<li>Added the <code>shiny_output_result</code> <code>MCP</code> tool: it returns a registered output’s rendered content even when the output is in a hidden tab or a collapsed card, rendering it first (waiting up to 10 seconds; option <code>shidashi.output_result_timeout</code>); a plot that was never shown is drawn at a fallback size; <code>shiny_query_ui</code> notes when an element is not shown or shows an error; outputs registered with <code>download_type = "htmlwidget"</code> also return the widget data (<code>x</code>), since a widget such as a <code>DT</code> table shows only one page of it, and outputs registered with <code>download_type = "data"</code> also return what <code>download_function</code> writes; both are trimmed by <code>max_chars</code>
 </li>
 <li>Added <code><a href="../reference/render_hidden_output.html">render_hidden_output()</a></code>, which renders one output at the next flush even when it is hidden, then restores <code>suspendWhenHidden</code>
 </li>
 <li>Errors inside <code>shidashi</code>’s own observers are reported as warnings instead of ending the user’s session</li>
+<li>
+<code><a href="../reference/register_io.html">register_input()</a></code> gains <code>tooltip</code>, shown when the mouse hovers over the input (its <code>title</code>); it defaults to the first sentence of <code>description</code> (new <code><a href="../reference/register_io.html">as_tooltip()</a></code>), and <code>tooltip = NULL</code> turns it off; only inputs get it, so other registered elements, such as cards, are unchanged</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="shidashi-020">shidashi 0.2.0<a class="anchor" aria-label="anchor" href="#shidashi-020"></a></h2><p class="text-muted">CRAN release: 2026-04-10</p>
