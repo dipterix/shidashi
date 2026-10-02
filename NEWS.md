@@ -47,6 +47,11 @@
     `switch_module()` also works when the dashboard sits in a frame
   - `switch_module()` gains `auto_new`: with `auto_new = FALSE` it only
     switches to a module whose tab is open
+  - exported `mcp_call_active()`: it is `TRUE` while a tool runs for an
+    `MCP` call, and while it is, the environment variable
+    `SHIDASHI_USING_MCP` is `"TRUE"` (removed when the call returns), so
+    tools and skill scripts can behave differently for agents, for example
+    print less
 * Each skill is now two tools: `skill_load__<name>` reads the instructions
   and reference files and never changes anything, and `skill_run__<name>`
   runs the scripts; `skill_wrapper()` returns both (`load`, `run`);
@@ -56,6 +61,9 @@
   `skill_run__<name>` lists each script's usage and refuses a call that
   leaves out a required argument; files in `scripts/` whose names start
   with `_` are helpers, not scripts
+* Environment variables passed to a skill script (`envs`) are now added to
+  the app's environment instead of replacing it, so the script keeps
+  `PATH`, `HOME`, and `SHIDASHI_USING_MCP`
 * Added `save_launcher()` and `run_launcher()`: saved apps are kept in one
   `launchers.json` file in the `shidashi` cache folder, optionally with a
   copy of the app (`copy_app = TRUE`) and free-form metadata; the `MCP`

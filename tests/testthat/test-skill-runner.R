@@ -147,3 +147,18 @@ test_that("environment variables are passed to scripts", {
   expect_equal(result$status, 0L)
   expect_match(result$stdout, "hello_from_test")
 })
+
+test_that("scripts given envs keep the app's environment variables", {
+  skip_if(!requireNamespace("processx", quietly = TRUE), "processx not installed")
+  withr::local_envvar(SHIDASHI_USING_MCP = "TRUE")
+
+  tmp <- tempfile("skill_env")
+  dir.create(file.path(tmp, "scripts"), recursive = TRUE)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  writeLines('cat(Sys.getenv("SHIDASHI_USING_MCP", "unset"), Sys.getenv("TEST_VAR"))',
+             file.path(tmp, "scripts", "env_check.R"))
+
+  result <- run_skill_script(tmp, "env_check.R", envs = c(TEST_VAR = "x"))
+  expect_equal(result$status, 0L)
+  expect_identical(result$stdout, "TRUE x")
+})

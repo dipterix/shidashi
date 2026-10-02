@@ -8,11 +8,49 @@
 # in-dashboard chat: over MCP, tools only carry hints (read-only,
 # destructive) and the agent asks the user in its own chat. The shared
 # tool wrapper (`wrap_tools_with_permissions`) tells the two routes apart
-# with `mcp_call_active()`.
+# with `mcp_call_active()`, which also sets the environment variable
+# `SHIDASHI_USING_MCP` so app code and skill scripts can tell them apart.
 
 # Set while an MCP tool call runs, so the shared tool wrapper can skip
 # the chat's mode checks and confirmation dialogs. A flag rather than an
-# argument: a chat model cannot set it.
+# argument: a chat model cannot set it. The wrapper reads the flag, never
+# the environment variable.
+
+#' Whether an \verb{MCP} tool call is running
+#'
+#' @description
+#' Returns \code{TRUE} while a tool runs for an \verb{MCP} request, and
+#' \code{FALSE} otherwise, for example when the in-dashboard chat calls the
+#' same tool. While it is \code{TRUE}, the environment variable
+#' \code{SHIDASHI_USING_MCP} is set to \code{"TRUE"}, so code that cannot
+#' call this function, such as skill scripts running in their own process,
+#' can check the variable instead.
+#'
+#' @details
+#' The dashboard's \verb{MCP} handler turns the state on before each tool
+#' call and off when the call returns, also when the tool fails. A tool
+#' that returns a promise returns before the promise settles, so code that
+#' runs once it settles sees \code{FALSE}.
+#'
+#' @param v optional logical; when given, turns the state on (\code{TRUE})
+#'   or off (anything else), and sets or removes \code{SHIDASHI_USING_MCP}
+#'   to match. App code normally only reads the state.
+#' @return \code{TRUE} or \code{FALSE}: the state after any change.
+#' @examples
+#' # Outside of an MCP tool call
+#' mcp_call_active()
+#' Sys.getenv("SHIDASHI_USING_MCP")
+#'
+#' # In a tool: print less when an agent calls it over MCP
+#' summarize_values <- function(x) {
+#'   if (!mcp_call_active()) {
+#'     message("Summarizing ", length(x), " values")
+#'   }
+#'   summary(x)
+#' }
+#' summarize_values(1:10)
+#'
+#' @export
 mcp_call_active <- local({
 
   # Must be NULL to avoid embedding environment in the build package
@@ -21,10 +59,15 @@ mcp_call_active <- local({
   function(v) {
     if (!missing(v)) {
       active <<- isTRUE(v)
+      if (active) {
+        Sys.setenv(SHIDASHI_USING_MCP = "TRUE")
+      } else {
+        Sys.unsetenv("SHIDASHI_USING_MCP")
+      }
     }
     active
   }
-  
+
 })
 
 

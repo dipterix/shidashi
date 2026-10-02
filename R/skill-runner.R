@@ -105,9 +105,11 @@ run_skill_script <- function(skill_dir, file_name, args = character(),
   command <- interpreter[[1L]]
   cmd_args <- c(interpreter[-1L], script_path, as.character(args))
 
+  # "current" keeps the app's variables (PATH, SHIDASHI_USING_MCP, ...);
+  # without it, processx replaces the whole environment with `envs`
   env_vars <- NULL
   if (length(envs) && !is.null(names(envs))) {
-    env_vars <- envs
+    env_vars <- c("current", envs)
   }
 
   result <- processx::run(

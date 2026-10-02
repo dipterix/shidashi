@@ -417,10 +417,56 @@ test_that("shidashi_tools lists the app's tools with their schemas", {
   expect_identical(app_tools[[match("tool__hello", app_names)]], hello)
 })
 
-test_that("mcp_call_active() is on only while an MCP tool call runs", {
+test_that("mcp_call_active() sets SHIDASHI_USING_MCP while on", {
+  withr::local_envvar(SHIDASHI_USING_MCP = NA)
+  withr::defer(mcp_call_active(FALSE))
+
   expect_false(mcp_call_active())
   mcp_call_active(TRUE)
   expect_true(mcp_call_active())
+  expect_identical(Sys.getenv("SHIDASHI_USING_MCP", unset = NA), "TRUE")
   mcp_call_active(FALSE)
   expect_false(mcp_call_active())
+  expect_identical(Sys.getenv("SHIDASHI_USING_MCP", unset = NA), NA_character_)
+})
+
+test_that("tools see SHIDASHI_USING_MCP only while called over MCP", {
+  withr::local_envvar(SHIDASHI_USING_MCP = NA)
+  app_env <- local_mcp_app()
+  use_template_root(make_mini_template())
+  app <- mcp_test_app()
+  token <- fake_module_session("alpha", "tool__hello")
+  probe <- ellmer::tool(
+    function() Sys.getenv("SHIDASHI_USING_MCP", unset = "unset"),
+    name = "tool__hello",
+    description = "Report SHIDASHI_USING_MCP"
+  )
+  get_session_entry(token)$tools$set("tool__hello", probe)
+
+  res <- mcp_call(app, "tool__hello")
+  expect_false(res$isError)
+  expect_true("TRUE" %in% res$texts)
+  expect_identical(Sys.getenv("SHIDASHI_USING_MCP", unset = NA), NA_character_)
+
+  # the in-dashboard chat calls the tool directly
+  expect_identical(probe(), "unset")
+})
+
+test_that("skill scripts run over MCP see SHIDASHI_USING_MCP and their envs", {
+  skip_if_not_installed("processx")
+  withr::local_envvar(SHIDASHI_USING_MCP = NA)
+  app_env <- local_mcp_app()
+  root <- use_template_root(make_mini_template())
+  add_mini_skill(root, "probe", scripts = c(probe.R = "exploratory"))
+  writeLines(
+    'cat(Sys.getenv("SHIDASHI_USING_MCP", "unset"), Sys.getenv("EXTRA", "unset"))',
+    file.path(root, "agents", "skills", "probe", "scripts", "probe.R")
+  )
+  app <- mcp_test_app()
+  open_real_module(root, "alpha")
+
+  res <- mcp_call(app, "skill_run__probe",
+                  list(file_name = "probe.R", envs = list("EXTRA=1")))
+  expect_false(res$isError)
+  expect_match(res$texts[[1]], "TRUE 1", fixed = TRUE)
 })

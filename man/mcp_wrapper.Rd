@@ -32,6 +32,10 @@ The wrapper performs the following validations:
   The returned function automatically handles both single tool definitions
   and lists of tools, providing a consistent interface for \verb{MCP} tool
   registration.
+
+  A tool can call \code{\link{mcp_call_active}} to tell whether an agent
+  called it over \verb{MCP} or the in-dashboard chat did, for example to
+  print less for agents.
 }
 \examples{
 # Define a generator function that returns tool definitions

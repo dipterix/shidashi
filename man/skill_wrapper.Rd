@@ -38,6 +38,11 @@ The two tools share a soft gate: reading a reference or running a
 
   The gate state is per-instance: each call to the wrapper produces
   a pair of tools with an independent \code{readme_unlocked} flag.
+
+  Scripts inherit the app's environment variables, plus the ones the
+  caller passes in \code{envs}. When an agent runs a script over
+  \verb{MCP}, \code{SHIDASHI_USING_MCP} is \code{"TRUE"}; see
+  \code{\link{mcp_call_active}}.
 }
 \examples{
 skill_dir <- system.file(
