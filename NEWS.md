@@ -80,7 +80,7 @@
   `shidashi.output_result_timeout`); a plot that was never shown is drawn
   at a fallback size; `shiny_query_ui` notes when an element is not shown
   or shows an error; outputs registered with `download_type = "htmlwidget"`
-  also return the widget's data (`x`), since a widget such as a `DT` table
+  also return the widget data (`x`), since a widget such as a `DT` table
   shows only one page of it, and outputs registered with
   `download_type = "data"` also return what `download_function` writes;
   both are trimmed by `max_chars`
@@ -88,6 +88,10 @@
   flush even when it is hidden, then restores `suspendWhenHidden`
 * Errors inside `shidashi`'s own observers are reported as warnings instead
   of ending the user's session
+* `register_input()` gains `tooltip`, shown when the mouse hovers over the
+  input (its `title`); it defaults to the first sentence of `description`
+  (new `as_tooltip()`), and `tooltip = NULL` turns it off; only inputs get
+  it, so other registered elements, such as cards, are unchanged
 
 # shidashi 0.2.0
 

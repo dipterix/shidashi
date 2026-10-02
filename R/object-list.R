@@ -106,7 +106,7 @@ object_list_oninit <- paste0(
   "}"
 )
 
-#' @title A re-orderable list of objects as a shiny input
+#' @title A ordered list of objects as a shiny input
 #' @description
 #' Displays the selected objects as a vertical list; entries can be dragged to
 #' re-order and removed with the \verb{X} button on the right. The value is a
@@ -127,7 +127,7 @@ object_list_oninit <- paste0(
 #' menu and re-selecting it appends it to the end of the list; default is
 #' \code{TRUE}
 #' @param sortable whether the entries can be dragged to re-order; requires
-#' 'jQuery' 'UI' shipped with \pkg{shiny}, and is silently disabled when
+#' \pkg{'jQuery'} shipped with \pkg{shiny}, and is silently disabled when
 #' unavailable
 #' @param removable whether each entry has a button to remove itself
 #' @param session shiny session

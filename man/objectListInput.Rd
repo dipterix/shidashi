@@ -3,7 +3,7 @@
 \name{objectListInput}
 \alias{objectListInput}
 \alias{updateObjectListInput}
-\title{A re-orderable list of objects as a shiny input}
+\title{A ordered list of objects as a shiny input}
 \usage{
 objectListInput(
   inputId,
@@ -38,7 +38,7 @@ the input; the order of \code{choices} is the order of the rows}
 \item{placeholder}{text to display when the list is empty}
 
 \item{sortable}{whether the entries can be dragged to re-order; requires
-'jQuery' 'UI' shipped with \pkg{shiny}, and is silently disabled when
+\pkg{'jQuery'} shipped with \pkg{shiny}, and is silently disabled when
 unavailable}
 
 \item{removable}{whether each entry has a button to remove itself}

@@ -1406,7 +1406,10 @@ register_output_widgets <- function(
 #' Protocol) agent access.
 #'
 #' \code{register_input()} wraps a \code{shiny} input constructor to
-#' register metadata.  It evaluates \code{expr} and returns the UI element.
+#' register metadata.  It evaluates \code{expr} and returns the UI element,
+#' with \code{tooltip} as its hover tip (the \verb{HTML} \code{title}
+#' attribute).  \code{as_tooltip()} gives the default hover tip: the first
+#' sentence of \code{description}.
 #'
 #' \code{register_output()} is a server-side function that registers a
 #' render function call (e.g. \code{renderPlot(\{...\})}), assigns it to
@@ -1428,6 +1431,14 @@ register_output_widgets <- function(
 #'   default argument names passed to the update function.
 #' @param description character string.  A human-readable description of
 #'   the input or output purpose, exposed to \verb{LLM} agents via \verb{MCP} tools.
+#' @param tooltip character string shown when the mouse hovers over the
+#'   input; defaults to the first sentence of \code{description} (see
+#'   \code{as_tooltip()}).  Set to \code{NULL} for no hover tip.  The hover
+#'   tip is added only when the outer tag of the UI element is an input
+#'   (a \code{button}, \code{a}, \code{input}, \code{select}, or
+#'   \code{textarea} tag, or a tag with class
+#'   \code{shiny-input-container}) without a \code{title}; other elements,
+#'   such as cards, are returned unchanged.
 #' @param writable logical (default \code{TRUE}).  Whether the \verb{MCP}
 #'   update tool is allowed to change this input.
 #' @param quoted logical (default \code{FALSE}).  If \code{TRUE},
@@ -1447,12 +1458,18 @@ register_output_widgets <- function(
 #' @param session the \code{shiny} session object.  For
 #'   \code{register_output}, defaults to
 #'   \code{shiny::getDefaultReactiveDomain()}.
-#' @return \code{register_input} returns the evaluated UI element.
+#' @return \code{register_input} returns the evaluated UI element, with
+#'   \code{tooltip} as the \code{title} of an input (see \code{tooltip}).
+#'   \code{as_tooltip} returns the first sentence of \code{description}
+#'   as a character string (\code{""} when it is blank).
 #'   \code{register_output} is called for its side effects (assigning
 #'   the render function and registering widgets) and returns \code{NULL}
 #'   invisibly.
 #' @seealso \code{\link{init_app}}, \code{\link{mcp_wrapper}}
 #' @examples
+#' # The default hover tip: the first sentence of the description
+#' as_tooltip("Plot threshold, e.g. 0.5. Agents set it before running.")
+#'
 #' \dontrun{
 #' # inside a shidashi module UI function:
 #' ns <- shiny::NS("demo")
@@ -1481,12 +1498,16 @@ register_input <- function(expr,
                            inputId,
                            update,
                            description = "",
+                           tooltip = as_tooltip(description),
                            writable = TRUE,
                            quoted = FALSE,
                            env = parent.frame()) {
   if (!quoted) {
     expr <- substitute(expr)
   }
+
+  # `tooltip` (a lazy default) sees the collapsed `description`
+  description <- paste(description, collapse = " ")
 
   register_input_impl <- get0(
     x = ".register_input",
@@ -1496,7 +1517,7 @@ register_input <- function(expr,
   )
 
   if (isTRUE(inherits(register_input_impl, "register_input_impl"))) {
-    register_input_impl(
+    ui <- register_input_impl(
       expr = expr,
       inputId = inputId,
       description = description,
@@ -1506,9 +1527,64 @@ register_input <- function(expr,
       env = env
     )
   } else {
-    eval(expr, envir = env)
+    ui <- eval(expr, envir = env)
   }
 
+  add_input_tooltip(ui, tooltip)
+}
+
+#' @rdname register_io
+#' @export
+as_tooltip <- function(description) {
+  text <- trimws(gsub("[[:space:]]+", " ", paste(description, collapse = " ")))
+  if (!nzchar(text)) {
+    return("")
+  }
+
+  # A sentence ends at '.', '!', or '?' before a space or the end of the
+  # text, but not after abbreviations such as 'e.g.'
+  ends <- gregexpr("[.!?](?=\\s|$)", text, perl = TRUE)[[1]]
+  for (end in ends[ends > 0]) {
+    before <- substr(text, 1L, end - 1L)
+    if (!grepl("(?i)\\b(e\\.g|i\\.e|etc|vs|cf)$", before, perl = TRUE)) {
+      return(substr(text, 1L, end))
+    }
+  }
+  text
+}
+
+# Adds `tooltip` as the hover tip (`title`) of an input's outer tag.
+# Other elements, such as cards registered so agents can switch their
+# tabs, are returned unchanged
+add_input_tooltip <- function(ui, tooltip) {
+  if (is.null(tooltip) || isFALSE(tooltip)) {
+    return(ui)
+  }
+  tooltip <- trimws(paste(tooltip, collapse = " "))
+  if (!nzchar(tooltip)) {
+    return(ui)
+  }
+
+  if (inherits(ui, "shiny.tag.list")) {
+    # e.g. `dipsaus::actionButtonStyled()`: one button and its dependency
+    is_tag <- vapply(ui, inherits, FALSE, what = "shiny.tag")
+    if (sum(is_tag) == 1L) {
+      idx <- which(is_tag)
+      ui[[idx]] <- add_input_tooltip(ui[[idx]], tooltip)
+    }
+    return(ui)
+  }
+
+  if (!inherits(ui, "shiny.tag") || htmltools::tagHasAttribute(ui, "title")) {
+    return(ui)
+  }
+  classes <- strsplit(htmltools::tagGetAttribute(ui, "class") %||% "", " ")[[1]]
+  is_input <- ui$name %in% c("button", "a", "input", "select", "textarea") ||
+    "shiny-input-container" %in% classes
+  if (!is_input) {
+    return(ui)
+  }
+  htmltools::tagAppendAttributes(ui, title = tooltip)
 }
 
 #' @rdname register_io
