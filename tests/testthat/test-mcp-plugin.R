@@ -77,13 +77,16 @@ tool_names <- function(response) {
   vapply(response$result$tools, `[[`, "", "name")
 }
 
-test_that("the plugin manifest names the package and its version", {
+test_that("the plugin manifest names the package and its release", {
   manifest <- jsonlite::fromJSON(
     plugin_file(".claude-plugin", "plugin.json"), simplifyVector = FALSE
   )
   expect_identical(manifest$name, "shidashi")
-  expect_identical(manifest$version,
-                   utils::packageDescription("shidashi")$Version)
+  # The plugin and the package share major.minor.patch, but the development
+  # number (the fourth part) may differ
+  release <- function(version) format(package_version(version)[, 1:3])
+  expect_identical(release(manifest$version),
+                   release(utils::packageDescription("shidashi")$Version))
 })
 
 test_that("the plugin starts the proxy that ships next to it", {
