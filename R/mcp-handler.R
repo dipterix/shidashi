@@ -377,12 +377,7 @@ ellmer_tool_schema <- function(tool_obj) {
 
   ellmer <- asNamespace("ellmer")
 
-  provider_args <- list(name = "dummy", base_url = "https://dummy")
-  # `model` is deprecated in newer ellmer, but may be required by older ones
-  if (is.call(formals(ellmer::Provider)$model)) {
-    provider_args$model <- "dummy"
-  }
-  dummy_provider <- do.call(ellmer::Provider, provider_args)
+  dummy_provider <- ellmer::Provider(name = "dummy", base_url = "https://dummy")
   schema <- ellmer$as_json(dummy_provider, tool_obj@arguments)
   # Remove OpenAI-specific quirks if any
   schema$additionalProperties <- NULL
