@@ -29,13 +29,13 @@ Source:
 [`DESCRIPTION`](https://github.com/dipterix/shidashi/blob/main/DESCRIPTION)
 
 Wang Z (2026). *shidashi: A Shiny Dashboard Template Modular System with
-Chat Bot Support*. R package version 0.2.0.10,
+Chat Bot Support*. R package version 0.2.0.11,
 <https://dipterix.org/shidashi/>.
 
     @Manual{,
       title = {shidashi: A Shiny Dashboard Template Modular System with Chat Bot Support},
       author = {Zhengjia Wang},
       year = {2026},
-      note = {R package version 0.2.0.10},
+      note = {R package version 0.2.0.11},
       url = {https://dipterix.org/shidashi/},
     }
