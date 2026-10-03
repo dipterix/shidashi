@@ -35,11 +35,19 @@ colormap_swatch_html <- function(colors, continuous, height = "10px") {
 #' @description
 #' Displays color right by the color names for better user experience;
 #' implemented using vanilla shiny selector
+#' @details The selector always holds one of the color maps while there are
+#' any: the selected item cannot be removed with the keyboard, and an update
+#' that empties the value (for example
+#' \code{\link[shiny]{updateSelectizeInput}} with
+#' \code{selected = character(0)}) puts the previous value back, or the first
+#' color map. Only an empty \code{colormaps} list yields the value \code{""},
+#' which a server should treat as "no choice".
 #' @param colormaps A named list with name being the color-map names and values
 #' being a character vector of key colors
 #' @param inputId,label,selected passed to shiny
-#' \code{\link[shiny]{selectInput}}; \code{selected} must be one of the
-#' names of color map list
+#' \code{\link[shiny]{selectInput}}; a \code{selected} that is not one of the
+#' names of the color map list (including \code{NULL}, \code{character(0)}
+#' and \code{""}) selects the first color map
 #' @param continuous whether the color map is continuous; default is false
 #' @returns A shiny selector
 #' @examples
@@ -78,6 +86,14 @@ colormap_swatch_html <- function(colors, continuous, height = "10px") {
 colormapSelectInput <- function(inputId, label, colormaps, selected = NULL,
                                   continuous = FALSE) {
 
+  # The value never leaves the choices while there are any: an unknown or
+  # empty `selected` (NULL, character(0), "") means the first color map, which
+  # is also what `shiny::selectInput()` does with NULL
+  choices <- names(colormaps)
+  if (!length(selected) || !isTRUE(selected[[1]] %in% choices)) {
+    selected <- NULL
+  }
+
   bars <- vapply(colormaps, colormap_swatch_html, character(1L),
                  continuous = continuous, USE.NAMES = TRUE)
   bars_json <- jsonlite::toJSON(as.list(bars), auto_unbox = TRUE)
@@ -103,8 +119,30 @@ colormapSelectInput <- function(inputId, label, colormaps, selected = NULL,
   shiny::selectizeInput(
     inputId = inputId,
     label = label,
-    choices = names(colormaps),
+    choices = choices,
     selected = selected,
-    options = list(render = I(render))
+    options = list(
+      render = I(render),
+      # Backspace/Delete on the selected item: keep it (selectize consults
+      # `onDelete` only for keyboard deletions)
+      onDelete = I("function(values) { return false; }"),
+      # The value to put back starts as the one the page loaded with
+      onInitialize = I("function() { this.__lastValue = this.getValue(); }"),
+      # An update that empties the value (`updateSelectizeInput(selected =
+      # character(0))`) goes through `setValue()` instead: put the previous
+      # value back, or the first color map. Choosing another item fires one
+      # debounced change with the final value, so this never sees it.
+      onChange = I(paste(
+        "function(value) {",
+        "  if ((value === '' || value === null) && Object.keys(this.options).length) {",
+        "    var keep = this.__lastValue;",
+        "    this.setValue(keep !== undefined && this.options[keep] ? keep : Object.keys(this.options)[0]);",
+        "  } else {",
+        "    this.__lastValue = value;",
+        "  }",
+        "}",
+        sep = "\n"
+      ))
+    )
   )
 }

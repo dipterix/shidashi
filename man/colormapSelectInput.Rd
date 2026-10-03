@@ -14,8 +14,9 @@ colormapSelectInput(
 }
 \arguments{
 \item{inputId, label, selected}{passed to shiny
-\code{\link[shiny]{selectInput}}; \code{selected} must be one of the
-names of color map list}
+\code{\link[shiny]{selectInput}}; a \code{selected} that is not one of the
+names of the color map list (including \code{NULL}, \code{character(0)}
+and \code{""}) selects the first color map}
 
 \item{colormaps}{A named list with name being the color-map names and values
 being a character vector of key colors}
@@ -28,6 +29,15 @@ A shiny selector
 \description{
 Displays color right by the color names for better user experience;
 implemented using vanilla shiny selector
+}
+\details{
+The selector always holds one of the color maps while there are
+any: the selected item cannot be removed with the keyboard, and an update
+that empties the value (for example
+\code{\link[shiny]{updateSelectizeInput}} with
+\code{selected = character(0)}) puts the previous value back, or the first
+color map. Only an empty \code{colormaps} list yields the value \code{""},
+which a server should treat as "no choice".
 }
 \examples{
 
