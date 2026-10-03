@@ -2,6 +2,11 @@
 
 ## shidashi 0.2.1
 
+- [`colormapSelectInput()`](https://dipterix.org/shidashi/reference/colormapSelectInput.md)
+  can no longer be emptied: Backspace/Delete keep the selected color
+  map, an update with an empty `selected` restores the previous value
+  (or the first color map), and a `selected` outside the choices selects
+  the first one
 - Added a color picker widget using vanilla `shiny` select input;
 - Added base theme for plots and viewers that are registered output,
   such as `plotOutput2`;

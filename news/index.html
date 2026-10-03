@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +34,9 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="shidashi-021">shidashi 0.2.1<a class="anchor" aria-label="anchor" href="#shidashi-021"></a></h2>
-<ul><li>Added a color picker widget using vanilla <code>shiny</code> select input;</li>
+<ul><li>
+<code><a href="../reference/colormapSelectInput.html">colormapSelectInput()</a></code> can no longer be emptied: Backspace/Delete keep the selected color map, an update with an empty <code>selected</code> restores the previous value (or the first color map), and a <code>selected</code> outside the choices selects the first one</li>
+<li>Added a color picker widget using vanilla <code>shiny</code> select input;</li>
 <li>Added base theme for plots and viewers that are registered output, such as <code>plotOutput2</code>;</li>
 <li>Redesigned the <code>MCP</code> endpoint so agents such as <code>Claude Code</code> can drive the dashboard without session binding:
 <ul><li>the tool list is built from the template on disk (each module’s tools load once without a browser), so it is available before any browser opens and never changes while an agent is connected; tools from modules that fail to load fall back to <code>agents/tool-schema.yaml</code>

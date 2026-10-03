@@ -20,8 +20,10 @@ colormapSelectInput(
 - inputId, label, selected:
 
   passed to shiny
-  [`selectInput`](https://rdrr.io/pkg/shiny/man/selectInput.html);
-  `selected` must be one of the names of color map list
+  [`selectInput`](https://rdrr.io/pkg/shiny/man/selectInput.html); a
+  `selected` that is not one of the names of the color map list
+  (including `NULL`, `character(0)` and `""`) selects the first color
+  map
 
 - colormaps:
 
@@ -35,6 +37,16 @@ colormapSelectInput(
 ## Value
 
 A shiny selector
+
+## Details
+
+The selector always holds one of the color maps while there are any: the
+selected item cannot be removed with the keyboard, and an update that
+empties the value (for example
+[`updateSelectizeInput`](https://rdrr.io/pkg/shiny/man/updateSelectInput.html)
+with `selected = character(0)`) puts the previous value back, or the
+first color map. Only an empty `colormaps` list yields the value `""`,
+which a server should treat as "no choice".
 
 ## Examples
 

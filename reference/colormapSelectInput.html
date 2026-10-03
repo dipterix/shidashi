@@ -9,7 +9,7 @@ implemented using vanilla shiny selector"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -57,8 +57,9 @@ implemented using vanilla shiny selector</p>
 
 <dl><dt id="arg-inputid-label-selected">inputId, label, selected<a class="anchor" aria-label="anchor" href="#arg-inputid-label-selected"></a></dt>
 <dd><p>passed to shiny
-<code><a href="https://rdrr.io/pkg/shiny/man/selectInput.html" class="external-link">selectInput</a></code>; <code>selected</code> must be one of the
-names of color map list</p></dd>
+<code><a href="https://rdrr.io/pkg/shiny/man/selectInput.html" class="external-link">selectInput</a></code>; a <code>selected</code> that is not one of the
+names of the color map list (including <code>NULL</code>, <code>character(0)</code>
+and <code>""</code>) selects the first color map</p></dd>
 
 
 <dt id="arg-colormaps">colormaps<a class="anchor" aria-label="anchor" href="#arg-colormaps"></a></dt>
@@ -73,6 +74,16 @@ being a character vector of key colors</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A shiny selector</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The selector always holds one of the color maps while there are
+any: the selected item cannot be removed with the keyboard, and an update
+that empties the value (for example
+<code><a href="https://rdrr.io/pkg/shiny/man/updateSelectInput.html" class="external-link">updateSelectizeInput</a></code> with
+<code>selected = character(0)</code>) puts the previous value back, or the first
+color map. Only an empty <code>colormaps</code> list yields the value <code>""</code>,
+which a server should treat as "no choice".</p>
     </div>
 
     <div class="section level2">
