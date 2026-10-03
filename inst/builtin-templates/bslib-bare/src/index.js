@@ -987,13 +987,86 @@ class ShidashiApp {
   }
 
   /**
-   * Capture a <canvas> element as a data URL.
+   * Whether `canvas` draws with WebGL or WebGPU. `getContext()` returns null
+   * for a type other than the one a canvas already has, so a canvas with a
+   * context is left as it is (the types are asked in `_readCanvas`'s order).
+   */
+  _isGPUCanvas(canvas) {
+    for (const type of ['webgl2', 'webgl', 'webgpu']) {
+      try {
+        if (canvas.getContext(type)) return true;
+      } catch (e) {
+        // e.g. a canvas whose control was transferred to an OffscreenCanvas
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Capture a <canvas> element as a data URL (async).
+   * A WebGL canvas without `preserveDrawingBuffer`, or a WebGPU canvas, can
+   * be read only in the task that drew it (Chromium; other browsers keep the
+   * last frame, which may predate a change made just before), and some
+   * widgets draw only when something changes. So a WebGL/WebGPU canvas first
+   * gets a bubbling `viewerApp.captureOnce` event with an empty object as
+   * `detail`: a widget that listens draws a frame and writes the picture to
+   * `detail.dataURI` (a PNG data URL). If the object is still empty after
+   * three animation frames (no widget listens, or it did not draw), or for
+   * any other canvas, the canvas is read directly in that frame. A page that
+   * runs no animation frames (a background tab) is read after 0.5 s, with a
+   * note added to `notes`. Resolves to null when capture is not possible
+   * (e.g. tainted canvas).
+   */
+  _captureCanvas(canvas, notes = []) {
+    let request = null;
+    if (this._isGPUCanvas(canvas)) {
+      request = {};
+      canvas.dispatchEvent(new CustomEvent('viewerApp.captureOnce', {
+        bubbles: true, detail: request
+      }));
+    }
+    const hasPicture = () => !!request && typeof request.dataURI === 'string' &&
+      request.dataURI.startsWith('data:image/');
+    return new Promise((resolve) => {
+      let done = false;
+      let frames = 0;
+      let frame = null;
+      let timer = null;
+      const finish = (inFrame) => {
+        if (done) return;
+        done = true;
+        cancelAnimationFrame(frame);
+        clearTimeout(timer);
+        if (hasPicture()) {
+          resolve(request.dataURI);
+          return;
+        }
+        if (!inFrame) {
+          notes.push('The page drew no animation frame for this image (e.g. it is in a background browser tab), so the canvas may be blank or out of date.');
+        }
+        resolve(this._readCanvas(canvas));
+      };
+      const onFrame = () => {
+        frames++;
+        if (!request || hasPicture() || frames >= 3) {
+          finish(true);
+          return;
+        }
+        frame = requestAnimationFrame(onFrame);
+      };
+      frame = requestAnimationFrame(onFrame);
+      timer = setTimeout(() => finish(false), 500);
+    });
+  }
+
+  /**
+   * Read a <canvas> element as a data URL, now.
    * Handles WebGL canvases whose drawing buffer may have been cleared
    * after compositing (preserveDrawingBuffer === false) by reading
    * pixels directly via gl.readPixels and compositing onto a 2D canvas.
    * Returns null when capture is not possible (e.g. tainted canvas).
    */
-  _captureCanvas(canvas) {
+  _readCanvas(canvas) {
     // Try the fast path first – works for 2D and WebGL with preserveDrawingBuffer
     try {
       const url = canvas.toDataURL('image/png');
@@ -1197,41 +1270,50 @@ class ShidashiApp {
       return;
     }
 
+    // An SVG or a single data-URI image as a picture, otherwise the HTML
+    const replyOther = () => {
+      if (transformImage) {
+        // An SVG (e.g. stream-viz D3 output), rasterised to PNG
+        const svgEl = el.querySelector('svg');
+        if (svgEl) {
+          this._captureSVG(svgEl).then((dataUrl) => {
+            if (dataUrl) {
+              replyImage(dataUrl);
+            } else {
+              reply({ html: el.innerHTML, note: openingTag });
+            }
+          });
+          return;
+        }
+
+        // A single <img> with a data URI
+        const img = el.querySelector('img[src^="data:"]');
+        if (img && el.querySelectorAll('img').length === 1) {
+          replyImage(img.getAttribute('src') || '');
+          return;
+        }
+      }
+
+      // Default: the element's HTML, with its opening tag as context
+      reply({ html: el.innerHTML, note: openingTag });
+    };
+
     if (transformImage) {
       // A <canvas>, or an element holding one
       const canvas = el.tagName === 'CANVAS' ? el : el.querySelector('canvas');
       if (canvas) {
-        const dataUrl = this._captureCanvas(canvas);
-        if (dataUrl) {
-          replyImage(dataUrl);
-          return;
-        }
-        // Tainted or empty canvas: fall through
-      }
-
-      // An SVG (e.g. stream-viz D3 output), rasterised to PNG
-      const svgEl = el.querySelector('svg');
-      if (svgEl) {
-        this._captureSVG(svgEl).then((dataUrl) => {
+        this._captureCanvas(canvas, notes).then((dataUrl) => {
           if (dataUrl) {
             replyImage(dataUrl);
           } else {
-            reply({ html: el.innerHTML, note: openingTag });
+            // Tainted or empty canvas: fall through
+            replyOther();
           }
         });
         return;
       }
-
-      // A single <img> with a data URI
-      const img = el.querySelector('img[src^="data:"]');
-      if (img && el.querySelectorAll('img').length === 1) {
-        replyImage(img.getAttribute('src') || '');
-        return;
-      }
     }
-
-    // Default: the element's HTML, with its opening tag as context
-    reply({ html: el.innerHTML, note: openingTag });
+    replyOther();
   }
 
   // ---------- Card tool click delegation ----------

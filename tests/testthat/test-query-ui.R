@@ -259,6 +259,16 @@ output_tools <- function(session, outputIds = "summary") {
   list(tools = tools, sent = sent)
 }
 
+# Run `later` until `n` custom messages were sent: a query goes to the
+# browser after a short pause (option `shidashi.query_ui_delay`)
+wait_sent <- function(sent, n = 1L, timeout = 5) {
+  deadline <- Sys.time() + timeout
+  while (length(sent$messages) < n && Sys.time() < deadline) {
+    later::run_now(0.05)
+  }
+  expect_length(sent$messages, n)
+}
+
 local_request_ids <- function(ids = c("req1", "req2"), env = parent.frame()) {
   i <- 0L
   local_mocked_bindings(rand_string = function(...) {
@@ -266,6 +276,41 @@ local_request_ids <- function(ids = c("req1", "req2"), env = parent.frame()) {
     ids[[i]]
   }, .env = env)
 }
+
+test_that("a query goes to the browser after a short pause", {
+  local_mocked_bindings(rand_string = function(...) "req1")
+  old <- options(shidashi.query_ui_delay = 0.2)
+  on.exit(options(old), add = TRUE)
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_query_ui(css_selector = "#plot")
+  # a change sent at about the same time reaches the page first
+  later::run_now()
+  expect_length(x$sent$messages, 0)
+  wait_sent(x$sent, 1)
+  expect_identical(x$sent$messages[[1]]$type, "shidashi.query_ui")
+  expect_identical(x$sent$messages[[1]]$request_id, "req1")
+
+  session$setInputs(`@shiny_query_ui_result@` = list(
+    request_id = "req1", html = "<b>hi</b>"
+  ))
+  expect_identical(wait_for_promise(p), "<b>hi</b>")
+})
+
+test_that("a query that timed out during the pause is not sent", {
+  local_mocked_bindings(rand_string = function(...) "req1")
+  old <- options(shidashi.query_ui_delay = 0.3, shidashi.query_ui_timeout = 0.1)
+  on.exit(options(old), add = TRUE)
+  session <- shiny::MockShinySession$new()
+  x <- output_tools(session)
+
+  p <- x$tools$shiny_query_ui(css_selector = "#plot")
+  expect_error(wait_for_promise(p), "did not answer")
+  Sys.sleep(0.3)
+  later::run_now(0.1)
+  expect_length(x$sent$messages, 0)
+})
 
 test_that("shiny_output_result lists the registered IDs for an unknown ID", {
   session <- shiny::MockShinySession$new()
@@ -291,6 +336,7 @@ test_that("shiny_output_result reads the output only after it is flushed", {
 
   p <- x$tools$shiny_output_result(outputId = "summary")
   expect_true(promises::is.promise(p))
+  wait_sent(x$sent, 1)
   expect_identical(x$sent$messages[[1]]$type, "shidashi.prepare_output")
   expect_identical(x$sent$messages[[1]]$selector,
                    paste0("#", session$ns("summary")))
@@ -323,6 +369,7 @@ test_that("shiny_output_result stops when the page has no such element", {
   x <- output_tools(session)
 
   p <- x$tools$shiny_output_result(outputId = "summary")
+  wait_sent(x$sent, 1)
   session$setInputs(`@shiny_query_ui_result@` = list(
     request_id = "req1", type = "not_found",
     note = "No element matched selector: '#summary'"

@@ -87,6 +87,20 @@
   both are trimmed by `max_chars`
 * Added `render_hidden_output()`, which renders one output at the next
   flush even when it is hidden, then restores `suspendWhenHidden`
+* `shiny_query_ui` and `shiny_output_result` ask the browser after a short
+  pause (option `shidashi.query_ui_delay`, default 0.1 seconds): agents often
+  send a change and a query in one turn as concurrent requests, which `R` may
+  take in either order, and the pause lets the change reach the page first
+* In the `bslib-bare` template, `shiny_query_ui` and `shiny_output_result`
+  ask the widget that draws a `WebGL` or `WebGPU` canvas for its picture: they
+  dispatch a bubbling `viewerApp.captureOnce` event on the canvas with an empty
+  object as `detail`, and a widget that listens (such as the `threeBrain`
+  viewer) draws a frame and writes the picture to `detail.dataURI`. When the
+  object is still empty after three animation frames, the canvas is read
+  directly as before. Such canvases used to come back blank in `Chromium`, or
+  out of date in browsers that keep the last frame. A page that draws no
+  frames (for example in a background tab) is read after half a second, with
+  a note
 * Errors inside `shidashi`'s own observers are reported as warnings instead
   of ending the user's session
 * `register_input()` gains `tooltip`, shown when the mouse hovers over the

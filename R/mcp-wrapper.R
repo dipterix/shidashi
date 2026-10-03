@@ -515,6 +515,26 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       list(id = request_id, promise = promise)
     }
 
+    # Agents often send a change (e.g. a viewer setting) and a query of the
+    # page in one turn, as concurrent requests that R may take in either
+    # order. A query goes to the browser only after a short pause (option
+    # `shidashi.query_ui_delay`, in seconds), so that a change that arrived
+    # at about the same time reaches the page first. Nothing is sent once the
+    # request has timed out; errors are guarded like the timeout.
+    send_after_pause <- function(type, message, request_id) {
+      later::later(function() {
+        tryCatch({
+          if (!query_requests$has(request_id)) {
+            return()
+          }
+          session$sendCustomMessage(type, message)
+        }, error = function(e) {
+          warning("[shidashi] browser request failed: ",
+                  conditionMessage(e), call. = FALSE)
+        })
+      }, delay = getOption("shidashi.query_ui_delay", 0.1))
+    }
+
     query_ui_max_chars <- function(max_chars) {
       max_chars <- suppressWarnings(as.integer(max_chars)[1])
       if (length(max_chars) != 1 || is.na(max_chars) || max_chars < 1) {
@@ -744,12 +764,12 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           format(timeout), css_selector
         ))
 
-        session$sendCustomMessage("shidashi.query_ui", list(
+        send_after_pause("shidashi.query_ui", list(
           selector = css_selector,
           request_id = request$id,
           input_id = session$ns("@shiny_query_ui_result@"),
           transform_image = transform_image
-        ))
+        ), request$id)
 
         promises::then(request$promise, function(res) {
           if (isFALSE(res$laid_out)) {
@@ -829,12 +849,12 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           "The browser did not answer within %s s: the module page may not be open.",
           format(timeout)
         ))
-        session$sendCustomMessage("shidashi.prepare_output", list(
+        send_after_pause("shidashi.prepare_output", list(
           selector = selector,
           request_id = prepare$id,
           input_id = input_id,
           needs_size = is.null(width)
-        ))
+        ), prepare$id)
 
         promises::then(prepare$promise, function(prepared) {
           if (identical(prepared$type, "not_found")) {
