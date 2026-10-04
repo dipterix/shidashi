@@ -1004,29 +1004,35 @@ class ShidashiApp {
 
   /**
    * Capture a <canvas> element as a data URL (async).
-   * A WebGL canvas without `preserveDrawingBuffer`, or a WebGPU canvas, can
-   * be read only in the task that drew it (Chromium; other browsers keep the
-   * last frame, which may predate a change made just before), and some
-   * widgets draw only when something changes. So a WebGL/WebGPU canvas first
-   * gets a bubbling `viewerApp.captureOnce` event with an empty object as
-   * `detail`: a widget that listens draws a frame and writes the picture to
-   * `detail.dataURI` (a PNG data URL). If the object is still empty after
-   * three animation frames (no widget listens, or it did not draw), or for
-   * any other canvas, the canvas is read directly in that frame. A page that
-   * runs no animation frames (a background tab) is read after 0.5 s, with a
-   * note added to `notes`. Resolves to null when capture is not possible
-   * (e.g. tainted canvas).
+   * The threeBrain viewer draws only when something changes, and a copy of a
+   * WebGPU canvas taken outside the frame that drew it can be blank
+   * (Chromium) or out of date. So for a WebGL/WebGPU canvas inside a viewer,
+   * one `viewerApp.captureOnce` event goes to the viewer's wrapper
+   * (`.threejs-brain-canvas`) with an empty object as `detail`: the viewer
+   * draws a frame, adds `{ canvas, dataURI }` (a PNG data URL) to
+   * `detail.views` for each view it drew, and sets `detail.dataURI`. If the
+   * viewer has not answered after three animation frames, or has no picture
+   * of this canvas, or for any other canvas, the canvas is read directly in
+   * that frame. A page that runs no animation frames (a background tab) is
+   * read after 0.5 s, with a note added to `notes`. Resolves to null when
+   * capture is not possible (e.g. tainted canvas).
    */
   _captureCanvas(canvas, notes = []) {
     let request = null;
-    if (this._isGPUCanvas(canvas)) {
+    const wrapper = canvas.closest('.threejs-brain-canvas');
+    if (wrapper && this._isGPUCanvas(canvas)) {
       request = {};
-      canvas.dispatchEvent(new CustomEvent('viewerApp.captureOnce', {
-        bubbles: true, detail: request
-      }));
+      wrapper.dispatchEvent(new CustomEvent('viewerApp.captureOnce', { detail: request }));
     }
-    const hasPicture = () => !!request && typeof request.dataURI === 'string' &&
+    const answered = () => !!request && typeof request.dataURI === 'string' &&
       request.dataURI.startsWith('data:image/');
+    const picture = () => {
+      if (!answered() || !Array.isArray(request.views)) return null;
+      const view = request.views.find((v) => v && v.canvas === canvas);
+      if (!view || typeof view.dataURI !== 'string' ||
+          !view.dataURI.startsWith('data:image/')) return null;
+      return view.dataURI;
+    };
     return new Promise((resolve) => {
       let done = false;
       let frames = 0;
@@ -1037,8 +1043,9 @@ class ShidashiApp {
         done = true;
         cancelAnimationFrame(frame);
         clearTimeout(timer);
-        if (hasPicture()) {
-          resolve(request.dataURI);
+        const dataUrl = picture();
+        if (dataUrl) {
+          resolve(dataUrl);
           return;
         }
         if (!inFrame) {
@@ -1048,7 +1055,7 @@ class ShidashiApp {
       };
       const onFrame = () => {
         frames++;
-        if (!request || hasPicture() || frames >= 3) {
+        if (!request || answered() || frames >= 3) {
           finish(true);
           return;
         }
