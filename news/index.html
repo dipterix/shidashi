@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@
 </li>
 <li>
 <code>shiny_query_ui</code> and <code>shiny_output_result</code> ask the browser after a short pause (option <code>shidashi.query_ui_delay</code>, default 0.1 seconds): agents often send a change and a query in one turn as concurrent requests, which <code>R</code> may take in either order, and the pause lets the change reach the page first</li>
-<li>In the <code>bslib-bare</code> template, <code>shiny_query_ui</code> and <code>shiny_output_result</code> ask the widget that draws a <code>WebGL</code> or <code>WebGPU</code> canvas for its picture: they dispatch a bubbling <code>viewerApp.captureOnce</code> event on the canvas with an empty object as <code>detail</code>, and a widget that listens (such as the <code>threeBrain</code> viewer) draws a frame and writes the picture to <code>detail.dataURI</code>. When the object is still empty after three animation frames, the canvas is read directly as before. Such canvases used to come back blank in <code>Chromium</code>, or out of date in browsers that keep the last frame. A page that draws no frames (for example in a background tab) is read after half a second, with a note</li>
+<li>In the <code>bslib-bare</code> template, <code>shiny_query_ui</code> and <code>shiny_output_result</code> ask a <code>threeBrain</code> viewer for pictures of its <code>WebGL</code> or <code>WebGPU</code> canvases: they dispatch one <code>viewerApp.captureOnce</code> event on the viewer’s wrapper (<code>.threejs-brain-canvas</code>) with an empty object as <code>detail</code>, and the viewer draws a frame and adds <code>{ canvas, dataURI }</code> to <code>detail.views</code> for each view it drew. When the viewer has not answered after three animation frames, and for any other canvas, the canvas is read directly as before. Such canvases used to come back blank in <code>Chromium</code>, or out of date in browsers that keep the last frame. A page that draws no frames (for example in a background tab) is read after half a second, with a note</li>
 <li>Errors inside <code>shidashi</code>’s own observers are reported as warnings instead of ending the user’s session</li>
 <li>
 <code><a href="../reference/register_io.html">register_input()</a></code> gains <code>tooltip</code>, shown when the mouse hovers over the input (its <code>title</code>); it defaults to the first sentence of <code>description</code> (new <code><a href="../reference/register_io.html">as_tooltip()</a></code>), and <code>tooltip = NULL</code> turns it off; only inputs get it, so other registered elements, such as cards, are unchanged</li>
