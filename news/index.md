@@ -2,6 +2,13 @@
 
 ## shidashi 0.2.1
 
+- Added
+  [`mcp_click()`](https://dipterix.org/shidashi/reference/mcp_click.md):
+  clicks an element for an agent and reports whether it matched, was
+  clicked, or was refused; the browser refuses elements inside
+  `[mcp-agent-disabled="true"]` (controls for people only).
+  `shiny_input_update` clicks buttons through it, so a refused or
+  missing button now fails the tool call
 - [`colormapSelectInput()`](https://dipterix.org/shidashi/reference/colormapSelectInput.md)
   can no longer be emptied: Backspace/Delete keep the selected color
   map, an update with an empty `selected` restores the previous value

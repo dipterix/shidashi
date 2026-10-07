@@ -205,6 +205,9 @@ repository](https://github.com/dipterix/shidashi-templates/).
 
   Whether an `MCP` tool call is running
 
+- [`mcp_click()`](https://dipterix.org/shidashi/reference/mcp_click.md)
+  : Click a page element for an agent
+
 - [`mcp_wrapper()`](https://dipterix.org/shidashi/reference/mcp_wrapper.md)
   :
 

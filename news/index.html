@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +34,8 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="shidashi-021">shidashi 0.2.1<a class="anchor" aria-label="anchor" href="#shidashi-021"></a></h2>
-<ul><li>
+<ul><li>Added <code><a href="../reference/mcp_click.html">mcp_click()</a></code>: clicks an element for an agent and reports whether it matched, was clicked, or was refused; the browser refuses elements inside <code>[mcp-agent-disabled="true"]</code> (controls for people only). <code>shiny_input_update</code> clicks buttons through it, so a refused or missing button now fails the tool call</li>
+<li>
 <code><a href="../reference/colormapSelectInput.html">colormapSelectInput()</a></code> can no longer be emptied: Backspace/Delete keep the selected color map, an update with an empty <code>selected</code> restores the previous value (or the first color map), and a <code>selected</code> outside the choices selects the first one</li>
 <li>Added a color picker widget using vanilla <code>shiny</code> select input;</li>
 <li>Added base theme for plots and viewers that are registered output, such as <code>plotOutput2</code>;</li>
