@@ -455,10 +455,42 @@ class ShidashiApp {
 
   // ---------- UI actions ----------
 
-  click(selector) {
-    if (!selector || selector === '') return;
-    const el = document.querySelector(selector);
-    if (el) el.click();
+  // `opts.agent`: the click comes from an agent (an MCP tool). Elements
+  // inside `[mcp-agent-disabled="true"]` are for people only and are not
+  // clicked. With `opts.request_id` and `opts.input_id`, the result goes back
+  // to R (`shidashi::mcp_click()`): matched, clicked, refused.
+  click(selector, opts = {}) {
+    const reply = (result) => {
+      if (opts.request_id && opts.input_id && window.Shiny) {
+        window.Shiny.setInputValue(
+          opts.input_id,
+          Object.assign({ request_id: opts.request_id }, result),
+          { priority: 'event' }
+        );
+      }
+    };
+    if (!selector || selector === '') {
+      reply({ matched: false, clicked: false, refused: false });
+      return;
+    }
+    let el = null;
+    try {
+      el = document.querySelector(selector);
+    } catch (e) {
+      reply({ matched: false, clicked: false, refused: false,
+              note: 'Invalid CSS selector: ' + e.message });
+      return;
+    }
+    if (!el) {
+      reply({ matched: false, clicked: false, refused: false });
+      return;
+    }
+    if (opts.agent && el.closest('[mcp-agent-disabled="true"]')) {
+      reply({ matched: true, clicked: false, refused: true });
+      return;
+    }
+    el.click();
+    reply({ matched: true, clicked: true, refused: false });
   }
 
   triggerResize(timeout) {
@@ -1755,7 +1787,7 @@ class ShidashiApp {
     this._shiny_registered = true;
 
     this.shinyHandler('click', (params) => {
-      this.click(params.selector);
+      this.click(params.selector, params);
     });
 
     this.shinyHandler('box_flip', (params) => {

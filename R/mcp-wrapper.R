@@ -664,12 +664,27 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         if (isTRUE(update_info$fun %in% c(
           "updateActionButton", "updateActionLink", "updateActionButtonStyled"
         ))) {
-          # This is to update button
+          # This is to update button: click it in the browser, which refuses
+          # buttons that are disabled for agents
           selector <- sprintf("#%s", session$ns(inputId))
-          session$sendCustomMessage(
-            "shidashi.click",
-            list(selector = selector)
-          )
+          return(promises::then(
+            mcp_click(selector, session = session),
+            function(res) {
+              if (isTRUE(res$refused)) {
+                stop("Input ID: `", inputId, "` is disabled for agents: ",
+                     "ask the user to click it themselves; they must approve.")
+              }
+              if (!isTRUE(res$matched)) {
+                stop("Input ID: `", inputId, "` is not on the page.")
+              }
+              list(
+                updated = TRUE,
+                shiny_namespace = session$ns(NULL),
+                inputId = inputId,
+                value = value
+              )
+            }
+          ))
         } else {
           expr <- as.call(call_list)
           eval(expr)
