@@ -45,7 +45,7 @@ test_that("the call log folder is named by the app's start time and id", {
   use_template_root(make_mini_template())
 
   dir <- mcp_log_dir()
-  expect_identical(dirname(dir), file.path(shidashi_cache_dir(), "MCP-logs"))
+  expect_identical(dir, file.path(shidashi_cache_dir(), "MCP-logs", basename(dir)))
   expect_match(basename(dir),
                sprintf("^date-\\d{6}T\\d{6}_app-%s$", mcp_app_id()))
 })
