@@ -40,12 +40,31 @@ The plugin finds running apps through the `shidashi` cache folder,
 `options(shidashi.cache_dir = ...)`, set the environment variable
 `SHIDASHI_CACHE_DIR` to the same folder for Claude.
 
+## Skills
+
+- `rave`: loads when you mention `RAVE`. It tells Claude how to find a
+  running `RAVE` app on your computer (or start one, if you agree), open it
+  in the browser, and which questions to ask before loading data.
+
+## Call log
+
+Every `MCP` call, and its reply, is written to a log in the `shidashi`
+cache folder: `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`, one
+folder per running app. Each line (at most 300 characters) has the time,
+the tool, and the start of its arguments, result, or the reason it failed,
+so you can see why a call failed. Calls that never reached an app are
+marked `(proxy)`. The newest 50 folders are kept. Turn the log off with the
+environment variable `SHIDASHI_MCP_LOG=false` (and, in R,
+`options(shidashi.mcp_log = FALSE)`).
+
 ## Privacy
 
-The plugin runs only on your computer. It collects no data, sends nothing
-to the plugin author or any other third party, and stores nothing besides
-the log files of apps it starts, kept in the `shidashi` cache folder until
-the next start of the same app (and only you can access those files). 
+The plugin runs only on your computer. It collects no data and sends
+nothing to the plugin author or any other third party. It stores only the
+log files of apps it starts, kept in the `shidashi` cache folder until the
+next start of the same app, and the call log above (only you can access
+those files). The call log holds the start of tool arguments and results,
+which can include names from your data, such as project and subject codes.
 It sends requests only to `shidashi` apps running on your computer, or to 
 an app address you give Claude. Tool results go to Claude like the rest of 
 your conversation.

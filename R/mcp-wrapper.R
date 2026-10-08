@@ -294,6 +294,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     update,
     description = "",
     writable = TRUE,
+    hint = "no_hint",
     quoted = FALSE,
     env = parent.frame()
   ) {
@@ -328,6 +329,9 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       argument names passed to the update function.
     @param writable    Logical scalar (default TRUE). Whether the MCP
       update tool is allowed to change this input.
+    @param hint        One of `input_hint_classes`: what an agent does with
+      the input before loading data or running the analysis (ask the user,
+      keep the default, or leave it alone). Default 'no_hint'.
 
     @return The evaluated UI element produced by the `expr` expression.
       The input specification is registered as a side effect.
@@ -344,7 +348,8 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       description = paste(description, collapse = " "),
       type        = truc_string(deparse1(expr), max_char = 100),
       update      = update_info$update,
-      writable    = as.logical(writable)[[1]]
+      writable    = as.logical(writable)[[1]],
+      hint        = check_input_hint(hint)
     )
 
     input_specs$set(inputId, item)
@@ -382,13 +387,14 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     description = NULL,
     type = NULL,
     update = NULL,
-    writable = NULL
+    writable = NULL,
+    hint = NULL
   ) {
     "
     Update the specification of an already-registered shiny input.
 
     Usage:
-      update_input_spec(inputId, description, type, update, writable)
+      update_input_spec(inputId, description, type, update, writable, hint)
 
     @param inputId     Character scalar. Must match a previously registered
       input ID; an error is raised otherwise.
@@ -396,6 +402,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
     @param type        Character or NULL. New widget type.
     @param update      Character or NULL. New update function spec string.
     @param writable    Logical or NULL. New writable flag.
+    @param hint        Character or NULL. New hint (see `input_hint_classes`).
 
     @return A list (invisible) with:
       - item:    the updated 1-row data.frame.
@@ -423,6 +430,10 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       item$writable <- as.logical(writable)[[1]]
       changed <- TRUE
     }
+    if (!is.null(hint)) {
+      item$hint <- check_input_hint(hint)
+      changed <- TRUE
+    }
     if (changed) {
       input_specs$set(inputId, item)
     }
@@ -441,7 +452,7 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       get_input_spec()
 
     @return A data.frame with columns: inputId, description, type,
-      update, writable. Returns an empty data.frame with the same
+      update, writable, hint. Returns an empty data.frame with the same
       columns when no inputs have been registered.
     "
     if (input_specs$size() == 0) {
@@ -450,7 +461,8 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         description = character(),
         type        = character(),
         update      = character(),
-        writable    = logical()
+        writable    = logical(),
+        hint        = character()
       ))
     }
     items <- input_specs$as_list()
@@ -548,9 +560,22 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
       name = "shiny_input_info",
       description = paste(
         "Query registered shiny input specifications.",
-        "Returns input IDs, descriptions, types, update functions,",
-        "whether each is writable, and (when a session is active)",
-        "whether each currently exists and its current value."
+        "Returns, per input ID: its description, type, update function,",
+        "whether it is writable, its `hint`, and (when a session is active)",
+        "whether it currently exists and its current value.",
+        "`hint` says what to do with the input before acting:",
+        "`loader_mandatory` - ask the user before loading data (ask all such",
+        "inputs in one message; never guess, and a value the page filled in",
+        "by itself is not the user's answer); `loader_optional` - the current",
+        "or default value is fine, tell the user which you used;",
+        "`loader_forbidden` - do not change it;",
+        "`analysis_mandatory`, `analysis_optional`, `analysis_forbidden` -",
+        "the same, before running the module's main action (analysis,",
+        "filtering, export...), for the actions the user asked for;",
+        "`no_hint` - no guidance. Pass `hints` to list only some classes,",
+        "e.g. [\"loader_mandatory\", \"loader_optional\"] for the loader form.",
+        "`@state`, when present, holds session state the app reports, such",
+        "as whether the data loader is open."
       ),
       arguments = list(
         inputIds = ellmer::type_array(
@@ -559,9 +584,17 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
           ),
           description = "Optional: specific input IDs to query. Omit to list all registered inputs.",
           required = FALSE
+        ),
+        hints = ellmer::type_array(
+          ellmer::type_enum(
+            values = input_hint_classes,
+            description = "Hint class"
+          ),
+          description = "Optional: list only inputs with these hints.",
+          required = FALSE
         )
       ),
-      fun = function(inputIds = character()) {
+      fun = function(inputIds = character(), hints = character()) {
         inputIds <- unlist(inputIds)
         inputIds <- inputIds[!is.na(inputIds) & nzchar(inputIds)]
         if (length(inputIds) > 0) {
@@ -569,21 +602,37 @@ mcp_wrapper_input_output <- function(input_specs = new_fastmap(), output_specs =
         } else {
           items <- input_specs$as_list()
         }
-        # split each row into list
+        # split each row into list, with `no_hint` for inputs registered
+        # without one
+        items <- lapply(items, function(item) {
+          if (is.null(item)) { return(NULL) }
+          item <- as.list(item)
+          if (!length(item$hint)) {
+            item$hint <- "no_hint"
+          }
+          item
+        })
+
+        hints <- unlist(hints)
+        hints <- hints[!is.na(hints) & nzchar(hints)]
+        if (length(hints)) {
+          items <- Filter(function(item) {
+            !is.null(item) && item$hint %in% hints
+          }, items)
+        }
 
         if (!is.null(session)) {
           input <- shiny::isolate(shiny::reactiveValuesToList(session$input))
           items <- lapply(items, function(item) {
             if (is.null(item)) { return(NULL) }
-            item <- as.list(item)
             item$exists <- item$inputId %in% names(input)
             item$current_value <- input[[item$inputId]]
             item
           })
-        } else {
-          items <- lapply(items, function(item) {
-            as.list(item)
-          })
+          state <- input_state_values(session)
+          if (length(state)) {
+            items[["@state"]] <- state
+          }
         }
 
         items
@@ -1476,6 +1525,14 @@ register_output_widgets <- function(
 #'   such as cards, are returned unchanged.
 #' @param writable logical (default \code{TRUE}).  Whether the \verb{MCP}
 #'   update tool is allowed to change this input.
+#' @param hint character string, one of \code{input_hint_classes}: what an
+#'   agent does with the input before acting, reported by the
+#'   \code{shiny_input_info} tool.  The \code{loader_*} hints apply before
+#'   loading data and the \code{analysis_*} hints before running the
+#'   module's main action: \code{*_mandatory} inputs are asked from the
+#'   user, \code{*_optional} inputs may keep their current or default
+#'   value, and \code{*_forbidden} inputs are left alone.  The default
+#'   \code{"no_hint"} gives no guidance.
 #' @param quoted logical (default \code{FALSE}).  If \code{TRUE},
 #'   \code{expr} is treated as already quoted; otherwise it is captured
 #'   with \code{substitute()}.
@@ -1535,6 +1592,7 @@ register_input <- function(expr,
                            description = "",
                            tooltip = as_tooltip(description),
                            writable = TRUE,
+                           hint = "no_hint",
                            quoted = FALSE,
                            env = parent.frame()) {
   if (!quoted) {
@@ -1543,6 +1601,7 @@ register_input <- function(expr,
 
   # `tooltip` (a lazy default) sees the collapsed `description`
   description <- paste(description, collapse = " ")
+  hint <- check_input_hint(hint)
 
   register_input_impl <- get0(
     x = ".register_input",
@@ -1558,6 +1617,7 @@ register_input <- function(expr,
       description = description,
       update = update,
       writable = writable,
+      hint = hint,
       quoted = TRUE,
       env = env
     )
@@ -1566,6 +1626,96 @@ register_input <- function(expr,
   }
 
   add_input_tooltip(ui, tooltip)
+}
+
+#' @rdname register_io
+#' @export
+input_hint_classes <- c(
+  "no_hint",
+  "loader_mandatory", "loader_optional", "loader_forbidden",
+  "analysis_mandatory", "analysis_optional", "analysis_forbidden"
+)
+
+check_input_hint <- function(hint) {
+  hint <- paste(as.character(hint), collapse = "")
+  if (!hint %in% input_hint_classes) {
+    stop(sprintf(
+      "`hint` must be one of %s, not \"%s\".",
+      paste(sprintf("\"%s\"", input_hint_classes), collapse = ", "), hint
+    ), call. = FALSE)
+  }
+  hint
+}
+
+#' Report session state to agents
+#'
+#' @description
+#' Registers a value that the \verb{MCP} tool \code{shiny_input_info}
+#' reports next to the inputs, under the key \code{"@state"}.  Use it for
+#' state that changes what an agent should ask, for example whether the
+#' data loader is open (a closed loader usually means the data are loaded
+#' and the user wants to change analysis inputs only).
+#' @param name character string, the name of the state
+#' @param getter a function without arguments that returns the current
+#'   value; it is called in \code{shiny::isolate()} each time
+#'   \code{shiny_input_info} runs, and an error is reported as the state's
+#'   \code{error} instead of failing the tool call
+#' @param description character string: what the value means, for agents
+#' @param session the \code{shiny} session (the module's session)
+#' @return \code{NULL}, invisibly
+#' @examples
+#' \dontrun{
+#' # in a module server function
+#' register_input_state(
+#'   "loader_opened",
+#'   function() isTRUE(loader_is_open()),
+#'   description = "TRUE while the data loader is open"
+#' )
+#' }
+#' @export
+register_input_state <- function(name, getter, description = "",
+                                 session = shiny::getDefaultReactiveDomain()) {
+  if (!is.character(name) || length(name) != 1L || is.na(name) ||
+      !nzchar(name)) {
+    stop("`name` must be a non-empty character string.", call. = FALSE)
+  }
+  if (!is.function(getter)) {
+    stop("`getter` must be a function.", call. = FALSE)
+  }
+  if (is.null(session)) {
+    stop("`register_input_state()` needs a shiny session.", call. = FALSE)
+  }
+  states <- session$userData[["@shidashi_input_states@"]]
+  if (!is_shidashi_fastmap(states)) {
+    states <- new_fastmap()
+    session$userData[["@shidashi_input_states@"]] <- states
+  }
+  states$set(name, list(
+    getter = getter,
+    description = paste(description, collapse = " ")
+  ))
+  invisible()
+}
+
+# The registered state of a session for `shiny_input_info`: a named list of
+# `list(value, description)` (or `error` when the getter fails)
+input_state_values <- function(session) {
+  states <- tryCatch(session$userData[["@shidashi_input_states@"]],
+                     error = function(e) NULL)
+  if (!is_shidashi_fastmap(states) || states$size() == 0L) {
+    return(NULL)
+  }
+  lapply(states$as_list(), function(state) {
+    value <- tryCatch(shiny::isolate(state$getter()), error = function(e) e)
+    if (inherits(value, "error")) {
+      return(list(value = NULL, description = state$description,
+                  error = conditionMessage(value)))
+    }
+    if (is.atomic(value)) {
+      value <- as.vector(value)
+    }
+    list(value = value, description = state$description)
+  })
 }
 
 #' @rdname register_io

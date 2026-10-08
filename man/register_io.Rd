@@ -3,6 +3,7 @@
 \name{register_io}
 \alias{register_io}
 \alias{register_input}
+\alias{input_hint_classes}
 \alias{as_tooltip}
 \alias{register_output}
 \title{Register Shiny Inputs and Outputs for \verb{MCP} Access}
@@ -14,9 +15,12 @@ register_input(
   description = "",
   tooltip = as_tooltip(description),
   writable = TRUE,
+  hint = "no_hint",
   quoted = FALSE,
   env = parent.frame()
 )
+
+input_hint_classes
 
 as_tooltip(description)
 
@@ -63,6 +67,15 @@ such as cards, are returned unchanged.}
 
 \item{writable}{logical (default \code{TRUE}).  Whether the \verb{MCP}
 update tool is allowed to change this input.}
+
+\item{hint}{character string, one of \code{input_hint_classes}: what an
+agent does with the input before acting, reported by the
+\code{shiny_input_info} tool.  The \code{loader_*} hints apply before
+loading data and the \code{analysis_*} hints before running the
+module's main action: \code{*_mandatory} inputs are asked from the
+user, \code{*_optional} inputs may keep their current or default
+value, and \code{*_forbidden} inputs are left alone.  The default
+\code{"no_hint"} gives no guidance.}
 
 \item{quoted}{logical (default \code{FALSE}).  If \code{TRUE},
 \code{expr} is treated as already quoted; otherwise it is captured

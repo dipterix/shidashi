@@ -19,18 +19,26 @@
  * case when this script runs from a Claude plugin):
  *   <cache>/launchers.json            apps saved with shidashi::save_launcher()
  *   <cache>/mcp_server/apps/<id>.json one per running app:
- *                                     {app_id, appdir, host, port, pid, started}
+ *                                     {app_id, appdir, host, port, pid, started,
+ *                                      log_dir}
  *   <cache>/mcp_server/proxy-meta.json  instructions and meta tools
  *   <cache>/mcp_server/logs/<id>.log  output of apps this proxy started
+ *   <cache>/MCP-logs/<folder>/mcp-calls.log  the MCP call log: each app writes
+ *                                     the calls it answers to its `log_dir`;
+ *                                     this proxy adds the calls that never
+ *                                     reach an app, marked `(proxy)`
  *
  * Choosing the app:
  *   --app      the newest live record whose app_id, app directory, or
  *              directory name matches
  *   otherwise  the newest live record
- * The proxy then sticks to that app directory. When the app restarts (new
- * port, new app_id), the next request finds the new record for the same
- * directory. It moves to another directory only when its own has no live
- * app and --app was not given, or when the agent launches a saved app.
+ * Until an app has answered, a record whose port refuses connections is
+ * skipped for the next one: its R session may outlive the app it ran.
+ * The proxy then sticks to the directory of the app that answered. When the
+ * app restarts (new port, new app_id), the next request finds the new record
+ * for the same directory. It moves to another directory only when its own
+ * has no live app and --app was not given, or when the agent launches a
+ * saved app.
  *
  * --module limits every tool call to one module (e.g. `--module demo`).
  * A URL or port argument connects to that endpoint directly instead.
@@ -89,11 +97,119 @@ const APPS_DIR = path.join(SERVER_DIR, 'apps');
 const LAUNCHERS_PATH = path.join(CACHE_DIR, 'launchers.json');
 const LOGS_DIR = path.join(SERVER_DIR, 'logs');
 const META_PATH = path.join(SERVER_DIR, 'proxy-meta.json');
+const CALL_LOG_ROOT = path.join(CACHE_DIR, 'MCP-logs');
 const PROTOCOL_VERSION = '2025-03-26';
 const LAUNCH_TIMEOUT_MS = 40000;
+const PROXY_STARTED = new Date();
 
 function log(message) {
   process.stderr.write(`[shidashi-proxy] ${message}\n`);
+}
+
+// ---------------------------------------------------------------------------
+// MCP call log
+//
+// The app writes every call that reaches it to its log folder (the record's
+// `log_dir`). The proxy adds, marked `(proxy)`, the calls that never reach
+// an app: its own tools, replies when no app answers, replies the app gave
+// without a JSON-RPC answer, and calls the client cancelled. Lines go to the
+// folder of the app the proxy used or tried last, else to a folder of its
+// own. SHIDASHI_MCP_LOG=false (or 0) turns the log off.
+// ---------------------------------------------------------------------------
+
+const CALL_LOG_MAX_CHARS = 300;
+
+// The local app record the proxy used or tried last, or null
+let lastRecord = null;
+
+function callLogEnabled() {
+  const value = (process.env.SHIDASHI_MCP_LOG || '').trim().toLowerCase();
+  return !(value === 'false' || value === '0');
+}
+
+function pad(number, width = 2) {
+  return String(number).padStart(width, '0');
+}
+
+function callLogDir() {
+  if (lastRecord && typeof lastRecord.log_dir === 'string' && lastRecord.log_dir) {
+    return lastRecord.log_dir;
+  }
+  const d = PROXY_STARTED;
+  const stamp = `${pad(d.getFullYear() % 100)}${pad(d.getMonth() + 1)}` +
+    `${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}` +
+    `${pad(d.getSeconds())}`;
+  return path.join(CALL_LOG_ROOT, `date-${stamp}_app-none`);
+}
+
+function callLogTime(d = new Date()) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.` +
+    pad(d.getMilliseconds(), 3);
+}
+
+function callLogJson(value) {
+  if (value === undefined || value === null) return '{}';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '{?}';
+  }
+}
+
+function callLogReason(message) {
+  return `{reason: ${JSON.stringify(String(message))}}`;
+}
+
+// The name a call is logged under: the tool for tools/call, else the method
+function callLogName(request) {
+  if (request?.method === 'tools/call') {
+    const name = request.params?.name;
+    return typeof name === 'string' && name ? name : '?';
+  }
+  return typeof request?.method === 'string' ? request.method : '?';
+}
+
+// Write one line: `<time> [type] [name] id=<id> <secs>s (proxy) <payload>`
+function appendCallLog(type, name, id, elapsedMs, payload) {
+  if (!callLogEnabled()) return;
+  const parts = [callLogTime(), `[${type}]`, `[${name}]`];
+  if (id !== undefined && id !== null) parts.push(`id=${id}`);
+  if (elapsedMs !== undefined && elapsedMs !== null) {
+    parts.push(`${(elapsedMs / 1000).toFixed(2)}s`);
+  }
+  parts.push('(proxy)');
+  if (payload) parts.push(payload);
+  let line = parts.join(' ').replace(/\r\n|\n|\r/g, '\\n').replace(/\t/g, ' ');
+  if (line.length > CALL_LOG_MAX_CHARS) {
+    line = line.slice(0, CALL_LOG_MAX_CHARS - 3) + '...';
+  }
+  try {
+    const dir = callLogDir();
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(path.join(dir, 'mcp-calls.log'), line + '\n');
+  } catch {
+    // the log never breaks a call
+  }
+}
+
+// Log a call the proxy answered itself: its request, then its reply
+function logAnsweredCall(request, started, result) {
+  const name = callLogName(request);
+  const args = request.method === 'tools/call'
+    ? request.params?.arguments
+    : request.params;
+  appendCallLog('request', name, request.id, null, callLogJson(args));
+  const text = (result?.content ?? [])
+    .map((item) => (typeof item?.text === 'string' ? item.text : ''))
+    .filter(Boolean).join('\n');
+  if (result?.isError) {
+    appendCallLog('failed', name, request.id, Date.now() - started,
+                  callLogReason(text));
+  } else {
+    appendCallLog('response', name, request.id, Date.now() - started,
+                  JSON.stringify(text));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -321,8 +437,22 @@ function matchesApp(record, spec) {
 let stickyAppdir = null;
 let currentApp = null;
 
+// Whether a local app has answered this proxy (or the agent launched one).
+// Until then, a record whose port refuses connections is skipped for the
+// next newest one: its process may be an R session that is still running
+// after the app in it stopped.
+let attached = false;
+const unreachable = new Set();
+
+function recordKey(record) {
+  return `${record.app_id}:${record.port}:${record.started}`;
+}
+
 function selectApp() {
-  const records = liveRecords();
+  let records = liveRecords();
+  if (!attached) {
+    records = records.filter((r) => !unreachable.has(recordKey(r)));
+  }
   let record = null;
   if (stickyAppdir) {
     record = records.find((r) => r.appdir === stickyAppdir) ?? null;
@@ -333,17 +463,18 @@ function selectApp() {
   if (!record && !ARGS.app) {
     record = records[0] ?? null;
   }
-  if (record) useApp(record);
   currentApp = record;
   return record;
 }
 
+// The app answered (or the agent launched it): stick to its directory
 function useApp(record) {
-  if (!currentApp || currentApp.app_id !== record.app_id) {
+  if (!attached || stickyAppdir !== record.appdir) {
     log(`Using app ${record.app_id} (${record.appdir}) on port ${record.port}`);
   }
   currentApp = record;
   stickyAppdir = record.appdir;
+  attached = true;
 }
 
 function appEndpoint(record) {
@@ -505,7 +636,8 @@ function noteSource(source) {
 // or a local app. Returns the response and where it came from, or null when
 // no app is reachable. For local apps, a stopped process (the app closed or
 // restarted, even on the same port) or a failed connection means: look for
-// the app's new record and retry once.
+// the app's new record and retry once. Before any local app has answered, a
+// record whose port refuses the connection is skipped for the next one.
 async function tryForward(body) {
   const fixed = remoteApp ? remoteApp.endpoint : DIRECT;
   if (fixed) {
@@ -520,17 +652,25 @@ async function tryForward(body) {
     }
   }
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const attempts = attached ? 2 : 10;
+  for (let attempt = 0; attempt < attempts; attempt++) {
     if (currentApp && !isAlive(currentApp.pid)) currentApp = null;
     const record = currentApp ?? selectApp();
     if (!record) return null;
+    lastRecord = record;
     try {
       const response = await post(appEndpoint(record), body);
+      useApp(record);
       response.source = `app:${record.appdir}`;
       noteSource(response.source);
       return response;
     } catch (err) {
       if (!isConnectionError(err)) throw err;
+      if (!attached) {
+        unreachable.add(recordKey(record));
+        log(`App ${record.app_id} on port ${record.port} does not answer; ` +
+            'trying the next app');
+      }
       currentApp = null;
     }
   }
@@ -991,8 +1131,10 @@ function replyError(id, message, code = -32603) {
   write({ jsonrpc: '2.0', id, error: { code, message } });
 }
 
-// Write the app's messages; make sure the request gets a reply
-function relay(request, response, transform = (message) => message) {
+// Write the app's messages; make sure the request gets a reply. The app
+// logs the calls it answers; a reply without an answer is logged here.
+function relay(request, response, transform = (message) => message,
+               started = Date.now()) {
   let answered = false;
   for (const message of response.messages) {
     if (message.id === request.id) {
@@ -1003,13 +1145,17 @@ function relay(request, response, transform = (message) => message) {
     }
   }
   if (!answered) {
-    replyError(request.id,
-               `The shidashi app returned HTTP ${response.status} without a JSON-RPC response.`);
+    const message = `The shidashi app returned HTTP ${response.status} ` +
+      'without a JSON-RPC response.';
+    appendCallLog('failed', callLogName(request), request.id,
+                  Date.now() - started, callLogReason(message));
+    replyError(request.id, message);
   }
 }
 
 async function handle(request, body) {
   const { id, method, params } = request;
+  const started = Date.now();
 
   if (method === 'initialize') return reply(id, initializeResult());
   if (method === 'ping') return reply(id, {});
@@ -1025,30 +1171,44 @@ async function handle(request, body) {
           message.result.tools = [...message.result.tools, ...PROXY_TOOLS];
         }
         return message;
-      });
+      }, started);
     }
     listedFrom = 'offline';
-    return reply(id, { tools: [...loadMeta().tools, ...PROXY_TOOLS] });
+    const tools = [...loadMeta().tools, ...PROXY_TOOLS];
+    appendCallLog('request', 'tools/list', id, null, callLogJson(params));
+    appendCallLog('response', 'tools/list', id, Date.now() - started,
+                  `{"tools":${tools.length},"offline":true}`);
+    return reply(id, { tools });
   }
 
   if (method === 'tools/call') {
     const name = params?.name;
-    if (name === 'shidashi_launchers') return reply(id, launchersResult());
-    if (name === 'shidashi_launch') {
-      return reply(id, await launch(params?.arguments ?? {}));
+    const proxyTools = {
+      shidashi_launchers: () => launchersResult(),
+      shidashi_launch: () => launch(params?.arguments ?? {}),
+      shidashi_connect: () => connect(params?.arguments ?? {}),
+      shidashi_disconnect: () => disconnect(),
+    };
+    if (typeof name === 'string' && Object.hasOwn(proxyTools, name)) {
+      const result = await proxyTools[name]();
+      logAnsweredCall(request, started, result);
+      return reply(id, result);
     }
-    if (name === 'shidashi_connect') {
-      return reply(id, await connect(params?.arguments ?? {}));
-    }
-    if (name === 'shidashi_disconnect') return reply(id, disconnect());
     const response = await tryForward(body);
-    if (response) return relay(request, response);
-    return reply(id, textResult(offlineText(), name !== 'shidashi_sessions'));
+    if (response) return relay(request, response, undefined, started);
+    const text = offlineText();
+    // nothing ran: a failure in the log, even for `shidashi_sessions`
+    logAnsweredCall(request, started, textResult(text, true));
+    return reply(id, textResult(text, name !== 'shidashi_sessions'));
   }
 
   const response = await tryForward(body);
-  if (response) return relay(request, response);
-  return replyError(id, `Method not found: ${method}`, -32601);
+  if (response) return relay(request, response, undefined, started);
+  const message = `Method not found: ${method}`;
+  appendCallLog('request', callLogName(request), id, null, callLogJson(params));
+  appendCallLog('failed', callLogName(request), id, Date.now() - started,
+                callLogReason(message));
+  return replyError(id, message, -32601);
 }
 
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
@@ -1074,9 +1234,14 @@ rl.on('line', async (line) => {
     log(`Ignoring a line that is not JSON: ${trimmed.slice(0, 200)}`);
     return;
   }
-  // Notifications from the client need no reply and no app
+  // Notifications from the client need no reply and no app. A cancelled
+  // call (the client gave up waiting) is worth a line in the call log.
   if (!request || typeof request !== 'object' ||
       request.id === undefined || request.id === null) {
+    if (request?.method === 'notifications/cancelled') {
+      appendCallLog('request', request.method, null, null,
+                    callLogJson(request.params));
+    }
     return;
   }
 
@@ -1085,6 +1250,8 @@ rl.on('line', async (line) => {
     await handle(request, trimmed);
   } catch (err) {
     log(`Request error: ${err.message}`);
+    appendCallLog('failed', callLogName(request), request.id, null,
+                  callLogReason(err.message));
     replyError(request.id, err.message);
   } finally {
     pending--;

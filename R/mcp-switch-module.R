@@ -183,7 +183,7 @@ mcp_tool_switch_module <- function(arguments, scope = list()) {
   if (is.null(page)) {
     return(mcp_tool_error(paste(
       "No dashboard page is open in the browser, so nothing can switch",
-      "modules. Ask the user to open the app in the browser."
+      "modules.", mcp_open_page_hint()
     )))
   }
 

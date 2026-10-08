@@ -188,7 +188,16 @@ mcp_no_module_message <- function(tool_name, module, offering, all_open,
     ))
   }
   if (!length(all_open)) {
-    return(sprintf("No dashboard module is open. %s", open_hint))
+    if (!is.null(mcp_latest_dashboard())) {
+      return(paste(
+        "No dashboard module is open; the dashboard itself is open in the",
+        "browser. Call `switch_module` with the module id to open the module."
+      ))
+    }
+    return(paste(
+      "No dashboard module is open: no browser page is connected to this",
+      "app.", mcp_open_page_hint()
+    ))
   }
   sprintf("No open dashboard module offers %s. %s", tool_text, open_hint)
 }

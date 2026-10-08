@@ -97,21 +97,28 @@ mcp_write_app_record <- function(port, appdir, host = "127.0.0.1",
                                  records_dir = mcp_app_records_dir()) {
   appdir <- normalizePath(appdir, winslash = "/", mustWork = TRUE)
   app_id <- substr(digest::digest(paste(appdir, Sys.getpid())), 1L, 8L)
-  template_settings$set(mcp_app_id = app_id)
+  started <- Sys.time()
+  template_settings$set(mcp_app_id = app_id, mcp_app_started = started)
+
+  record <- list(
+    app_id  = app_id,
+    appdir  = appdir,
+    host    = host,
+    port    = as.integer(port),
+    pid     = Sys.getpid(),
+    started = format(started, "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC")
+  )
+  # Where the proxy writes the calls that never reach this app
+  if (mcp_log_enabled()) {
+    record$log_dir <- mcp_log_dir()
+    mcp_log_prune()
+  }
 
   dir.create(records_dir, recursive = TRUE, showWarnings = FALSE)
   path <- file.path(records_dir, paste0(app_id, ".json"))
-  writeLines(
-    jsonlite::toJSON(list(
-      app_id  = app_id,
-      appdir  = appdir,
-      host    = host,
-      port    = as.integer(port),
-      pid     = Sys.getpid(),
-      started = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC")
-    ), auto_unbox = TRUE),
-    path
-  )
+  writeLines(jsonlite::toJSON(record, auto_unbox = TRUE), path)
+
+  mcp_write_server_info(appdir, record, started = started)
 
   # Keep the 20 newest records; the proxy skips the ones whose process is gone
   records <- list.files(records_dir, pattern = "\\.json$", full.names = TRUE)
@@ -123,15 +130,110 @@ mcp_write_app_record <- function(port, appdir, host = "127.0.0.1",
   invisible(path)
 }
 
+# The host part of a URL that reaches `host` from this computer: a wildcard
+# listen address means this computer
+mcp_url_host <- function(host) {
+  if (!length(host) || !nzchar(host) || host %in% c("0.0.0.0", "::")) {
+    host <- "127.0.0.1"
+  }
+  if (grepl(":", host, fixed = TRUE)) {
+    host <- sprintf("[%s]", host)
+  }
+  host
+}
+
+# Where the app's `logs/server-info.log` is
+mcp_server_info_path <- function(appdir) {
+  file.path(appdir, "logs", "server-info.log")
+}
+
+#' Write `<appdir>/logs/server-info.log`
+#'
+#' One `key: value` per line: the app id, process id, start time, host,
+#' port, the app and MCP URLs, and the MCP call log folder. Agents read it
+#' to find a running app (for example a RAVE session folder). It is removed
+#' when the app stops (see `mcp_remove_app_files()`). Also keeps the app URL
+#' in `template_settings` for messages that tell agents how to open it.
+#' @noRd
+mcp_write_server_info <- function(appdir, record, started = Sys.time()) {
+  url <- sprintf("http://%s:%d/", mcp_url_host(record$host), record$port)
+  template_settings$set(mcp_app_url = url)
+  lines <- c(
+    paste("app_id:", record$app_id),
+    paste("pid:", record$pid),
+    paste("started:", format(started, "%Y-%m-%d %H:%M:%S %Z")),
+    paste("host:", record$host),
+    paste("port:", record$port),
+    paste("url:", url),
+    paste0("mcp: ", url, "mcp"),
+    if (length(record$log_dir)) paste("mcp_log:", record$log_dir)
+  )
+  path <- mcp_server_info_path(appdir)
+  tryCatch({
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    writeLines(lines, path)
+  }, error = function(e) {
+    warning("Cannot write ", path, ": ", conditionMessage(e), call. = FALSE)
+  })
+  invisible(path)
+}
+
+# Remove the app record and server info of this process; files that name
+# another process (an app started since in the same folder) stay
+mcp_remove_app_files <- function(record_path, info_path) {
+  pid <- Sys.getpid()
+  record_pid <- tryCatch(jsonlite::read_json(record_path)$pid,
+                         error = function(e) NULL)
+  if (identical(as.integer(record_pid), pid)) {
+    unlink(record_path)
+  }
+  info <- tryCatch(readLines(info_path, warn = FALSE),
+                   error = function(e) character(0))
+  info_pid <- sub("^pid:[[:space:]]*", "", info[startsWith(info, "pid:")])
+  if (identical(info_pid, as.character(pid))) {
+    unlink(info_path)
+  }
+  invisible()
+}
+
+# What an agent can do when no browser page is connected to the app: open
+# the app's URL (known once the app record is written)
+mcp_open_page_hint <- function() {
+  url <- template_settings$get("mcp_app_url")
+  if (!(length(url) == 1L && is.character(url) && nzchar(url))) {
+    return("Ask the user to open the app in the browser.")
+  }
+  sprintf(
+    paste(
+      "Open the app in a browser first. Give the user this one-click link:",
+      "[Open the dashboard](%1$s). On the computer that runs the app, you",
+      "may instead check that `GET %1$smcp` answers, then open the link with",
+      "`utils::browseURL()`. Then call `shidashi_sessions` until it lists",
+      "the page."
+    ),
+    url
+  )
+}
+
 # Chain the MCP handler in front of the app's HTTP handler. When `port` and
-# `appdir` are given, also announce the app to the stdio proxy.
+# `appdir` are given, also announce the app to the stdio proxy (the app
+# record and `logs/server-info.log`); both are removed when the app stops.
 register_mcp_route <- function(app, port = NULL, appdir = NULL,
                                host = "127.0.0.1",
                                records_dir = mcp_app_records_dir(),
                               server_name = "shidashi") {
   if (length(port) == 1L && length(appdir) == 1L) {
-    mcp_write_app_record(port = port, appdir = appdir, host = host,
-                         records_dir = records_dir)
+    record_path <- mcp_write_app_record(port = port, appdir = appdir,
+                                        host = host,
+                                        records_dir = records_dir)
+    info_path <- mcp_server_info_path(
+      normalizePath(appdir, winslash = "/", mustWork = TRUE)
+    )
+    # Outside a server function, this runs when the app exits: a normal
+    # stop, an interrupt, or an error while starting
+    shiny::onStop(function() {
+      mcp_remove_app_files(record_path, info_path)
+    }, session = NULL)
   }
 
   default_handler <- app$httpHandler
@@ -183,11 +285,28 @@ mcp_route_request <- function(req, server_name = "shidashi") {
 }
 
 #' Handle an MCP JSON-RPC request
+#'
+#' Answers the request and writes it and its reply to the MCP call log
+#' (see mcp-log.R).
 #' @param req the Rook request environment
 #' @param scope `list(module)` from the URL
 #' @return a `shiny::httpResponse`, or a promise of one
 #' @noRd
 mcp_http_handler <- function(req, scope = list()) {
+  call <- mcp_log_new_call()
+  response <- tryCatch(
+    mcp_http_dispatch(req, scope, call),
+    error = function(e) {
+      mcp_log_failed(call, conditionMessage(e))
+      stop(e)
+    }
+  )
+  mcp_log_finish(call, response)
+}
+
+# Parse and answer one JSON-RPC request; `call` (from mcp_log_new_call())
+# records what it is for the log
+mcp_http_dispatch <- function(req, scope, call) {
 
   sweep_closed_sessions()
 
@@ -195,8 +314,9 @@ mcp_http_handler <- function(req, scope = list()) {
   if (length(body_raw) == 0L) {
     return(mcp_json_error(NULL, -32700L, "Parse error: empty body"))
   }
+  body_text <- rawToChar(body_raw)
   msg <- tryCatch(
-    jsonlite::fromJSON(rawToChar(body_raw), simplifyVector = TRUE,
+    jsonlite::fromJSON(body_text, simplifyVector = TRUE,
                        simplifyDataFrame = FALSE, simplifyMatrix = FALSE),
     error = function(e) NULL
   )
@@ -210,10 +330,18 @@ mcp_http_handler <- function(req, scope = list()) {
 
   if (!identical(msg$jsonrpc, "2.0") || !is.character(method) ||
       length(method) != 1L) {
+    call$id <- id
     return(mcp_json_error(
       id, -32600L, "Invalid Request: missing jsonrpc or method"
     ))
   }
+
+  # The log shows the arguments as the client sent them: unsimplified, so a
+  # one-element array stays an array
+  mcp_log_request(call, method = method, id = id, params = tryCatch(
+    jsonlite::fromJSON(body_text, simplifyVector = FALSE)$params,
+    error = function(e) params
+  ))
 
   # Notifications (no id) need no reply
   if (is.null(id)) {
