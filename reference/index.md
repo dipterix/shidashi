@@ -156,7 +156,11 @@
 - [`read_stream_vis()`](https://dipterix.org/shidashi/reference/read_stream_vis.md)
   : Read a shidashi stream binary file
 
+- [`register_input_state()`](https://dipterix.org/shidashi/reference/register_input_state.md)
+  : Report session state to agents
+
 - [`register_input()`](https://dipterix.org/shidashi/reference/register_io.md)
+  [`input_hint_classes`](https://dipterix.org/shidashi/reference/register_io.md)
   [`as_tooltip()`](https://dipterix.org/shidashi/reference/register_io.md)
   [`register_output()`](https://dipterix.org/shidashi/reference/register_io.md)
   :

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +34,15 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.1" id="shidashi-021">shidashi 0.2.1<a class="anchor" aria-label="anchor" href="#shidashi-021"></a></h2>
-<ul><li>Added <code><a href="../reference/mcp_click.html">mcp_click()</a></code>: clicks an element for an agent and reports whether it matched, was clicked, or was refused; the browser refuses elements inside <code>[mcp-agent-disabled="true"]</code> (controls for people only). <code>shiny_input_update</code> clicks buttons through it, so a refused or missing button now fails the tool call</li>
+<ul><li>The <code>MCP</code> endpoint keeps a call log for each running app in the cache folder, <code>MCP-logs/date-&lt;start time&gt;_app-&lt;app id&gt;/mcp-calls.log</code>: one line (at most 300 characters) per request, reply, or failure, with the tool, the <code>JSON-RPC</code> id, the time taken, and the arguments, result, or reason. The stdio proxy adds the calls that never reach an app, marked <code>(proxy)</code>. Turn the log off with <code>options(shidashi.mcp_log = FALSE)</code> or the environment variable <code>SHIDASHI_MCP_LOG=false</code>; the newest <code>getOption("shidashi.mcp_log_keep", 50)</code> folders are kept</li>
+<li>A running app writes <code>logs/server-info.log</code> in its folder (app id, process id, port, addresses, and call log folder). It and the app record are removed when the app stops, so an app stopped inside an R session that keeps running no longer leaves a record behind</li>
+<li>Until an app has answered it, the stdio proxy skips app records whose port refuses connections and tries the next newest, instead of failing every call on a stopped app</li>
+<li>
+<code><a href="../reference/register_io.html">register_input()</a></code> gains <code>hint</code> (one of <code>input_hint_classes</code>): whether agents ask the user for an input before loading data or running the analysis, keep its default, or leave it alone. <code>shiny_input_info</code> returns each input’s hint, takes a <code>hints</code> filter, and reports session state registered with the new <code><a href="../reference/register_input_state.html">register_input_state()</a></code> under <code>@state</code>
+</li>
+<li>With no browser page open, <code>switch_module</code> and module tool calls give the agent the app’s address as a one-click link</li>
+<li>The Claude plugin adds a <code>rave</code> skill: how agents find a running <code>RAVE</code> app, open it in the browser, and what to ask before loading data</li>
+<li>Added <code><a href="../reference/mcp_click.html">mcp_click()</a></code>: clicks an element for an agent and reports whether it matched, was clicked, or was refused; the browser refuses elements inside <code>[mcp-agent-disabled="true"]</code> (controls for people only). <code>shiny_input_update</code> clicks buttons through it, so a refused or missing button now fails the tool call</li>
 <li>
 <code><a href="../reference/colormapSelectInput.html">colormapSelectInput()</a></code> can no longer be emptied: Backspace/Delete keep the selected color map, an update with an empty <code>selected</code> restores the previous value (or the first color map), and a <code>selected</code> outside the choices selects the first one</li>
 <li>Added a color picker widget using vanilla <code>shiny</code> select input;</li>

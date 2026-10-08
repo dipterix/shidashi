@@ -24,9 +24,12 @@ register_input(
   description = "",
   tooltip = as_tooltip(description),
   writable = TRUE,
+  hint = "no_hint",
   quoted = FALSE,
   env = parent.frame()
 )
+
+input_hint_classes
 
 as_tooltip(description)
 
@@ -85,6 +88,16 @@ register_output(
 
   logical (default `TRUE`). Whether the `MCP` update tool is allowed to
   change this input.
+
+- hint:
+
+  character string, one of `input_hint_classes`: what an agent does with
+  the input before acting, reported by the `shiny_input_info` tool. The
+  `loader_*` hints apply before loading data and the `analysis_*` hints
+  before running the module's main action: `*_mandatory` inputs are
+  asked from the user, `*_optional` inputs may keep their current or
+  default value, and `*_forbidden` inputs are left alone. The default
+  `"no_hint"` gives no guidance.
 
 - quoted:
 

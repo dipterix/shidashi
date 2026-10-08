@@ -2,6 +2,34 @@
 
 ## shidashi 0.2.1
 
+- The `MCP` endpoint keeps a call log for each running app in the cache
+  folder, `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`: one
+  line (at most 300 characters) per request, reply, or failure, with the
+  tool, the `JSON-RPC` id, the time taken, and the arguments, result, or
+  reason. The stdio proxy adds the calls that never reach an app, marked
+  `(proxy)`. Turn the log off with `options(shidashi.mcp_log = FALSE)`
+  or the environment variable `SHIDASHI_MCP_LOG=false`; the newest
+  `getOption("shidashi.mcp_log_keep", 50)` folders are kept
+- A running app writes `logs/server-info.log` in its folder (app id,
+  process id, port, addresses, and call log folder). It and the app
+  record are removed when the app stops, so an app stopped inside an R
+  session that keeps running no longer leaves a record behind
+- Until an app has answered it, the stdio proxy skips app records whose
+  port refuses connections and tries the next newest, instead of failing
+  every call on a stopped app
+- [`register_input()`](https://dipterix.org/shidashi/reference/register_io.md)
+  gains `hint` (one of `input_hint_classes`): whether agents ask the
+  user for an input before loading data or running the analysis, keep
+  its default, or leave it alone. `shiny_input_info` returns each
+  input’s hint, takes a `hints` filter, and reports session state
+  registered with the new
+  [`register_input_state()`](https://dipterix.org/shidashi/reference/register_input_state.md)
+  under `@state`
+- With no browser page open, `switch_module` and module tool calls give
+  the agent the app’s address as a one-click link
+- The Claude plugin adds a `rave` skill: how agents find a running
+  `RAVE` app, open it in the browser, and what to ask before loading
+  data
 - Added
   [`mcp_click()`](https://dipterix.org/shidashi/reference/mcp_click.md):
   clicks an element for an agent and reports whether it matched, was
