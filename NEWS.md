@@ -1,4 +1,4 @@
-# shidashi 0.2.1
+# shidashi 0.3.0
 
 * The `MCP` endpoint keeps a call log for each running app in the cache folder, `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`: one line (at most 300 characters) per request, reply, or failure, with the tool, the `JSON-RPC` id, the time taken, and the arguments, result, or reason. The stdio proxy adds the calls that never reach an app, marked `(proxy)`. Turn the log off with `options(shidashi.mcp_log = FALSE)` or the environment variable `SHIDASHI_MCP_LOG=false`; the newest `getOption("shidashi.mcp_log_keep", 50)` folders are kept
 * A running app writes `logs/server-info.log` in its folder (app id, process id, port, addresses, and call log folder). It and the app record are removed when the app stops, so an app stopped inside an R session that keeps running no longer leaves a record behind
