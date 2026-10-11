@@ -1,6 +1,6 @@
 # Changelog
 
-## shidashi 0.2.1
+## shidashi 0.3.0
 
 - The `MCP` endpoint keeps a call log for each running app in the cache
   folder, `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`: one
