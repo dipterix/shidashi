@@ -26,7 +26,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/dipterix/shidashi/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/dipterix/shidashi/blob/v0.3.0/DESCRIPTION)
 
 Wang Z (2026). *shidashi: A Shiny Dashboard Template Modular System with
 Chat Bot Support*. R package version 0.3.0,
