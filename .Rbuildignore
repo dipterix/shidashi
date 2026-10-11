@@ -8,6 +8,7 @@ node_modules$
 ^docs$
 ^pkgdown$
 ^adhoc$
+^revdep$
 ^inst/builtin-templates/AdminLTE3-bare/www/AdminLTE/js/\.eslintrc\.json$
 ^inst/builtin-templates/AdminLTE3-bare/node_modules
 ^inst/builtin-templates/AdminLTE3-bare/src
