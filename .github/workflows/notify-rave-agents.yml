@@ -1,0 +1,33 @@
+# Asks rave-ieeg/agents to sync (its .github/workflows/sync.yml) when the files
+# it copies from this repository change; the paths below are the ones listed
+# for dipterix/shidashi in https://github.com/rave-ieeg/agents/blob/main/tools/bundle.json
+#
+# Needs the repository secret RAVE_AGENTS_DISPATCH_TOKEN: a fine-grained
+# personal access token limited to rave-ieeg/agents, with "Actions: Read and
+# write". It can start the sync workflow and nothing more; it cannot push
+# code. Without the secret (in forks, for example) the job does nothing.
+name: notify rave-ieeg/agents
+
+permissions: {}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'inst/mcp-proxy/shidashi-proxy.mjs'
+      - 'LICENSE.md'
+      - 'inst/mcp-proxy/skills/rave/**'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.RAVE_AGENTS_DISPATCH_TOKEN }}
+    steps:
+      - name: Ask rave-ieeg/agents to sync
+        if: env.GH_TOKEN != ''
+        run: >
+          gh workflow run sync.yml --repo rave-ieeg/agents --ref main
+          -f "source=${{ github.repository }}"
+          -f "sha=${{ github.sha }}"
