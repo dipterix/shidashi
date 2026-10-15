@@ -2,6 +2,8 @@
 
 ## shidashi 0.3.0
 
+CRAN release: 2026-10-11
+
 - The `MCP` endpoint keeps a call log for each running app in the cache
   folder, `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`: one
   line (at most 300 characters) per request, reply, or failure, with the
