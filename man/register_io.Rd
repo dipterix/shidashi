@@ -96,7 +96,10 @@ with \code{substitute()}.}
 and writes the download content.}
 
 \item{download_type}{character string.  One of \code{"image"},
-\code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.}
+\code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.
+A \code{"threeBrain"} download saves the \pkg{threeBrain} viewer as
+it is shown: its current control panel values and camera replace the
+ones the render expression sets.}
 
 \item{extension}{character vector of allowed file extension for
 download, or \code{NULL}.}

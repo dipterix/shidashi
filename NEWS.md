@@ -1,3 +1,7 @@
+# shidashi 0.3.1
+
+* A `threeBrain` download saves the viewer as it is shown: the control panel values and camera (position, target, up, zoom) the viewer reports replace the ones the render expression sets, so modules no longer need `brain$render()` to save the latest view
+
 # shidashi 0.3.0
 
 * The `MCP` endpoint keeps a call log for each running app in the cache folder, `MCP-logs/date-<start time>_app-<app id>/mcp-calls.log`: one line (at most 300 characters) per request, reply, or failure, with the tool, the `JSON-RPC` id, the time taken, and the arguments, result, or reason. The stdio proxy adds the calls that never reach an app, marked `(proxy)`. Turn the log off with `options(shidashi.mcp_log = FALSE)` or the environment variable `SHIDASHI_MCP_LOG=false`; the newest `getOption("shidashi.mcp_log_keep", 50)` folders are kept

@@ -1434,7 +1434,32 @@ register_output_widgets <- function(
               title <- "RAVE Viewer"
             }
             widget <- eval(render_expr, envir = new.env(parent = render_env))
-            tb$save_brain(widget, file, title = title)
+
+            controllers <- NULL
+            main_camera <- NULL
+
+            # Save the viewer as it is shown: the controller and camera state
+            # it reports through the proxy overrides the render-time settings
+            if (inherits(widget, "threejs_brain")) {
+              tryCatch(
+                {
+                  
+                  proxy <- tb$brain_proxy(outputId = outputId, session = session)
+                  controllers <- shiny::isolate(proxy$get_controllers())
+                  main_camera <- shiny::isolate(proxy$main_camera)
+
+                },
+                error = function(e) {}
+              )
+            }
+            
+            tb$save_brain(
+              widget = widget,
+              path = file,
+              title = title,
+              controllers = controllers,
+              main_camera = main_camera
+            )
           },
           "htmlwidget" = {
             widget <- eval(render_expr, envir = new.env(parent = render_env))
@@ -1545,6 +1570,9 @@ register_output_widgets <- function(
 #'   and writes the download content.
 #' @param download_type character string.  One of \code{"image"},
 #'   \code{"threeBrain"}, \code{"data"}, or \code{"no-download"}.
+#'   A \code{"threeBrain"} download saves the \pkg{threeBrain} viewer as
+#'   it is shown: its current control panel values and camera replace the
+#'   ones the render expression sets.
 #' @param extension character vector of allowed file extension for
 #'   download, or \code{NULL}.
 #' @param session the \code{shiny} session object.  For
