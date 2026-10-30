@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">shidashi</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,10 @@
       <small>Source: <a href="https://github.com/dipterix/shidashi/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.1" id="shidashi-031">shidashi 0.3.1<a class="anchor" aria-label="anchor" href="#shidashi-031"></a></h2>
+<ul><li>A <code>threeBrain</code> download saves the viewer as it is shown: the control panel values and camera (position, target, up, zoom) the viewer reports replace the ones the render expression sets, so modules no longer need <code>brain$render()</code> to save the latest view</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="shidashi-030">shidashi 0.3.0<a class="anchor" aria-label="anchor" href="#shidashi-030"></a></h2><p class="text-muted">CRAN release: 2026-10-11</p>
 <ul><li>The <code>MCP</code> endpoint keeps a call log for each running app in the cache folder, <code>MCP-logs/date-&lt;start time&gt;_app-&lt;app id&gt;/mcp-calls.log</code>: one line (at most 300 characters) per request, reply, or failure, with the tool, the <code>JSON-RPC</code> id, the time taken, and the arguments, result, or reason. The stdio proxy adds the calls that never reach an app, marked <code>(proxy)</code>. Turn the log off with <code>options(shidashi.mcp_log = FALSE)</code> or the environment variable <code>SHIDASHI_MCP_LOG=false</code>; the newest <code>getOption("shidashi.mcp_log_keep", 50)</code> folders are kept</li>

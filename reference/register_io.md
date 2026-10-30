@@ -131,7 +131,9 @@ register_output(
 - download_type:
 
   character string. One of `"image"`, `"threeBrain"`, `"data"`, or
-  `"no-download"`.
+  `"no-download"`. A `"threeBrain"` download saves the threeBrain viewer
+  as it is shown: its current control panel values and camera replace
+  the ones the render expression sets.
 
 - extension:
 

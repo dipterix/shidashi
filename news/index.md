@@ -1,5 +1,12 @@
 # Changelog
 
+## shidashi 0.3.1
+
+- A `threeBrain` download saves the viewer as it is shown: the control
+  panel values and camera (position, target, up, zoom) the viewer
+  reports replace the ones the render expression sets, so modules no
+  longer need `brain$render()` to save the latest view
+
 ## shidashi 0.3.0
 
 CRAN release: 2026-10-11
