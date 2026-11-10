@@ -71,18 +71,30 @@ a list of functions that controls the progress
   progress$close()
 
 }
-#> [Procedure A]: initializing...                                                  
-#> [Procedure A]: Step 1 (1 out of 10)                                             
-#> [Procedure A]: Step 2 (2 out of 10)                                             
-#> [Procedure A]: Step 3 (3 out of 10)                                             
-#> [Procedure A]: Step 4 (4 out of 10)                                             
-#> [Procedure A]: Step 5 (5 out of 10)                                             
-#> [Procedure A]: Step 6 (6 out of 10)                                             
-#> [Procedure A]: Step 7 (7 out of 10)                                             
-#> [Procedure A]: Step 8 (8 out of 10)                                             
-#> [Procedure A]: Step 9 (9 out of 10)                                             
-#> [Procedure A]: Step 10 (10 out of 10)                                           
-#> Finished                                                                        
+#> 
+[Procedure A]: initializing...                                                  
+#> 
+[Procedure A]: Step 1 (1 out of 10)                                             
+#> 
+[Procedure A]: Step 2 (2 out of 10)                                             
+#> 
+[Procedure A]: Step 3 (3 out of 10)                                             
+#> 
+[Procedure A]: Step 4 (4 out of 10)                                             
+#> 
+[Procedure A]: Step 5 (5 out of 10)                                             
+#> 
+[Procedure A]: Step 6 (6 out of 10)                                             
+#> 
+[Procedure A]: Step 7 (7 out of 10)                                             
+#> 
+[Procedure A]: Step 8 (8 out of 10)                                             
+#> 
+[Procedure A]: Step 9 (9 out of 10)                                             
+#> 
+[Procedure A]: Step 10 (10 out of 10)                                           
+#> 
+Finished                                                                        
 
 if(interactive()) {
   library(shiny)
